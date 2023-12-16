@@ -24,18 +24,18 @@ public class ChessGameFrame extends JFrame {
     private JLabel statusLabel,dialogLabel;
     private JButton darkButton,loadButton,swayConfirmButton,nextStepButton,newGameButton,saveButton;
     private final JButton[] jButtons;
-    FileDialog openDialog = new FileDialog(this, "Open File", FileDialog.LOAD);
-    FileDialog saveDialog = new FileDialog(this, "Save File", FileDialog.SAVE);
-    private JFileChooser jf = new JFileChooser(".\\");
-    private FileNameExtensionFilter ff = new FileNameExtensionFilter("txt","txt");
+//    private FileDialog openDialog = new FileDialog(this, "Open File", FileDialog.LOAD);
+//    private FileDialog saveDialog = new FileDialog(this, "Save File", FileDialog.SAVE);
+    private final JFileChooser jf = new JFileChooser(".\\");
 
     public ChessGameFrame(int wdt, int height) {
-        setTitle("2023 CS109 Project Demo"); //设置标题
+        setTitle("CS109 消消乐"); //设置标题
         this.wdt = wdt;
         this.hgt = height;
         this.ONE_CHESS_SIZE = (hgt * 4 / 5) / 9;
 
         jf.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        FileNameExtensionFilter ff = new FileNameExtensionFilter("txt", "txt");
         jf.addChoosableFileFilter(ff);
         jf.setFileFilter(ff);
 
