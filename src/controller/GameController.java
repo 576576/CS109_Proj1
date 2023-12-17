@@ -2,6 +2,7 @@ package controller;
 
 import listener.GameListener;
 import model.*;
+import net.NetGame;
 import view.CellComponent;
 import view.ChessComponent;
 import view.ChessboardComponent;
@@ -23,28 +24,35 @@ public class GameController implements GameListener {
 
     private final Chessboard model;
     private final ChessboardComponent view;
-
+    private final NetGame net;
 
     // Record whether there is a selected piece before
     private ChessboardPoint selectedPoint;
     private ChessboardPoint selectedPoint2;
 
     private int score;
-
-    private JLabel statusLabel;
+    private Difficulty difficulty;
+    private JLabel statusLabel,dialogLabel;
 
     public JLabel getStatusLabel() {
         return statusLabel;
+    }
+    public JLabel getDialogLabel(){
+        return dialogLabel;
     }
 
     public void setStatusLabel(JLabel statusLabel) {
         this.statusLabel = statusLabel;
     }
+    public void setDialogLabel(JLabel dialogLabel) {
+        this.dialogLabel = dialogLabel;
+    }
 
     public GameController(ChessboardComponent view, Chessboard model) {
         this.view = view;
         this.model = model;
-
+        this.net = new NetGame();
+        net.registerController(this);
         view.registerController(this);
         view.initiateChessComponent(model);
         view.repaint();
@@ -62,6 +70,9 @@ public class GameController implements GameListener {
             }
         }
         view.repaint();
+    }
+    public void setDifficulty(Difficulty difficulty){
+        this.difficulty=difficulty;
     }
 
     // click an empty cell
@@ -92,7 +103,33 @@ public class GameController implements GameListener {
         this.statusLabel.setText("Score:" + score);
         System.out.println("Score updated:"+score);
     }
-
+    public <T> void loadGame(T in){
+        if (in.getClass().getName().equals("File")){
+            loadFromFile((File) in);
+            return;
+        }
+        Scanner sc;
+        sc = new Scanner((InputStream) in);
+        var csb = new int[8][8];
+        score=sc.nextInt();
+        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+                csb[i][j]=sc.hasNextInt()?sc.nextInt():new Random().nextInt(4);
+            }
+        }
+        System.out.println("Game Loaded.\nScore: "+score+"\n");
+        view.removeAllChessComponentsAtGrids();
+        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            System.out.println(Arrays.toString(csb[i]));
+            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+                String pName = new String[]{"💎", "⚪", "▲", "🔶"}[Math.min(Math.max(csb[j][i],0),3)];
+                view.setChessComponentAtGrid(new ChessboardPoint(j,i),new ChessComponent(view.getCHESS_SIZE(),new ChessPiece(pName)));
+                model.setChessPiece(new ChessboardPoint(j,i),new ChessPiece(pName));
+            }
+        }
+        view.repaint();
+        sc.close();
+    }
     public void loadFromFile(File file) {
         if (!file.exists() || !file.canRead()) return;
         Scanner sc;
@@ -225,5 +262,7 @@ public class GameController implements GameListener {
         component.repaint();
 
     }
-
+    public String getNetGameData(){
+        return difficulty.getDifficultyInfo()+" "+score;
+    }
 }

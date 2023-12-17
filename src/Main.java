@@ -11,6 +11,7 @@ public class Main {
             GameController gameController = new GameController(mainFrame.getChessboardComponent(), new Chessboard());
             mainFrame.setGameController(gameController);
             gameController.setStatusLabel(mainFrame.getStatusLabel());
+            gameController.setDialogLabel(mainFrame.getDialogLabel());
             mainFrame.setVisible(true);
         });
     }

@@ -22,10 +22,8 @@ public class ChessGameFrame extends JFrame {
     private ChessboardComponent chessboardComponent;
 
     private JLabel statusLabel,dialogLabel;
-    private JButton darkButton,loadButton,swayConfirmButton,nextStepButton,newGameButton,saveButton;
+    private JButton darkButton,loadButton,swayConfirmButton,nextStepButton,newGameButton,saveButton,netGameButton;
     private final JButton[] jButtons;
-//    private FileDialog openDialog = new FileDialog(this, "Open File", FileDialog.LOAD);
-//    private FileDialog saveDialog = new FileDialog(this, "Save File", FileDialog.SAVE);
     private final JFileChooser jf = new JFileChooser(".\\");
 
     public ChessGameFrame(int wdt, int height) {
@@ -52,8 +50,9 @@ public class ChessGameFrame extends JFrame {
         addNextStepButton();
         addLoadButton();
         addSaveButton();
+        addNetGameButton();
         addDialogLabel();
-        jButtons = new JButton[]{darkButton,loadButton,swayConfirmButton,nextStepButton,newGameButton,saveButton};
+        jButtons = new JButton[]{darkButton,loadButton,swayConfirmButton,nextStepButton,newGameButton,saveButton,netGameButton};
         darkButton.doClick();
     }
 
@@ -93,8 +92,8 @@ public class ChessGameFrame extends JFrame {
         add(statusLabel);
     }
     private void addDialogLabel() {
-        this.dialogLabel = new JLabel("dddd");
-        dialogLabel.setLocation(16,hgt-80);
+        this.dialogLabel = new JLabel("Difficulty:EASY  StepLeft:∞  Goal:30");
+        dialogLabel.setLocation(0,hgt-80);
         dialogLabel.setSize(wdt-20, 60);
         dialogLabel.setFont(new Font("Rockwell", Font.BOLD, 20));
         add(dialogLabel);
@@ -103,6 +102,11 @@ public class ChessGameFrame extends JFrame {
     public JLabel getStatusLabel() {
         return statusLabel;
     }
+
+    public JLabel getDialogLabel() {
+        return dialogLabel;
+    }
+
     private void addDarkModeButton() {
         JButton button = new JButton("Dark");
         button.addActionListener(e -> {
@@ -111,7 +115,6 @@ public class ChessGameFrame extends JFrame {
             button.setText(isDarkMode?"Day":"Dark");
             statusLabel.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
             dialogLabel.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
-            dialogLabel.setText("Switch to "+(isDarkMode?"Dark":"Day")+" Mode");
             for (var i:jButtons){
                 i.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
                 i.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
@@ -119,7 +122,7 @@ public class ChessGameFrame extends JFrame {
             chessboardComponent.setDarkMode(isDarkMode);
             repaint();
         });
-        button.setLocation(hgt, hgt / 10 + 120);
+        button.setLocation(hgt, hgt / 10 + 110);
         button.setSize(200, 60);
         button.setFont(new Font("Rockwell", Font.BOLD, 20));
         darkButton=button;
@@ -128,7 +131,7 @@ public class ChessGameFrame extends JFrame {
     private void addNewGameButton(){
         JButton button = new JButton("Start New");
         button.addActionListener((e) -> chessboardComponent.startNewGame());
-        button.setLocation(hgt, hgt / 10 + 200);
+        button.setLocation(hgt, hgt / 10 + 180);
         button.setSize(200, 60);
         button.setFont(new Font("Rockwell", Font.BOLD, 20));
         newGameButton=button;
@@ -138,7 +141,7 @@ public class ChessGameFrame extends JFrame {
     private void addSwapConfirmButton() {
         JButton button = new JButton("Confirm Swap");
         button.addActionListener((e) -> chessboardComponent.swapChess());
-        button.setLocation(hgt, hgt / 10 + 280);
+        button.setLocation(hgt, hgt / 10 + 250);
         button.setSize(200, 60);
         button.setFont(new Font("Rockwell", Font.BOLD, 20));
         swayConfirmButton=button;
@@ -148,7 +151,7 @@ public class ChessGameFrame extends JFrame {
     private void addNextStepButton() {
         JButton button = new JButton("Next Step");
         button.addActionListener((e) -> chessboardComponent.nextStep());
-        button.setLocation(hgt, hgt / 10 + 360);
+        button.setLocation(hgt, hgt / 10 + 320);
         button.setSize(200, 60);
         button.setFont(new Font("Rockwell", Font.BOLD, 20));
         nextStepButton=button;
@@ -157,7 +160,7 @@ public class ChessGameFrame extends JFrame {
 
     private void addLoadButton() {
         JButton button = new JButton("Load");
-        button.setLocation(hgt, hgt / 10 + 440);
+        button.setLocation(hgt, hgt / 10 + 390);
         button.setSize(200, 60);
         button.setFont(new Font("Rockwell", Font.BOLD, 20));
         add(button);
@@ -166,22 +169,14 @@ public class ChessGameFrame extends JFrame {
             int result = jf.showOpenDialog(this);
             if (result == JFileChooser.APPROVE_OPTION) {
                 File file = jf.getSelectedFile();
-                gameController.loadFromFile(file);
+                gameController.loadGame(file);
             }
         });
-//        button.addActionListener(e -> {
-//            openDialog.setVisible(true);
-//            File file = openDialog.getFiles()[0];
-//            System.out.println("Load from file: "
-//                    + openDialog.getDirectory()
-//                    + openDialog.getFile());
-//            gameController.loadFromFile(file);
-//        });
         loadButton=button;
     }
     private void addSaveButton(){
         JButton button = new JButton("Save");
-        button.setLocation(hgt, hgt / 10 + 520);
+        button.setLocation(hgt, hgt / 10 + 460);
         button.setSize(200, 60);
         button.setFont(new Font("Rockwell", Font.BOLD, 20));
         add(button);
@@ -193,15 +188,19 @@ public class ChessGameFrame extends JFrame {
                 gameController.saveToFile(file);
             }
         });
-//        button.addActionListener(e -> {
-//            openDialog.setVisible(true);
-//            File file = saveDialog.getFiles()[0];
-//            System.out.println("Saved to file: "
-//                    + saveDialog.getDirectory()
-//                    + saveDialog.getFile());
-//            gameController.saveToFile(file);
-//        });
         saveButton=button;
+    }
+    private void addNetGameButton(){
+        JButton button = new JButton("Net PVP");
+        button.setLocation(hgt, hgt / 10 + 530);
+        button.setSize(200, 60);
+        button.setFont(new Font("Rockwell", Font.BOLD, 20));
+        add(button);
+
+        button.addActionListener(e -> {
+            //TODO:net functions gui
+        });
+        netGameButton=button;
     }
 
 }
