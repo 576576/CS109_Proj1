@@ -1,14 +1,17 @@
 package model;
 
-public enum Difficulty {
-    EASY(30,-1,-1),NORMAL(100,30,180),HARD(180,46,180);
+public class Difficulty {
     private final int goal,stepLimit,timeLimit;
-    Difficulty(int goal,int stepLimit,int timeLimit){
+    Difficulty(int goal, int stepLimit, int timeLimit){
         this.goal=goal;
         this.stepLimit=stepLimit;
         this.timeLimit=timeLimit;
     }
-
+    Difficulty(DifficultyPreset dPreset){
+        this.goal=dPreset.goal;
+        this.stepLimit=dPreset.stepLimit;
+        this.timeLimit=dPreset.timeLimit;
+    }
     public int getGoal() {
         return goal;
     }

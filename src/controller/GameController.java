@@ -225,6 +225,15 @@ public class GameController implements GameListener {
                 selectedPoint2 = point;
                 component.setSelected(true);
                 component.repaint();
+            } else if (distance2point1>1&&distance2point2>1){
+                point1.setSelected(false);
+                point2.setSelected(false);
+                point1.repaint();
+                point2.repaint();
+                selectedPoint=point;
+                selectedPoint2=null;
+                component.setSelected(true);
+                component.repaint();
             }
             return;
         }
