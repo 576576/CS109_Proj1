@@ -1,7 +1,5 @@
 package model;
 
-import java.util.Random;
-
 /**
  * This class store the real chess information.
  * The Chessboard has 8 * 8 cells, and each cell has a position for chess
@@ -40,11 +38,11 @@ public class Chessboard {
     }
 
     public Cell getGridAt(ChessboardPoint point) {
-        return grid[point.getRow()][point.getCol()];
+        return grid[point.row()][point.col()];
     }
 
     private int calculateDistance(ChessboardPoint src, ChessboardPoint dest) {
-        return Math.abs(src.getRow() - dest.getRow()) + Math.abs(src.getCol() - dest.getCol());
+        return Math.abs(src.row() - dest.row()) + Math.abs(src.col() - dest.col());
     }
 
     public ChessPiece removeChessPiece(ChessboardPoint point) {
