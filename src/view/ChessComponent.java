@@ -46,7 +46,7 @@ public class ChessComponent extends JComponent {
         g2.drawString(this.chessPiece.getName() , getWidth() / 4, getHeight() * 5 / 8); // FIXME: Use library to find the correct offset.
         if (isSelected()) { // Highlights the model if selected.
             g.setColor(Color.gray);
-            g.drawOval(0, 0, getWidth(), getHeight());
+            g.drawOval(2, 2, getWidth()-4, getHeight()-4);
         }
     }
 }

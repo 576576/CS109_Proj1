@@ -6,14 +6,10 @@ import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
-
-/**
- * 这个类表示游戏过程中的整个游戏界面，是一切的载体
- */
+import java.util.ArrayList;
 public class ChessGameFrame extends JFrame {
     //    public final Dimension FRAME_SIZE ;
-    private final int wdt;
-    private final int hgt;
+    private final int wdt,hgt;
     private boolean isDarkMode=false;
     private final int ONE_CHESS_SIZE;
 
@@ -22,8 +18,9 @@ public class ChessGameFrame extends JFrame {
     private ChessboardComponent chessboardComponent;
 
     private JLabel statusLabel,dialogLabel;
+    private JPanel buttonsPanel = new JPanel(new GridLayout(7,1));
     private JButton darkButton,loadButton,swayConfirmButton,nextStepButton,newGameButton,saveButton,netGameButton;
-    private final JButton[] jButtons;
+    private final ArrayList<JButton> jButtons = new ArrayList<>();
     private final JFileChooser jf = new JFileChooser(".\\");
 
     public ChessGameFrame(int wdt, int height) {
@@ -42,20 +39,27 @@ public class ChessGameFrame extends JFrame {
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE); //设置程序关闭按键，如果点击右上方的叉就游戏全部关闭了
         setLayout(null);
 
-        addChessboard();
-        addLabel();
-        addDarkModeButton();
-        addNewGameButton();
-        addSwapConfirmButton();
-        addNextStepButton();
-        addLoadButton();
-        addSaveButton();
-        addNetGameButton();
-        addDialogLabel();
-        jButtons = new JButton[]{darkButton,loadButton,swayConfirmButton,nextStepButton,newGameButton,saveButton,netGameButton};
-        darkButton.doClick();
-    }
+        initBasicComponents();
+        initLocalPlayButtons();
 
+        //darkButton.doClick();
+    }
+    private void initBasicComponents(){
+        initChessboard();
+        initLabel();
+        initDarkModeButton();
+        initNewGameButton();
+        initSwapConfirmButton();
+        initNextStepButton();
+        initLoadButton();
+        initSaveButton();
+        initNetGameButton();
+        buttonsPanel.setBounds(hgt, hgt / 10,200,500);
+    }
+    private void initLocalPlayButtons(){
+        for (var button:jButtons) buttonsPanel.add(button);
+        add(buttonsPanel);
+    }
     public ChessboardComponent getChessboardComponent() {
         return chessboardComponent;
     }
@@ -75,28 +79,24 @@ public class ChessGameFrame extends JFrame {
     /**
      * 在游戏面板中添加棋盘
      */
-    private void addChessboard() {
+    private void initChessboard() {
         chessboardComponent = new ChessboardComponent(ONE_CHESS_SIZE);
-        chessboardComponent.setLocation(hgt / 5, hgt / 10);
-        add(chessboardComponent);
+        chessboardComponent.setSize(576,576);
+        JPanel chessPanel = new JPanel(null);
+        chessPanel.setBounds(hgt / 5, hgt / 10,576,576);
+        chessPanel.add(chessboardComponent);
+        add(chessPanel);
     }
 
     /**
      * 在游戏面板中添加标签
      */
-    private void addLabel() {
-        this.statusLabel = new JLabel("Score:0");
-        statusLabel.setLocation(hgt, wdt / 10);
-        statusLabel.setSize(200, 60);
+    private void initLabel() {
+        this.statusLabel = new JLabel("Difficulty:EASY  StepLeft:∞  Score:0/30");
+        statusLabel.setLocation(hgt / 5,20);
+        statusLabel.setSize(400, 60);
         statusLabel.setFont(new Font("Rockwell", Font.BOLD, 20));
         add(statusLabel);
-    }
-    private void addDialogLabel() {
-        this.dialogLabel = new JLabel("Difficulty:EASY  StepLeft:∞  Goal:30");
-        dialogLabel.setLocation(0,hgt-80);
-        dialogLabel.setSize(wdt-20, 60);
-        dialogLabel.setFont(new Font("Rockwell", Font.BOLD, 20));
-        add(dialogLabel);
     }
 
     public JLabel getStatusLabel() {
@@ -107,7 +107,7 @@ public class ChessGameFrame extends JFrame {
         return dialogLabel;
     }
 
-    private void addDarkModeButton() {
+    private void initDarkModeButton() {
         JButton button = new JButton("Dark");
         button.addActionListener(e -> {
             isDarkMode=!isDarkMode;
@@ -122,64 +122,54 @@ public class ChessGameFrame extends JFrame {
             chessboardComponent.setDarkMode(isDarkMode);
             repaint();
         });
-        button.setLocation(hgt, hgt / 10 + 110);
         button.setSize(200, 60);
         button.setFont(new Font("Rockwell", Font.BOLD, 20));
+        jButtons.add(button);
         darkButton=button;
-        add(button);
     }
-    private void addNewGameButton(){
+    private void initNewGameButton(){
         JButton button = new JButton("Start New");
         button.addActionListener((e) -> chessboardComponent.startNewGame());
-        button.setLocation(hgt, hgt / 10 + 180);
         button.setSize(200, 60);
         button.setFont(new Font("Rockwell", Font.BOLD, 20));
+        jButtons.add(button);
         newGameButton=button;
-        add(button);
     }
 
-    private void addSwapConfirmButton() {
+    private void initSwapConfirmButton() {
         JButton button = new JButton("Confirm Swap");
         button.addActionListener((e) -> chessboardComponent.swapChess());
-        button.setLocation(hgt, hgt / 10 + 250);
-        button.setSize(200, 60);
         button.setFont(new Font("Rockwell", Font.BOLD, 20));
+        jButtons.add(button);
         swayConfirmButton=button;
-        add(button);
     }
 
-    private void addNextStepButton() {
+    private void initNextStepButton() {
         JButton button = new JButton("Next Step");
         button.addActionListener((e) -> chessboardComponent.nextStep());
-        button.setLocation(hgt, hgt / 10 + 320);
-        button.setSize(200, 60);
         button.setFont(new Font("Rockwell", Font.BOLD, 20));
+        jButtons.add(button);
         nextStepButton=button;
-        add(button);
     }
 
-    private void addLoadButton() {
+    private void initLoadButton() {
         JButton button = new JButton("Load");
-        button.setLocation(hgt, hgt / 10 + 390);
-        button.setSize(200, 60);
         button.setFont(new Font("Rockwell", Font.BOLD, 20));
-        add(button);
+        jButtons.add(button);
 
         button.addActionListener(e -> {
             int result = jf.showOpenDialog(this);
             if (result == JFileChooser.APPROVE_OPTION) {
                 File file = jf.getSelectedFile();
-                gameController.loadGame(file);
+                gameController.loadFromFile(file);
             }
         });
         loadButton=button;
     }
-    private void addSaveButton(){
+    private void initSaveButton(){
         JButton button = new JButton("Save");
-        button.setLocation(hgt, hgt / 10 + 460);
-        button.setSize(200, 60);
         button.setFont(new Font("Rockwell", Font.BOLD, 20));
-        add(button);
+        jButtons.add(button);
 
         button.addActionListener(e -> {
             int result = jf.showOpenDialog(this);
@@ -190,12 +180,10 @@ public class ChessGameFrame extends JFrame {
         });
         saveButton=button;
     }
-    private void addNetGameButton(){
+    private void initNetGameButton(){
         JButton button = new JButton("Net PVP");
-        button.setLocation(hgt, hgt / 10 + 530);
-        button.setSize(200, 60);
         button.setFont(new Font("Rockwell", Font.BOLD, 20));
-        add(button);
+        jButtons.add(button);
 
         button.addActionListener(e -> {
             //TODO:net functions gui

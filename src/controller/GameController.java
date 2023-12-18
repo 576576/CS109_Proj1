@@ -65,8 +65,12 @@ public class GameController implements GameListener {
         for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
             for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
                 //todo: complete it when restart game
-                view.setChessComponentAtGrid(new ChessboardPoint(j,i),new ChessComponent(view.getCHESS_SIZE(),new ChessPiece(Util.RandomPick(new String[]{"💎", "⚪", "▲", "🔶"}))));
-                model.setChessPiece(new ChessboardPoint(j,i),new ChessPiece(Util.RandomPick(new String[]{"💎", "⚪", "▲", "🔶"})));
+                String pName = Util.RandomPick(new String[]{"💎", "⚪", "▲", "🔶"});
+                view.setChessComponentAtGrid(new ChessboardPoint(j,i),new ChessComponent(view.getCHESS_SIZE(),new ChessPiece(pName)));
+                model.setChessPiece(new ChessboardPoint(j,i),new ChessPiece(pName));
+                while (isMatchable()){
+                    onPlayerNextStep();
+                }
             }
         }
         view.repaint();
@@ -84,9 +88,15 @@ public class GameController implements GameListener {
     public void onPlayerSwapChess() {
         try {
             model.swapChessPiece(selectedPoint,selectedPoint2);
-            ChessComponent tmp=view.removeChessComponentAtGrid(selectedPoint);
-            view.setChessComponentAtGrid(selectedPoint,view.removeChessComponentAtGrid(selectedPoint2));
-            view.setChessComponentAtGrid(selectedPoint2,tmp);
+            if (!isMatchable()){
+                model.swapChessPiece(selectedPoint,selectedPoint2);
+                System.out.println("Swap Fail! Nothing can be match");
+            }
+            else {
+                ChessComponent tmp=view.removeChessComponentAtGrid(selectedPoint);
+                view.setChessComponentAtGrid(selectedPoint,view.removeChessComponentAtGrid(selectedPoint2));
+                view.setChessComponentAtGrid(selectedPoint2,tmp);
+            }
         } catch (NullPointerException e) {
             System.out.println("Swap Failed!");
             selectedPoint=null;
@@ -96,6 +106,10 @@ public class GameController implements GameListener {
         }
     }
 
+    public boolean isMatchable(){
+        //TODO:to check the model to see if sth.'s matchable.
+        return false;
+    }
     @Override
     public void onPlayerNextStep() {
 
@@ -145,10 +159,15 @@ public class GameController implements GameListener {
                 csb[i][j]=sc.hasNextInt()?sc.nextInt():new Random().nextInt(4);
             }
         }
-        System.out.println("Game Loaded.\nScore: "+score+"\n");
+        System.out.println("Game Loaded.\n"+score);
         view.removeAllChessComponentsAtGrids();
         for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
-            System.out.println(Arrays.toString(csb[i]));
+            String str = Arrays.toString(csb[i]);
+            str=str.replaceAll("\\[","");
+            str=str.replaceAll("]","");
+            str=str.replaceAll(",","");
+            System.out.println(str);
+
             for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
                 String pName = new String[]{"💎", "⚪", "▲", "🔶"}[Math.min(Math.max(csb[j][i],0),3)];
                 view.setChessComponentAtGrid(new ChessboardPoint(j,i),new ChessComponent(view.getCHESS_SIZE(),new ChessPiece(pName)));
@@ -184,7 +203,7 @@ public class GameController implements GameListener {
             }
             sb.append("\n");
         }
-        System.out.println(sb);
+        System.out.println("Game Saved.\n"+sb);
         try {
             BufferedWriter writer = new BufferedWriter(new FileWriter(file));
             writer.write(sb.toString());
@@ -269,6 +288,12 @@ public class GameController implements GameListener {
         }
         component.setSelected(true);
         component.repaint();
+
+    }
+    public void onPlayerHostGame(){
+
+    }
+    public void onPlayerJoinGame(){
 
     }
     public String getNetGameData(){
