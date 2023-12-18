@@ -17,9 +17,8 @@ public class ChessGameFrame extends JFrame {
 
     private ChessboardComponent chessboardComponent;
 
-    private JLabel statusLabel,dialogLabel;
-    private JPanel buttonsPanel = new JPanel(new GridLayout(7,1));
-    private JButton darkButton,loadButton,swayConfirmButton,nextStepButton,newGameButton,saveButton,netGameButton;
+    private JLabel statusLabel;
+    private JPanel buttonsPanel = new JPanel(new GridLayout(7,1,2,10));
     private final ArrayList<JButton> jButtons = new ArrayList<>();
     private final JFileChooser jf = new JFileChooser(".\\");
 
@@ -53,7 +52,8 @@ public class ChessGameFrame extends JFrame {
         initNextStepButton();
         initLoadButton();
         initSaveButton();
-        initNetGameButton();
+        initReturnTitleButton();
+        initExitButton();
         buttonsPanel.setBounds(hgt, hgt / 10,200,500);
     }
     private void initLocalPlayButtons(){
@@ -83,7 +83,7 @@ public class ChessGameFrame extends JFrame {
         chessboardComponent = new ChessboardComponent(ONE_CHESS_SIZE);
         chessboardComponent.setSize(576,576);
         JPanel chessPanel = new JPanel(null);
-        chessPanel.setBounds(hgt / 5, hgt / 10,576,576);
+        chessPanel.setBounds(wdt / 8, hgt / 10,576,576);
         chessPanel.add(chessboardComponent);
         add(chessPanel);
     }
@@ -93,18 +93,14 @@ public class ChessGameFrame extends JFrame {
      */
     private void initLabel() {
         this.statusLabel = new JLabel("Difficulty:EASY  StepLeft:∞  Score:0/30");
-        statusLabel.setLocation(hgt / 5,20);
-        statusLabel.setSize(400, 60);
+        statusLabel.setLocation(wdt/8,20);
+        statusLabel.setSize(wdt, 60);
         statusLabel.setFont(new Font("Rockwell", Font.BOLD, 20));
         add(statusLabel);
     }
 
     public JLabel getStatusLabel() {
         return statusLabel;
-    }
-
-    public JLabel getDialogLabel() {
-        return dialogLabel;
     }
 
     private void initDarkModeButton() {
@@ -114,7 +110,6 @@ public class ChessGameFrame extends JFrame {
             getContentPane().setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
             button.setText(isDarkMode?"Day":"Dark");
             statusLabel.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
-            dialogLabel.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
             for (var i:jButtons){
                 i.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
                 i.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
@@ -125,7 +120,6 @@ public class ChessGameFrame extends JFrame {
         button.setSize(200, 60);
         button.setFont(new Font("Rockwell", Font.BOLD, 20));
         jButtons.add(button);
-        darkButton=button;
     }
     private void initNewGameButton(){
         JButton button = new JButton("Start New");
@@ -133,7 +127,6 @@ public class ChessGameFrame extends JFrame {
         button.setSize(200, 60);
         button.setFont(new Font("Rockwell", Font.BOLD, 20));
         jButtons.add(button);
-        newGameButton=button;
     }
 
     private void initSwapConfirmButton() {
@@ -141,7 +134,6 @@ public class ChessGameFrame extends JFrame {
         button.addActionListener((e) -> chessboardComponent.swapChess());
         button.setFont(new Font("Rockwell", Font.BOLD, 20));
         jButtons.add(button);
-        swayConfirmButton=button;
     }
 
     private void initNextStepButton() {
@@ -149,7 +141,6 @@ public class ChessGameFrame extends JFrame {
         button.addActionListener((e) -> chessboardComponent.nextStep());
         button.setFont(new Font("Rockwell", Font.BOLD, 20));
         jButtons.add(button);
-        nextStepButton=button;
     }
 
     private void initLoadButton() {
@@ -164,7 +155,6 @@ public class ChessGameFrame extends JFrame {
                 gameController.loadFromFile(file);
             }
         });
-        loadButton=button;
     }
     private void initSaveButton(){
         JButton button = new JButton("Save");
@@ -178,17 +168,22 @@ public class ChessGameFrame extends JFrame {
                 gameController.saveToFile(file);
             }
         });
-        saveButton=button;
     }
-    private void initNetGameButton(){
-        JButton button = new JButton("Net PVP");
+    private void initReturnTitleButton(){
+        JButton button = new JButton("ReturnTitle");
         button.setFont(new Font("Rockwell", Font.BOLD, 20));
         jButtons.add(button);
 
         button.addActionListener(e -> {
-            //TODO:net functions gui
+            //TODO:return to Menu.java
         });
-        netGameButton=button;
     }
-
+    public void initExitButton(){
+        JButton button = new JButton("Exit");
+        button.setFont(new Font("Rockwell", Font.BOLD, 20));
+        jButtons.add(button);
+        button.addActionListener(e -> {
+            System.exit(0);
+        });
+    }
 }
