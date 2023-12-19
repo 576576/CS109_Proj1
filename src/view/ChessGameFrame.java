@@ -11,18 +11,18 @@ public class ChessGameFrame extends JFrame {
     //    public final Dimension FRAME_SIZE ;
     private final int wdt,hgt;
     private boolean isDarkMode=false;
-    private final int ONE_CHESS_SIZE;
+    private final int ONE_CHESS_SIZE,CHESSBOARD_SIZE;
 
     private GameController gameController;
     private final boolean isOnlinePlay;
 
     private ChessboardComponent chessboardComponent;
-    private JButton swapConfirmButton,NextStepButton;
+    private JButton swapConfirmButton,nextStepButton;
 
     private JLabel statusLabel,difficultyLabel;
     private final JPanel controlPanel = new JPanel(new GridLayout(9,1,2,10));
-    private final JPanel chessPanel = new JPanel(null);
-    private final ArrayList<JComponent> componentsInControlPanel = new ArrayList<>();
+    private final JPanel chessPanel = new JPanel(new GridLayout(1,1));
+    private final ArrayList<JComponent> controlComponents = new ArrayList<>();
     private final JFileChooser jf = new JFileChooser(".\\");
 
     public ChessGameFrame(int wdt, int height,boolean isOnlinePlay) {
@@ -30,7 +30,8 @@ public class ChessGameFrame extends JFrame {
         this.wdt = wdt;
         this.hgt = height;
         this.isOnlinePlay=isOnlinePlay;
-        this.ONE_CHESS_SIZE = (hgt * 4 / 5) / 9;
+        this.CHESSBOARD_SIZE = (int)(3*Math.sqrt(wdt*hgt)/5);
+        this.ONE_CHESS_SIZE = CHESSBOARD_SIZE/8;
 
         jf.setFileSelectionMode(JFileChooser.FILES_ONLY);
         FileNameExtensionFilter ff = new FileNameExtensionFilter("txt", "txt");
@@ -50,11 +51,11 @@ public class ChessGameFrame extends JFrame {
     }
     private void initBasicComponents(){
         initChessboard();
-        initLabel();
+        initStatusLabels();
         initDifficultyLabel();
         initDarkModeButton();
         initAutoConfirmButton();
-        controlPanel.setBounds(wdt-350, hgt / 6,200,600);
+        controlPanel.setBounds(5*wdt/4, hgt / 6,200,2*hgt/3);
     }
     private void initLocalPlayPanel(){
         initNewGameButton();
@@ -64,13 +65,13 @@ public class ChessGameFrame extends JFrame {
         initSaveButton();
         initReturnTitleButton();
         initExitButton();
-        for (var button: componentsInControlPanel) controlPanel.add(button);
+        for (var component: controlComponents) controlPanel.add(component);
     }
     private void initOnlinePlayPanel(){
         initNewGameButton();
         initReturnTitleButton();
         initExitButton();
-        for (var button: componentsInControlPanel) controlPanel.add(button);
+        for (var button: controlComponents) controlPanel.add(button);
     }
     public ChessboardComponent getChessboardComponent() {
         return chessboardComponent;
@@ -93,8 +94,7 @@ public class ChessGameFrame extends JFrame {
      */
     private void initChessboard() {
         chessboardComponent = new ChessboardComponent(ONE_CHESS_SIZE);
-        chessboardComponent.setSize(576,576);
-        chessPanel.setBounds(wdt / 8, hgt / 7,576,576);
+        chessPanel.setBounds(wdt / 8, hgt / 7,CHESSBOARD_SIZE,CHESSBOARD_SIZE);
         chessPanel.add(chessboardComponent);
         add(chessPanel);
     }
@@ -102,7 +102,7 @@ public class ChessGameFrame extends JFrame {
     /**
      * 在游戏面板中添加标签
      */
-    private void initLabel() {
+    private void initStatusLabels() {
         this.statusLabel = new JLabel("StepLeft:∞  Score:0/30");
         statusLabel.setLocation(wdt-350, hgt/12);
         statusLabel.setSize(wdt/2, 60);
@@ -140,7 +140,7 @@ public class ChessGameFrame extends JFrame {
         difficultyLabel.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
         chessPanel.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
         controlPanel.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
-        for (var i: componentsInControlPanel){
+        for (var i: controlComponents){
             i.setBackground(isDarkMode ? Color.DARK_GRAY : Color.LIGHT_GRAY);
             i.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
         }
@@ -158,18 +158,21 @@ public class ChessGameFrame extends JFrame {
             boolean isAutoConfirm = !getGameController().isAutoConfirm();
             getGameController().setAutoConfirm(isAutoConfirm);
             button.setText(isAutoConfirm?"Auto":"Manual");
-
+            swapConfirmButton.setVisible(!isAutoConfirm);
+            nextStepButton.setVisible(!isAutoConfirm);
         });
     }
 
     private void initSwapConfirmButton() {
         JButton button = initButton("Confirm Swap");
         button.addActionListener((e) -> chessboardComponent.swapChess());
+        swapConfirmButton=button;
     }
 
     private void initNextStepButton() {
         JButton button = initButton("Next Step");
         button.addActionListener((e) -> chessboardComponent.nextStep());
+        nextStepButton=button;
     }
     private void initLoadButton() {
         JButton button = initButton("Load");
@@ -207,7 +210,7 @@ public class ChessGameFrame extends JFrame {
         button.setFont(new Font("Rockwell", Font.BOLD, 20));
         button.setForeground(Color.BLACK);
         button.setBackground(Color.LIGHT_GRAY);
-        componentsInControlPanel.add(button);
+        controlComponents.add(button);
         return button;
     }
 }
