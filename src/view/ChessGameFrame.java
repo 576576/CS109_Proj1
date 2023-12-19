@@ -19,8 +19,9 @@ public class ChessGameFrame extends JFrame {
     private ChessboardComponent chessboardComponent;
     private JButton swapConfirmButton,nextStepButton;
 
-    private JLabel statusLabel,difficultyLabel;
-    private final JPanel controlPanel = new JPanel(new GridLayout(9,1,2,10));
+    private JLabel statusLabel,statusLabel2,difficultyLabel;
+    private final JPanel controlPanel = new JPanel(new GridLayout(11,1,2,6));
+    private final JPanel statusPanel = new JPanel(new GridLayout(2,1));
     private final JPanel chessPanel = new JPanel(new GridLayout(1,1));
     private final ArrayList<JComponent> controlComponents = new ArrayList<>();
     private final JFileChooser jf = new JFileChooser(".\\");
@@ -55,7 +56,7 @@ public class ChessGameFrame extends JFrame {
         initDifficultyLabel();
         initDarkModeButton();
         initAutoConfirmButton();
-        controlPanel.setBounds(5*wdt/4, hgt / 6,200,2*hgt/3);
+        controlPanel.setBounds(2*wdt/3, hgt / 10,wdt/6,4*hgt/5);
     }
     private void initLocalPlayPanel(){
         initNewGameButton();
@@ -103,11 +104,11 @@ public class ChessGameFrame extends JFrame {
      * 在游戏面板中添加标签
      */
     private void initStatusLabels() {
-        this.statusLabel = new JLabel("StepLeft:∞  Score:0/30");
-        statusLabel.setLocation(wdt-350, hgt/12);
-        statusLabel.setSize(wdt/2, 60);
-        statusLabel.setFont(new Font("Rockwell", Font.BOLD, 20));
-        add(statusLabel);
+        statusLabel = initLabel("Score:0/30");
+        statusLabel2 = initLabel("StepLeft:∞");
+        statusPanel.add(statusLabel);
+        statusPanel.add(statusLabel2);
+        controlComponents.add(statusPanel);
     }
     private void initDifficultyLabel(){
         this.difficultyLabel = new JLabel("Difficulty:EASY  TimeLimit:∞");
@@ -119,6 +120,9 @@ public class ChessGameFrame extends JFrame {
 
     public JLabel getStatusLabel() {
         return statusLabel;
+    }
+    public JLabel getStatusLabel2() {
+        return statusLabel2;
     }
 
     public JLabel getDifficultyLabel() {
@@ -137,10 +141,13 @@ public class ChessGameFrame extends JFrame {
         isDarkMode = darkMode;
         getContentPane().setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
         statusLabel.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
+        statusLabel2.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
         difficultyLabel.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
         chessPanel.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
+        statusPanel.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
         controlPanel.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
         for (var i: controlComponents){
+            if (i.getClass()!=JButton.class) continue;
             i.setBackground(isDarkMode ? Color.DARK_GRAY : Color.LIGHT_GRAY);
             i.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
         }
@@ -212,5 +219,11 @@ public class ChessGameFrame extends JFrame {
         button.setBackground(Color.LIGHT_GRAY);
         controlComponents.add(button);
         return button;
+    }
+    private JLabel initLabel(String name){
+        JLabel label = new JLabel(name);
+        label.setFont(new Font("Rockwell", Font.BOLD, 20));
+        label.setForeground(Color.BLACK);
+        return label;
     }
 }
