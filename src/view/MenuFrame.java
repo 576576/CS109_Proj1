@@ -89,7 +89,7 @@ import java.awt.*;
                // close.setVisible(false); //hides it temporarily
                 //frame2.setVisible(true); //shows it
                 SwingUtilities.invokeLater(() -> {
-                    ChessGameFrame mainFrame = new ChessGameFrame(1100, 810);
+                    ChessGameFrame mainFrame = new ChessGameFrame(1100, 810,false);
                     GameController gameController = new GameController(mainFrame.getChessboardComponent(), new Chessboard(),new NetGame());
                     mainFrame.setGameController(gameController);
                     gameController.setStatusLabel(mainFrame.getStatusLabel());

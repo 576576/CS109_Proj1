@@ -21,10 +21,17 @@ public class NetGame {
         if (isHost) serverHost();
         else connectHost();
     }
-    public void serverHost() throws IOException {
-        ServerSocket ss = new ServerSocket(port);
-        JDialog jd = new JDialog(new JFrame("Oh no"), "Wait for player");
-        sock = ss.accept();
+    public void serverHost() {
+        ServerSocket ss = null;
+        JDialog jd;
+        try {
+            ss = new ServerSocket(port);
+            jd = new JDialog(new JFrame("Oh no"), "Wait for player");
+            jd.setVisible(true);
+            sock = ss.accept();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
         jd.dispose();
         System.out.println("connected from " + sock.getRemoteSocketAddress());
         Thread t = new Handler(sock);

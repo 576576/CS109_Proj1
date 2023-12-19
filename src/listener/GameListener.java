@@ -19,4 +19,6 @@ public interface GameListener {
 
     void loadFromFile(File file);
     void saveToFile(File file);
+
+    void terminate();
 }

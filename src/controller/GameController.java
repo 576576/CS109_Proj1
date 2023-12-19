@@ -26,6 +26,7 @@ public class GameController implements GameListener {
     private final Chessboard model;
     private final ChessboardComponent view;
     private final NetGame net;
+    private boolean isAutoConfirm=false;
 
     // Record whether there is a selected piece before
     private ChessboardPoint selectedPoint;
@@ -287,8 +288,6 @@ public class GameController implements GameListener {
         if (distance2point1 == 1) {
             selectedPoint2 = point;
         } else {
-            selectedPoint2 = null;
-
             var grid = (ChessComponent) view.getGridComponentAt(selectedPoint).getComponent(0);
             if (grid == null) return;
             grid.setSelected(false);
@@ -302,7 +301,7 @@ public class GameController implements GameListener {
     }
 
     public void onPlayerHostGame() {
-
+        net.serverHost();
     }
 
     public void onPlayerJoinGame() {
@@ -311,5 +310,18 @@ public class GameController implements GameListener {
 
     public String getNetGameData() {
         return difficulty.getDifficultyInfo() + " " + score;
+    }
+
+    @Override
+    public void terminate() {
+        //TODO:terminate the game
+    }
+
+    public void setAutoConfirm(boolean autoConfirm) {
+        isAutoConfirm = autoConfirm;
+    }
+
+    public boolean isAutoConfirm() {
+        return isAutoConfirm;
     }
 }
