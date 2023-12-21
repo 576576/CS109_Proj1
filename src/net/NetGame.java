@@ -12,7 +12,7 @@ public class NetGame {
     private GameController gameController;
     private int port = 14723;
     Socket sock;
-    public void startOnlineGame(int port,boolean isHost) throws IOException {
+    public void startOnlineGame(int port,boolean isHost){
         if (port<=0||port>65535){
             System.err.println("Illegal Port!");
             return;
@@ -22,13 +22,15 @@ public class NetGame {
         else connectHost();
     }
     public void serverHost() {
-        ServerSocket ss = null;
         JDialog jd;
-        try {
-            ss = new ServerSocket(port);
-            jd = new JDialog(new JFrame("Oh no"), "Wait for player");
-            jd.setVisible(true);
-            sock = ss.accept();
+        try (ServerSocket ss = new ServerSocket(port)){
+            try {
+                jd = new JDialog(new JFrame("Oh no"), "Wait for player");
+                jd.setVisible(true);
+                sock = ss.accept();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
@@ -37,9 +39,15 @@ public class NetGame {
         Thread t = new Handler(sock);
         t.start();
     }
-    public void connectHost() throws IOException {
+    public void connectHost(){
         try (ServerSocket ss = new ServerSocket(port)) {
-            sock = ss.accept();
+            try {
+                sock = ss.accept();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }catch (IOException ioe){
+            System.err.println("ioe");
         }
     }
 

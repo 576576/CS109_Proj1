@@ -17,10 +17,12 @@ public enum Constant {
     }
 
     static final Map<String, Color> colorMap = new HashMap<>(){{
+        //chess types:6
         put("💎",Color.blue);
         put("⚪",Color.white);
         put("▲",Color.green);
         put("🔶",Color.orange);
+        //todo:add colorMap(optional)
     }};
 
 }

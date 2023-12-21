@@ -73,24 +73,27 @@ public class GameController implements GameListener {
         stepLeft=difficulty.getStepLimit();
     }
 
+    // When initialize from the gaming interface, this was used
     public void initialize() {
+        boolean needToInit=true;
         score = 0;
         statusLabel.setText("Score:" + score);
         view.removeAllChessComponentsAtGrids();
+
+        // call method to refresh a chessboard with new random pieces
+        this.model.initPieces();
+        // fetch contents of Chessboard to view
         for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
             for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
-                //todo: complete it when restart game
-                String pName = Util.RandomPick(new String[]{"💎", "⚪", "▲", "🔶"});
                 view.setChessComponentAtGrid(new ChessboardPoint(j, i), new ChessComponent(view.getCHESS_SIZE(),
-                        new ChessPiece(pName)));
-                model.setChessPiece(new ChessboardPoint(j, i), new ChessPiece(pName));
-                while (isMatchable()) {
-                    onPlayerNextStep();
-                }
+                        new ChessPiece(model.getGrid()[i][j].getPiece().getName())));
             }
         }
+        //todo: complete it when restart game (auto-mode)
+
         updateStatusLabel();
         view.repaint();
+        System.out.println("New game initialized");
     }
 
     public void setDifficulty(Difficulty difficulty) {
@@ -125,7 +128,7 @@ public class GameController implements GameListener {
 
     public boolean isMatchable() {
         //TODO:to check the model to see if sth.'s matchable.
-        return false;
+        return Chessboard.checkerBoardValidator(model.getGrid());
     }
 
     @Override
@@ -305,7 +308,7 @@ public class GameController implements GameListener {
     }
 
     public void onPlayerJoinGame() {
-
+        net.connectHost();
     }
 
     public String getNetGameData() {
@@ -316,6 +319,9 @@ public class GameController implements GameListener {
     public void terminate() {
         //TODO:terminate the game
     }
+    public void hint(){
+        //todo:introduce hint function
+    }
 
     public void setAutoConfirm(boolean autoConfirm) {
         isAutoConfirm = autoConfirm;
@@ -323,5 +329,9 @@ public class GameController implements GameListener {
 
     public boolean isAutoConfirm() {
         return isAutoConfirm;
+    }
+
+    public Difficulty getDifficulty() {
+        return difficulty;
     }
 }

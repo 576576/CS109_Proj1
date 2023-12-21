@@ -88,6 +88,18 @@ import java.awt.*;
                 //JOptionPane.showMessageDialog(this, "FIX THIS");
                // close.setVisible(false); //hides it temporarily
                 //frame2.setVisible(true); //shows it
+                //Custom button text
+                Object[] options = {"Easy",
+                        "Medium",
+                        "Hard"};
+                int n = JOptionPane.showOptionDialog(this,
+                        "Choose your difficulty",
+                        "Difficulty",
+                        JOptionPane.YES_NO_CANCEL_OPTION,
+                        JOptionPane.QUESTION_MESSAGE,
+                        null,
+                        options,
+                        options[2]);
                 SwingUtilities.invokeLater(() -> {
                     ChessGameFrame mainFrame = new ChessGameFrame(1100, 810,false);
                     GameController gameController = new GameController(mainFrame.getChessboardComponent(), new Chessboard(),new NetGame());
@@ -146,44 +158,4 @@ import java.awt.*;
         add(button);
     }
     }
-
-    /*public static void addComponentsToPane(Container pane) {
-        pane.setLayout(new BoxLayout(pane, BoxLayout.Y_AXIS));
-
-        addAButton("Start", pane);
-        addAButton("Exit", pane);
-        addAButton("Button 3", pane);
-        //addAButton("Long-Named Button 4", pane);
-        //addAButton("5", pane);
-    }
-
-    private static void addAButton(String text, Container container) {
-        JButton button = new JButton(text);
-        button.setAlignmentX(Component.CENTER_ALIGNMENT);
-        container.add(button);
-    }*/
-
-
-    /*private static void createAndShowGUI() {
-        //Create and set up the window.
-        JFrame frame = new JFrame("Match-3");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-
-        //Set up the content pane.
-        addComponentsToPane(frame.getContentPane());
-
-        //Display the window.
-        frame.pack();
-        frame.setVisible(true);
-    }
-
-    public static void main(String[] args) {
-        //Schedule a job for the event-dispatching thread:
-        //creating and showing this application's GUI.
-        javax.swing.SwingUtilities.invokeLater(new Runnable() {
-            public void run() {
-                createAndShowGUI();
-            }
-        });
-    }*/
 
