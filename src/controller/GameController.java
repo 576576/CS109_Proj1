@@ -127,7 +127,6 @@ public class GameController implements GameListener {
     }
 
     public boolean isMatchable() {
-        //TODO:to check the model to see if sth.'s matchable.
         return Chessboard.checkerBoardValidator(model.getGrid());
     }
 
