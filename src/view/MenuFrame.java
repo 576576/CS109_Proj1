@@ -30,6 +30,7 @@ public class MenuFrame extends JFrame implements MyFrame{
         //    public final Dimension FRAME_SIZE ;
         this.hgt = height;
         this.ONE_CHESS_SIZE = (hgt * 4 / 5) / 9;
+        setMinimumSize(new Dimension(905,600));
 
         setSize(width, hgt);
         setLocationRelativeTo(null); // Center the window.
@@ -72,11 +73,6 @@ public class MenuFrame extends JFrame implements MyFrame{
         chessPanel.add(chessboardComponent,BorderLayout.CENTER);
         MyFrame.addComponent(this,gbl,chessPanel,0,0,12,12,0,0);
     }
-    public void setLabel(JLabel label) {
-        this.label = label;
-    }
-
-
     private void addPlay() {
         JFrame close = new JFrame();
         JButton button = MyFrame.initButton("Play");

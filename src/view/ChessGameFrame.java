@@ -5,6 +5,8 @@ import controller.GameController;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
 import java.io.File;
 import java.util.ArrayList;
 public class ChessGameFrame extends JFrame implements MyFrame{
@@ -29,6 +31,7 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         this.isOnlinePlay=isOnlinePlay;
         int CHESSBOARD_SIZE = (int) (3 * Math.sqrt(width * height) / 5);
         this.ONE_CHESS_SIZE = CHESSBOARD_SIZE /8;
+        setMinimumSize(new Dimension(905,600));
 
         jf.setFileSelectionMode(JFileChooser.FILES_ONLY);
         FileNameExtensionFilter ff = new FileNameExtensionFilter("txt", "txt");
@@ -46,6 +49,13 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         MyFrame.addComponent(this,gbl,controlPanel,590,1,560,4,0,1);
         SwingUtilities.invokeLater(()->{
             setDarkMode();setDarkMode();
+        });
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                super.componentResized(e);
+                SwingUtilities.invokeLater(()-> System.out.println("Window size changed to \\["+getWidth()+" , "+getHeight()+"]"));
+            }
         });
     }
     private void initBasicComponents(){
