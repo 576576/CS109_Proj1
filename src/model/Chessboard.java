@@ -10,7 +10,6 @@ public class Chessboard {
     public Chessboard() {
         this.grid =
                 new Cell[Constant.CHESSBOARD_ROW_SIZE.getNum()][Constant.CHESSBOARD_COL_SIZE.getNum()];
-
         initGrid();
         initPieces();
     }
@@ -75,9 +74,9 @@ public class Chessboard {
                 }
 
                 // Check down
-                if(i < columns-1 &&
+                if(i < rows-2 &&
                         grid[i+1][j].getPiece().getName().equals(currentPieceName) &&
-                        grid[i][j].getPiece().getName().equals(currentPieceName)) {
+                        grid[i+2][j].getPiece().getName().equals(currentPieceName)) {
                     return true;
                 }
 

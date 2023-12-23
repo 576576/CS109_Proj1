@@ -50,6 +50,9 @@ public class NetGame {
             System.err.println("ioe");
         }
     }
+    public void callHostTerminate(){
+
+    }
 
     public void registerController(GameController gameController) {
         this.gameController = gameController;

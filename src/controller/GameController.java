@@ -5,6 +5,7 @@ import model.*;
 import net.NetGame;
 import view.CellComponent;
 import view.ChessComponent;
+import view.ChessGameFrame;
 import view.ChessboardComponent;
 
 import javax.swing.*;
@@ -27,6 +28,7 @@ public class GameController implements GameListener {
     private final ChessboardComponent view;
     private final NetGame net;
     private boolean isAutoConfirm=false;
+    private ChessGameFrame chessGameFrame;
 
     // Record whether there is a selected piece before
     private ChessboardPoint selectedPoint;
@@ -62,6 +64,9 @@ public class GameController implements GameListener {
         view.registerController(this);
         view.initiateChessComponent(model);
         view.repaint();
+    }
+    public void setChessGameFrame(ChessGameFrame chessGameFrame){
+        this.chessGameFrame=chessGameFrame;
     }
 
     private void initDifficultyPresets() {
@@ -318,8 +323,95 @@ public class GameController implements GameListener {
     public void terminate() {
         //TODO:terminate the game
     }
+    public void onlineGameTerminate(boolean isWinner){
+        //TODO:(576)terminate the online game
+        if (isWinner){
+            net.callHostTerminate();
+        }
+        else {
+            terminate();
+        }
+    }
+    public boolean isContinuable(){
+        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum()-1; j++) {
+                var p1=new ChessboardPoint(i,j);
+                var p2=new ChessboardPoint(i,j+1);
+                model.swapChessPiece(p1,p2);
+                if (isMatchable()){
+                    model.swapChessPiece(p1,p2);
+                    return true;
+                }
+                model.swapChessPiece(p1,p2);
+            }
+        }
+        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum()-1; i++) {
+            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+                var p1=new ChessboardPoint(i,j);
+                var p2=new ChessboardPoint(i+1,j);
+                model.swapChessPiece(p1,p2);
+                if (isMatchable()){
+                    model.swapChessPiece(p1,p2);
+                    return true;
+                }
+                model.swapChessPiece(p1,p2);
+            }
+        }
+        return false;
+    }
     public void hint(){
         //todo:introduce hint function
+        if (!isContinuable()) return;
+        if (selectedPoint!=null){
+            var point1 = (ChessComponent) view.getGridComponentAt(selectedPoint).getComponent(0);
+            point1.setSelected(false);
+            point1.repaint();
+            selectedPoint=null;
+        }
+        if (selectedPoint2!=null){
+            var point2 = (ChessComponent) view.getGridComponentAt(selectedPoint2).getComponent(0);
+            point2.setSelected(false);
+            point2.repaint();
+            selectedPoint2=null;
+        }
+        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum()-1; j++) {
+                selectedPoint=new ChessboardPoint(i,j);
+                selectedPoint2=new ChessboardPoint(i,j+1);
+                model.swapChessPiece(selectedPoint,selectedPoint2);
+                if (isMatchable()){
+                    model.swapChessPiece(selectedPoint,selectedPoint2);
+                    var point1 = (ChessComponent) view.getGridComponentAt(selectedPoint).getComponent(0);
+                    var point2 = (ChessComponent) view.getGridComponentAt(selectedPoint2).getComponent(0);
+                    point1.setSelected(true);
+                    point2.setSelected(true);
+                    point1.repaint();
+                    point2.repaint();
+                    return;
+                }
+                model.swapChessPiece(selectedPoint,selectedPoint2);
+            }
+        }
+        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum()-1; i++) {
+            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+                selectedPoint=new ChessboardPoint(i,j);
+                selectedPoint2=new ChessboardPoint(i+1,j);
+                model.swapChessPiece(selectedPoint,selectedPoint2);
+                if (isMatchable()){
+                    model.swapChessPiece(selectedPoint,selectedPoint2);
+                    var point1 = (ChessComponent) view.getGridComponentAt(selectedPoint).getComponent(0);
+                    var point2 = (ChessComponent) view.getGridComponentAt(selectedPoint2).getComponent(0);
+                    point1.setSelected(true);
+                    point2.setSelected(true);
+                    point1.repaint();
+                    point2.repaint();
+                    return;
+                }
+                model.swapChessPiece(selectedPoint,selectedPoint2);
+            }
+        }
+        JDialog jd = new JDialog(chessGameFrame,"Nothing can be done, please start a new game");
+        jd.setVisible(true);
     }
 
     public void setAutoConfirm(boolean autoConfirm) {
