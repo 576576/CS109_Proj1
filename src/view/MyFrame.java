@@ -5,14 +5,14 @@ import java.awt.*;
 
 public interface MyFrame {
     static void addComponent(JFrame motherFrame, GridBagLayout gbl, Component comp,
-                                    int gridx, int gridy, int gridheight, int gridwidth, int weight_x, int weight_y) {
+                                    int gridx, int grid_y, int grid_height, int grid_width, int weight_x, int weight_y) {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.weightx = weight_x;
         gbc.weighty = weight_y;
-        gbc.gridheight = gridheight;
-        gbc.gridwidth = gridwidth;
+        gbc.gridheight = grid_height;
+        gbc.gridwidth = grid_width;
         gbc.gridx = gridx;
-        gbc.gridy = gridy;
+        gbc.gridy = grid_y;
         gbl.setConstraints(comp, gbc);
         motherFrame.add(comp);
     }

@@ -149,4 +149,9 @@ public class ChessboardComponent extends JComponent {
             }
         }
     }
+
+    @Override
+    public Dimension getPreferredSize() {
+        return new Dimension(getWidth(),getHeight());
+    }
 }

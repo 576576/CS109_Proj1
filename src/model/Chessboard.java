@@ -5,7 +5,7 @@ package model;
  * The Chessboard has 8 * 8 cells, and each cell has a position for chess
  */
 public class Chessboard {
-    private Cell[][] grid;
+    private final Cell[][] grid;
 
     public Chessboard() {
         this.grid =
@@ -94,8 +94,8 @@ public class Chessboard {
         return grid[point.row()][point.col()];
     }
 
-    private int calculateDistance(ChessboardPoint src, ChessboardPoint dest) {
-        return Math.abs(src.row() - dest.row()) + Math.abs(src.col() - dest.col());
+    private int calculateDistance(ChessboardPoint src, ChessboardPoint destination) {
+        return Math.abs(src.row() - destination.row()) + Math.abs(src.col() - destination.col());
     }
 
     public ChessPiece removeChessPiece(ChessboardPoint point) {

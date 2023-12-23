@@ -37,24 +37,10 @@ public class GameController implements GameListener {
     private int score, timeLeft, stepLeft;
     private Difficulty difficulty;
     private final ArrayList<DifficultyPreset> difficultyPresets = new ArrayList<>();
-    private JLabel statusLabel, difficultyLabel;
-
-    public JLabel getStatusLabel() {
-        return statusLabel;
+    private JLabel[] statusLabels = new JLabel[4];
+    public void setStatusLabels(JLabel[] statusLabels) {
+        this.statusLabels = statusLabels;
     }
-
-    public JLabel getDifficultyLabel() {
-        return difficultyLabel;
-    }
-
-    public void setStatusLabel(JLabel statusLabel) {
-        this.statusLabel = statusLabel;
-    }
-
-    public void setDifficultyLabel(JLabel difficultyLabel) {
-        this.difficultyLabel = difficultyLabel;
-    }
-
     public GameController(ChessboardComponent view, Chessboard model, NetGame net) {
         initDifficultyPresets();
         this.view = view;
@@ -82,7 +68,6 @@ public class GameController implements GameListener {
     public void initialize() {
         boolean needToInit=true;
         score = 0;
-        statusLabel.setText("Score:" + score);
         view.removeAllChessComponentsAtGrids();
 
         // call method to refresh a chessboard with new random pieces
@@ -96,7 +81,7 @@ public class GameController implements GameListener {
         }
         //todo: complete it when restart game (auto-mode)
 
-        updateStatusLabel();
+        updateScoreAndStepLabel();
         view.repaint();
         System.out.println("New game initialized");
     }
@@ -110,19 +95,34 @@ public class GameController implements GameListener {
     public void onPlayerClickCell(ChessboardPoint point, CellComponent component) {
     }
 
+    /*
+    1. Click "confirm swap", and if OK the chess is swapped and eliminated. (otherwise do no swap, notice the user)
+    2. Click “next step”, the upper chess will fall down.
+    3. Click "next step" again, if this time, there are still 3-matches on the chessboard
+        3.1 The click will cause these 3-match to be eliminated
+        3.2 If there is not any 3-match randomly generate new pieces on the empty cells.
+     */
     @Override
     public void onPlayerSwapChess() {
         try {
+            // Try to swap, then check if they are matchable
             model.swapChessPiece(selectedPoint, selectedPoint2);
             if (!isMatchable()) {
+                // Do nothing if there is nothing matchable
                 model.swapChessPiece(selectedPoint, selectedPoint2);
                 System.out.println("Swap Fail! Nothing can be match");
             } else {
+                // Do swap two chess (in view) if matchable
+                // TODO: may need animation for swap and eliminate
                 ChessComponent tmp = view.removeChessComponentAtGrid(selectedPoint);
                 view.setChessComponentAtGrid(selectedPoint, view.removeChessComponentAtGrid(selectedPoint2));
                 view.setChessComponentAtGrid(selectedPoint2, tmp);
+                // Do the elimination
+                doChessEliminate();
+                //TODO: cancel cell selection after eliminate? it may cause null pointer exception
             }
         } catch (NullPointerException e) {
+            // if the selected cell contains empty content, do nothing
             System.out.println("Swap Failed!");
             selectedPoint = null;
             selectedPoint2 = null;
@@ -131,8 +131,35 @@ public class GameController implements GameListener {
         }
     }
 
+    //to check the model to see if sth.'s matchable (3-match only, larger than 3 will be ignored).
     public boolean isMatchable() {
         return Chessboard.checkerBoardValidator(model.getGrid());
+    }
+
+    // do the elimination, only after chessboard has been checked
+    // notice that there may be multiple matched simultaneously
+    private void doChessEliminate() {
+        int rows = model.getGrid().length;
+        int cols = model.getGrid()[0].length;
+
+        // For debug only. Print chessboard of model to manually see what it is.
+        //Chessboard.printChessBoardGrid(model.getGrid());
+
+        // Check for horizontal adjacency
+        for (int i = 0; i < rows; i++) {
+            for (int j = 0; j < cols - 2; j++) {
+                //TODO:FIX THIS
+
+            }
+        }
+
+        // Check for vertical adjacency
+        for (int i = 0; i < rows - 2; i++) {
+            for (int j = 0; j < cols; j++) {
+                //TODO:FIX THIS
+
+            }
+        }
     }
 
     @Override
@@ -140,11 +167,13 @@ public class GameController implements GameListener {
         //TODO:onPlayerNextStep
         score++;
         stepLeft--;
-        updateStatusLabel();
+        updateScoreAndStepLabel();
         System.out.println("Score updated:" + score);
     }
-    public void updateStatusLabel(){
-        statusLabel.setText("StepLeft:" +((difficulty.getStepLimit()>0)?(stepLeft + "/"+difficulty.getStepLimit()):('∞')) + "  Score:" + score + "/" + difficulty.getGoal());
+    public void updateScoreAndStepLabel(){
+        if (statusLabels[0]==null) setStatusLabels(chessGameFrame.getStatusLabels());
+        statusLabels[1].setText("Score:" + score + "/" + difficulty.getGoal());
+        statusLabels[2].setText("StepLeft:" +((difficulty.getStepLimit()>0)?(stepLeft + "/"+difficulty.getStepLimit()):('∞')));
     }
     public void loadFromFile(File file) {
         if (!file.exists() || !file.canRead()) return;
@@ -188,7 +217,7 @@ public class GameController implements GameListener {
                 model.setChessPiece(new ChessboardPoint(j, i), new ChessPiece(pName));
             }
         }
-        updateStatusLabel();
+        updateScoreAndStepLabel();
         view.repaint();
     }
 
@@ -360,7 +389,6 @@ public class GameController implements GameListener {
         return false;
     }
     public void hint(){
-        //todo:introduce hint function
         if (!isContinuable()) return;
         if (selectedPoint!=null){
             var point1 = (ChessComponent) view.getGridComponentAt(selectedPoint).getComponent(0);
@@ -390,6 +418,8 @@ public class GameController implements GameListener {
                     return;
                 }
                 model.swapChessPiece(selectedPoint,selectedPoint2);
+                selectedPoint=null;
+                selectedPoint2=null;
             }
         }
         for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum()-1; i++) {

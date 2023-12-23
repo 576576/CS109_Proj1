@@ -8,9 +8,7 @@ import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
 public class ChessGameFrame extends JFrame implements MyFrame{
-    //    public final Dimension FRAME_SIZE ;
-    private final int wdt,hgt;
-    private final int ONE_CHESS_SIZE,CHESSBOARD_SIZE;
+    private final int ONE_CHESS_SIZE;
 
     private GameController gameController;
     private MenuFrame menuFrame;
@@ -18,46 +16,45 @@ public class ChessGameFrame extends JFrame implements MyFrame{
 
     private ChessboardComponent chessboardComponent;
     private JButton swapConfirmButton,nextStepButton;
-
-    private JLabel statusLabel,statusLabel2,difficultyLabel,timeLimitLabel;
-    private final JPanel controlPanel = new JPanel(new GridLayout(11,1,2,6));
-    private final JPanel statusPanel = new JPanel(new GridLayout(16,1));
-    private final JPanel chessPanel = new JPanel(new BorderLayout());
-    private final JPanel panelUp = new JPanel();
+    private final JPanel controlPanel = new JPanel(new GridLayout(10,1,2,6));
+    private final JPanel statusPanel = new JPanel(new GridLayout(10,1,2,6));
+    private final JLabel[] statusLabels = new JLabel[4];
+    private final GridBagLayout gbl = new GridBagLayout();
     private final ArrayList<JComponent> controlComponents = new ArrayList<>();
     private final JFileChooser jf = new JFileChooser(".\\");
 
     public ChessGameFrame(int width, int height,boolean isOnlinePlay) {
         setTitle("CS109 消消乐"); //设置标题
-        this.wdt = width;
-        this.hgt = height;
+        //    public final Dimension FRAME_SIZE ;
         this.isOnlinePlay=isOnlinePlay;
-        this.CHESSBOARD_SIZE = (int)(3*Math.sqrt(wdt*hgt)/5);
-        this.ONE_CHESS_SIZE = CHESSBOARD_SIZE/8;
+        int CHESSBOARD_SIZE = (int) (3 * Math.sqrt(width * height) / 5);
+        this.ONE_CHESS_SIZE = CHESSBOARD_SIZE /8;
 
         jf.setFileSelectionMode(JFileChooser.FILES_ONLY);
         FileNameExtensionFilter ff = new FileNameExtensionFilter("txt", "txt");
         jf.addChoosableFileFilter(ff);
         jf.setFileFilter(ff);
 
-        setSize(wdt, hgt);
+        setSize(width, height);
         setLocationRelativeTo(null); // Center the window.
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
-        setLayout(new BorderLayout(6,18));
+        setLayout(gbl);
 
         initBasicComponents();
         if (!isOnlinePlay) initLocalPlayPanel();
         else initOnlinePlayPanel();
-        add(controlPanel,BorderLayout.EAST);
-
+        MyFrame.addComponent(this,gbl,controlPanel,590,1,560,4,0,1);
+        SwingUtilities.invokeLater(()->{
+            setDarkMode();setDarkMode();
+        });
     }
     private void initBasicComponents(){
         initChessboard();
         initStatusLabels();
+        for (var i:statusLabels) statusPanel.add(i);
+        MyFrame.addComponent(this,gbl,statusPanel,1,1,24,24,0,1);
         initDarkModeButton();
         initAutoConfirmButton();
-        add(panelUp,BorderLayout.NORTH);
-        controlPanel.setBounds(2*wdt/3, hgt / 10,wdt/6,4*hgt/5);
     }
     private void initLocalPlayPanel(){
         initHintButton();
@@ -81,11 +78,6 @@ public class ChessGameFrame extends JFrame implements MyFrame{
     public ChessboardComponent getChessboardComponent() {
         return chessboardComponent;
     }
-
-    public void setChessboardComponent(ChessboardComponent chessboardComponent) {
-        this.chessboardComponent = chessboardComponent;
-    }
-
     public void setMenuFrame(MenuFrame menuFrame) {
         this.menuFrame = menuFrame;
     }
@@ -103,55 +95,48 @@ public class ChessGameFrame extends JFrame implements MyFrame{
      */
     private void initChessboard() {
         chessboardComponent = new ChessboardComponent(ONE_CHESS_SIZE);
-        chessPanel.add(chessboardComponent,BorderLayout.CENTER);
-        add(chessPanel,BorderLayout.CENTER);
+        MyFrame.addComponent(this,gbl,chessboardComponent,25,1,560,560,560,560);
     }
 
     /**
-     * 在游戏面板中添加标签
+     * 在游戏面板中添加标签面板
      */
     private void initStatusLabels() {
-        statusLabel = MyFrame.initLabel("Score:0/30");
-        statusLabel2 = MyFrame.initLabel("StepLeft:∞");
-        difficultyLabel = MyFrame.initLabel("Difficulty:EASY");
-        timeLimitLabel = MyFrame.initLabel("TimeLimit:∞");
-        statusPanel.add(statusLabel);
-        statusPanel.add(statusLabel2);
-        statusPanel.add(difficultyLabel);
-        statusPanel.add(timeLimitLabel);
-        add(statusPanel,BorderLayout.WEST);
+        statusLabels[0] = MyFrame.initLabel("Difficulty:EASY");
+        statusLabels[1] = MyFrame.initLabel("Score:0/30");
+        statusLabels[2] = MyFrame.initLabel("StepLeft:∞");
+        statusLabels[3] = MyFrame.initLabel("TimeLimit:∞");
     }
-
-    public JLabel getStatusLabel() {
-        return getStatusLabel(0);
+    public JLabel[] getStatusLabels(){
+        if (statusLabels==null) initStatusLabels();
+        return statusLabels;
     }
-    public JLabel getStatusLabel(int i){
-        if (i>statusPanel.getComponents().length) return null;
-        return (JLabel) statusPanel.getComponents()[i];
-    }
-    public JLabel getDifficultyLabel() {
-        return difficultyLabel;
+    public void setDarkMode() {
+        boolean isDarkMode=menuFrame.setDarkMode();
+        try {
+            getContentPane().setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
+            chessboardComponent.setDarkMode(isDarkMode);
+            for (var i:getContentPane().getComponents()){
+                i.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
+            }
+            for (var i:statusPanel.getComponents()){
+                i.setForeground(isDarkMode ? Color.WHITE : Color.BLACK);
+                i.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
+            }
+            for (var i: controlComponents){
+                i.setBackground(isDarkMode ? Color.DARK_GRAY : Color.LIGHT_GRAY);
+                i.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
+            }
+            chessboardComponent.setDarkMode(isDarkMode);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+        repaint();
     }
 
     private void initDarkModeButton() {
         JButton button = initButton("SetDarkMode");
         button.addActionListener(e -> setDarkMode());
-    }
-
-    public void setDarkMode() {
-        boolean isDarkMode=menuFrame.setDarkMode();
-        getContentPane().setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
-        chessboardComponent.setDarkMode(isDarkMode);
-        for (var i:statusPanel.getComponents()){
-            i.setForeground(isDarkMode ? Color.WHITE : Color.BLACK);
-            i.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
-        }
-        for (var i: controlComponents){
-            i.setBackground(isDarkMode ? Color.DARK_GRAY : Color.LIGHT_GRAY);
-            i.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
-        }
-        chessboardComponent.setDarkMode(isDarkMode);
-        repaint();
     }
 
     private void initNewGameButton(){
