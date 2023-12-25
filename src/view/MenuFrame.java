@@ -49,12 +49,14 @@ public class MenuFrame extends JFrame implements MyFrame{
     public boolean setDarkMode() {
         isDarkMode = !isDarkMode;
         getContentPane().setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
-        for (var i : getContentPane().getComponents()) {
-            if (i.getClass() == JButton.class) {
+        controlPanel.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
+        for (var i : controlPanel.getComponents()) {
+            if (i instanceof JButton) {
                 i.setBackground(isDarkMode ? Color.DARK_GRAY : Color.LIGHT_GRAY);
                 i.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
             } else {
                 i.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
+                i.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
             }
         }
         return isDarkMode;
@@ -104,7 +106,7 @@ public class MenuFrame extends JFrame implements MyFrame{
         mainFrame.setMenuFrame(this);
         gameController.setChessGameFrame(mainFrame);
         mainFrame.setVisible(true);
-        this.dispose();
+        this.setState(Frame.ICONIFIED);
     }
 }
 

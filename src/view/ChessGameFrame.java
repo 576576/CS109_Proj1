@@ -202,6 +202,7 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         JButton button = initButton(isOnlinePlay?"Disconnect":"Return Title");
         button.addActionListener(e -> {
             gameController.terminate();
+            menuFrame.setState(Frame.NORMAL);
             dispose();
         });
     }

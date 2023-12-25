@@ -16,6 +16,7 @@ import java.util.Random;
 import java.util.Scanner;
 import static model.Constant.CHESSBOARD_COL_SIZE;
 import static model.Constant.CHESSBOARD_ROW_SIZE;
+import static view.MenuFrame.difficulty;
 /**
  * Controller is the connection between model and view,
  * when a Controller receive a request from a view, the Controller
@@ -23,7 +24,7 @@ import static model.Constant.CHESSBOARD_ROW_SIZE;
  * [in this demo the request methods are onPlayerClickCell() and
  * onPlayerClickChessPiece()]
  */
-public class GameController implements GameListener {
+public class GameController implements GameListener{
 
     private final Chessboard model;
     private final ChessboardComponent view;
@@ -46,7 +47,6 @@ public class GameController implements GameListener {
     }
 
     private NextStepFlag onNextStepFlag;
-    private Difficulty difficulty;
     private final ArrayList<DifficultyPreset> difficultyPresets = new ArrayList<>();
     private JLabel[] statusLabels = new JLabel[4];
     public void setStatusLabels(JLabel[] statusLabels) {
@@ -57,7 +57,6 @@ public class GameController implements GameListener {
         this.view = view;
         this.model = model;
         this.net = net;
-        // TODO: set difficulty
         this.onNextStepFlag = NextStepFlag.NO_SWAP_DONE; // first, no swap done so initiate with this state
         net.registerController(this);
         view.registerController(this);
@@ -100,8 +99,8 @@ public class GameController implements GameListener {
         System.out.println("New game initialized");
     }
 
-    public void setDifficulty(Difficulty difficulty) {
-        this.difficulty = difficulty;
+    public void setDifficulty(Difficulty difficulty1) {
+        difficulty = difficulty1;
     }
 
     // click an empty cell
@@ -118,7 +117,7 @@ public class GameController implements GameListener {
      */
     @Override
     public void onPlayerSwapChess() {
-        if ( stepLeft<0 && !this.difficulty.getName().equals("EASY")){
+        if ( stepLeft<0 && !difficulty.getName().equals("EASY")){
             // TODO: notice player no step. using a window
             System.out.println("No step left!");
             initialize();
@@ -235,7 +234,7 @@ public class GameController implements GameListener {
         }
         view.repaint();
         updateScoreAndStepLabel();
-        if (score > this.difficulty.getGoal()){
+        if (score > difficulty.getGoal()){
             // TODO: send UI message to notice the user got victory
             System.out.println("You have passed the target score!");
             initialize();
@@ -285,7 +284,7 @@ public class GameController implements GameListener {
 
         updateScoreAndStepLabel();
         System.out.println("Score updated:" + score);
-        if (score > this.difficulty.getGoal()){
+        if (score > difficulty.getGoal()){
             // TODO: send UI message to notice the user got victory
             System.out.println("You have passed the target score!");
             initialize();
@@ -344,6 +343,10 @@ public class GameController implements GameListener {
         if (statusLabels[0]==null) setStatusLabels(chessGameFrame.getStatusLabels());
         statusLabels[1].setText("Score:" + score + "/" + difficulty.getGoal());
         statusLabels[2].setText("StepLeft:" +((difficulty.getStepLimit()>0)?(stepLeft + "/"+difficulty.getStepLimit()):('∞')));
+    }
+    public void updateDifficultyLabel(){
+        if (statusLabels[0]==null) setStatusLabels(chessGameFrame.getStatusLabels());
+        statusLabels[0].setText("Difficulty:" + difficulty.getName());
     }
     public void loadFromFile(File file) {
         if (!file.exists() || !file.canRead()) return;

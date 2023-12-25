@@ -12,15 +12,6 @@ public class NetGame {
     public GameController gameController;
     private int port = 14723;
     Socket sock;
-    public void startOnlineGame(int port,boolean isHost){
-        if (port<=0||port>65535){
-            System.err.println("Illegal Port!");
-            return;
-        }
-        this.port = port;
-        if (isHost) serverHost();
-        else connectHost();
-    }
     public void serverHost() {
         JDialog jd;
         try (ServerSocket ss = new ServerSocket(port)){
