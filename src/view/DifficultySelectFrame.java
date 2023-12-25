@@ -16,7 +16,7 @@ public class DifficultySelectFrame extends JFrame implements MyFrame {
         setTitle("Select a difficulty");
         setSize(600,400);
         setLayout(new GridLayout(1,1));
-        JPanel selectPanel = new JPanel(new GridLayout(isOnlinePlay?3:2,1));
+        JPanel selectPanel = new JPanel(new GridLayout(3,1));
         var startButton = MyFrame.initButton("Start Game!");
         startButton.addActionListener(e -> {
             menuFrame.generateNewGame();
@@ -31,11 +31,17 @@ public class DifficultySelectFrame extends JFrame implements MyFrame {
             }
             onlineButtons.get(0).addActionListener(e -> isToHost=true);
             onlineButtons.get(1).addActionListener(e -> isToHost=false);
+            onlineButtons.get(1).setSelected(true);
             JPanel panel = new JPanel(new GridLayout(1,2));
             for (int i = 0; i < 2; i++) panel.add(onlineButtons.get(i));
             selectPanel.add(panel);
         }
-        else selectPanel.add(new Box(1));
+        else {
+            JPanel panel0 = new JPanel();
+            panel0.setBackground(Color.DARK_GRAY);
+            selectPanel.add(panel0);
+        }
+
         var difficultyButtons = MyFrame.initSelectButtons("Easy","Normal","Hard","Custom");
         difficultyButtons.get(0).addActionListener(e -> difficulty=new Difficulty(DifficultyPreset.EASY));
         difficultyButtons.get(1).addActionListener(e -> difficulty=new Difficulty(DifficultyPreset.NORMAL));
@@ -61,10 +67,17 @@ public class DifficultySelectFrame extends JFrame implements MyFrame {
                 difficultyButtons.get(3).setSelected(false);
                 difficultyButtons.get(0).setSelected(true);
             }
+            if (!isOnlinePlay){
+                for (var i:difficultyButtons){
+                    i.setBackground(Color.DARK_GRAY);
+                    i.setForeground(Color.WHITE);
+                }
+            }
         });
         JPanel panel = new JPanel(new GridLayout(1,4));
         for (int i = 0; i < 4; i++) panel.add(difficultyButtons.get(i));
         selectPanel.add(panel);
+        difficultyButtons.get(1).setSelected(true);
         add(selectPanel);
     }
 

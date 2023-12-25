@@ -63,7 +63,7 @@ public class MenuFrame extends JFrame implements MyFrame{
     }
 
     private void addLabel() {
-        label = new JLabel("CHECKING");
+        label = new JLabel("MENU");
         label.setLocation(hgt - 360, hgt / 10 + 200);
         label.setSize(200, 60);
         label.setFont(new Font("Rockwell", Font.BOLD, 20));
