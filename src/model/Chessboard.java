@@ -63,11 +63,13 @@ public class Chessboard {
 
         for(int i=0; i<rows; i++) {
             for(int j=0; j<columns; j++) {
-
-                String currentPieceName = grid[i][j].getPiece().getName();
+                try {
+                    String currentPieceName = grid[i][j].getPiece().getName();
 
                 // Check right
                 if(j < columns-2 &&
+                            grid[i][j+1].getPiece() != null &&
+                            grid[i][j+2].getPiece() != null &&
                         grid[i][j+1].getPiece().getName().equals(currentPieceName) &&
                         grid[i][j+2].getPiece().getName().equals(currentPieceName)) {
                     return true;
@@ -75,11 +77,15 @@ public class Chessboard {
 
                 // Check down
                 if(i < rows-2 &&
+                            grid[i+1][j].getPiece() != null &&
+                            grid[i+2][j].getPiece() != null &&
                         grid[i+1][j].getPiece().getName().equals(currentPieceName) &&
                         grid[i+2][j].getPiece().getName().equals(currentPieceName)) {
                     return true;
                 }
+                } catch (NullPointerException e) {
 
+                }
             }
         }
 

@@ -2,6 +2,7 @@ package view;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ArrayList;
 
 public interface MyFrame {
     static void addComponent(JFrame motherFrame, GridBagLayout gbl, Component comp,
@@ -22,6 +23,19 @@ public interface MyFrame {
         button.setForeground(Color.BLACK);
         button.setBackground(Color.LIGHT_GRAY);
         return button;
+    }
+    static ArrayList<JRadioButton> initSelectButtons(String... name){
+        ButtonGroup group = new ButtonGroup();
+        ArrayList<JRadioButton> buttons = new ArrayList<>();
+        for (var i:name){
+            var button = new JRadioButton(i);
+            button.setFont(new Font("Rockwell", Font.BOLD, 20));
+            button.setForeground(Color.BLACK);
+            button.setBackground(Color.LIGHT_GRAY);
+            group.add(button);
+            buttons.add(button);
+        }
+        return buttons;
     }
     static JLabel initLabel(String name){
         JLabel label = new JLabel(name);

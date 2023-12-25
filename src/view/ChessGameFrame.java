@@ -9,26 +9,24 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.io.File;
 import java.util.ArrayList;
+import static view.MenuFrame.isOnlinePlay;
+
 public class ChessGameFrame extends JFrame implements MyFrame{
     private final int ONE_CHESS_SIZE;
 
     private GameController gameController;
     private MenuFrame menuFrame;
-    private final boolean isOnlinePlay;
-
     private ChessboardComponent chessboardComponent;
     private JButton swapConfirmButton,nextStepButton;
-    private final JPanel controlPanel = new JPanel(new GridLayout(10,1,2,6));
+    private final JPanel controlPanel = new JPanel();
     private final JPanel statusPanel = new JPanel(new GridLayout(10,1,2,6));
     private final JLabel[] statusLabels = new JLabel[4];
     private final GridBagLayout gbl = new GridBagLayout();
     private final ArrayList<JComponent> controlComponents = new ArrayList<>();
     private final JFileChooser jf = new JFileChooser(".\\");
 
-    public ChessGameFrame(int width, int height,boolean isOnlinePlay) {
-        setTitle("CS109 消消乐"); //设置标题
-        //    public final Dimension FRAME_SIZE ;
-        this.isOnlinePlay=isOnlinePlay;
+    public ChessGameFrame(int width, int height) {
+        setTitle("CS109 消消乐");
         int CHESSBOARD_SIZE = (int) (3 * Math.sqrt(width * height) / 5);
         this.ONE_CHESS_SIZE = CHESSBOARD_SIZE /8;
         setMinimumSize(new Dimension(905,600));
@@ -67,6 +65,7 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         initAutoConfirmButton();
     }
     private void initLocalPlayPanel(){
+        controlPanel.setLayout(new GridLayout(10,1,2,6));
         initHintButton();
         initNewGameButton();
         initSwapConfirmButton();
@@ -78,6 +77,7 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         for (var component: controlComponents) controlPanel.add(component);
     }
     private void initOnlinePlayPanel(){
+        controlPanel.setLayout(new GridLayout(8,1,2,6));
         initNewGameButton();
         initSwapConfirmButton();
         initNextStepButton();

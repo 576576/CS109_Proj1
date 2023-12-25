@@ -2,6 +2,8 @@ package view;
 
 import controller.GameController;
 import model.Chessboard;
+import model.Difficulty;
+import model.DifficultyPreset;
 import net.NetGame;
 
 import javax.swing.*;
@@ -15,8 +17,8 @@ import java.awt.*;
  */
 public class MenuFrame extends JFrame implements MyFrame{
     private final int hgt;
-    public static boolean isDarkMode;
-
+    public static boolean isDarkMode=false,isOnlinePlay=false,isToHost=false;
+    public static Difficulty difficulty=new Difficulty(DifficultyPreset.EASY);
     private final int ONE_CHESS_SIZE;
 
     private final JPanel controlPanel = new JPanel(new GridLayout(5,1,4,8));
@@ -74,7 +76,6 @@ public class MenuFrame extends JFrame implements MyFrame{
         MyFrame.addComponent(this,gbl,chessPanel,0,0,12,12,0,0);
     }
     private void addPlay() {
-        JFrame close = new JFrame();
         JButton button = MyFrame.initButton("Play");
         button.addActionListener(e -> {
 
@@ -86,46 +87,18 @@ public class MenuFrame extends JFrame implements MyFrame{
             // close.setVisible(false); //hides it temporarily
             //frame2.setVisible(true); //shows it
             //Custom button text
-            Object[] options = {"Easy",
-                    "Medium",
-                    "Hard"};
-            JOptionPane.showOptionDialog(this,
-                    "Choose your difficulty",
-                    "Difficulty",
-                    JOptionPane.YES_NO_CANCEL_OPTION,
-                    JOptionPane.QUESTION_MESSAGE,
-                    null,
-                    options,
-                    options[2]);
-            SwingUtilities.invokeLater(() -> {
-                ChessGameFrame mainFrame = new ChessGameFrame(1100, 810, false);
-                GameController gameController = new GameController(mainFrame.getChessboardComponent(),
-                        new Chessboard(), new NetGame());
-                mainFrame.setGameController(gameController);
-                mainFrame.setMenuFrame(this);
-                gameController.setChessGameFrame(mainFrame);
-                mainFrame.setVisible(true);
-                this.dispose();
-            });
+            isOnlinePlay=false;
         });
         controlPanel.add(button);
     }
-
 
     private void addOnlineButton() {
         JButton button = MyFrame.initButton("Online Play");
 
         button.addActionListener(e -> {
-            //TODO: start with online play(if host,show difficulty choose panel)
-            Object[] options = {"Host", "Join"};
-            JOptionPane.showOptionDialog(this,
-                    "Choose your play mode",
-                    "Play Online",
-                    JOptionPane.YES_NO_CANCEL_OPTION,
-                    JOptionPane.QUESTION_MESSAGE,
-                    null,
-                    options,
-                    options[1]);
+            isOnlinePlay=true;
+            DifficultySelectFrame difficultySelectFrame = new DifficultySelectFrame(this);
+            difficultySelectFrame.setVisible(true);
         });
         controlPanel.add(button);
     }
@@ -143,6 +116,16 @@ public class MenuFrame extends JFrame implements MyFrame{
         JButton button = MyFrame.initButton("Exit");
         button.addActionListener(e -> System.exit(0));
         controlPanel.add(button);
+    }
+    public void generateNewGame(){
+        ChessGameFrame mainFrame = new ChessGameFrame(1100, 810);
+        GameController gameController = new GameController(mainFrame.getChessboardComponent(),
+                new Chessboard(), new NetGame());
+        mainFrame.setGameController(gameController);
+        mainFrame.setMenuFrame(this);
+        gameController.setChessGameFrame(mainFrame);
+        mainFrame.setVisible(true);
+        this.dispose();
     }
 }
 

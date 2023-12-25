@@ -14,7 +14,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.Scanner;
-
+import static model.Constant.CHESSBOARD_COL_SIZE;
+import static model.Constant.CHESSBOARD_ROW_SIZE;
 /**
  * Controller is the connection between model and view,
  * when a Controller receive a request from a view, the Controller
@@ -35,6 +36,16 @@ public class GameController implements GameListener {
     private ChessboardPoint selectedPoint2;
 
     private int score, timeLeft, stepLeft;
+
+    enum NextStepFlag {
+        NO_SWAP_DONE,        // 0: no swap done, user cannot click "Next Step"
+        SWAP_DONE,      // 1: swap done, user can click "Next Step" for the first time to make it fall down
+        FALL_DOWN_DONE, // 2: fall down done. Click "Next Step" again to check if match-3 or more continue to take place,
+        //    the player can continue eliminating them by clicking the "Next Step" button until there are no more match left.
+        //    if no more match left, reset the flag to NO_SWAP_DONE.
+    }
+
+    private NextStepFlag onNextStepFlag;
     private Difficulty difficulty;
     private final ArrayList<DifficultyPreset> difficultyPresets = new ArrayList<>();
     private JLabel[] statusLabels = new JLabel[4];
@@ -46,6 +57,7 @@ public class GameController implements GameListener {
         this.view = view;
         this.model = model;
         this.net = net;
+        this.onNextStepFlag = NextStepFlag.NO_SWAP_DONE; // first, no swap done so initiate with this state
         net.registerController(this);
         view.registerController(this);
         view.initiateChessComponent(model);
@@ -69,6 +81,7 @@ public class GameController implements GameListener {
         boolean needToInit=true;
         score = 0;
         view.removeAllChessComponentsAtGrids();
+        this.onNextStepFlag = NextStepFlag.NO_SWAP_DONE;  // first, no swap done, so initiate it with this state
 
         // call method to refresh a chessboard with new random pieces
         this.model.initPieces();
@@ -118,6 +131,8 @@ public class GameController implements GameListener {
                 view.setChessComponentAtGrid(selectedPoint, view.removeChessComponentAtGrid(selectedPoint2));
                 view.setChessComponentAtGrid(selectedPoint2, tmp);
                 // Do the elimination
+                this.onNextStepFlag = NextStepFlag.SWAP_DONE; // Swap done, eliminated, so set the state to SWAP_DONE
+                //TODO: cancel cell selection after eliminate? something cause null pointer exception
                 doChessEliminate();
                 //TODO: cancel cell selection after eliminate? it may cause null pointer exception
             }
@@ -148,27 +163,140 @@ public class GameController implements GameListener {
         // Check for horizontal adjacency
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols - 2; j++) {
-                //TODO:FIX THIS
+                // get the name of chess and the adjacent chess (horizontal)
 
+                ChessPiece chess1 = model.getChessPieceAt(new ChessboardPoint(i, j));
+                ChessPiece chess2 = model.getChessPieceAt(new ChessboardPoint(i, j + 1));
+                ChessPiece chess3 = model.getChessPieceAt(new ChessboardPoint(i, j + 2));
+
+
+                // if they are equal, they can match
+                if (
+                        chess1 != null && chess2 != null && chess3 != null &&
+                        chess1.getName().equals(chess2.getName()) && chess2.getName().equals(chess3.getName())
+                ) {
+                    // Do elimination 3 chess, should remove on both "model" and "view"
+                    model.removeChessPiece(new ChessboardPoint(i, j));
+                    view.removeChessComponentAtGrid(new ChessboardPoint(i, j));
+                    model.removeChessPiece(new ChessboardPoint(i, j + 1));
+                    view.removeChessComponentAtGrid(new ChessboardPoint(i, j + 1));
+                    model.removeChessPiece(new ChessboardPoint(i, j + 2));
+                    view.removeChessComponentAtGrid(new ChessboardPoint(i, j + 2));
+                }
             }
         }
 
         // Check for vertical adjacency
         for (int i = 0; i < rows - 2; i++) {
             for (int j = 0; j < cols; j++) {
-                //TODO:FIX THIS
+                // get the name of chess and the adjacent chess (vertical)
+                ChessPiece chess1 = model.getChessPieceAt(new ChessboardPoint(i, j));
+                ChessPiece chess2 = model.getChessPieceAt(new ChessboardPoint(i + 1, j));
+                ChessPiece chess3 = model.getChessPieceAt(new ChessboardPoint(i + 2, j));
 
+                // if they are equal, they can match
+                if (chess1 != null && chess2 != null && chess3 != null &&
+                        chess1.getName().equals(chess2.getName()) && chess2.getName().equals(chess3.getName())) {
+                    // Do elimination 3 chess, should remove on both "model" and "view"
+                    model.removeChessPiece(new ChessboardPoint(i, j));
+                    view.removeChessComponentAtGrid(new ChessboardPoint(i, j));
+                    model.removeChessPiece(new ChessboardPoint(i + 1, j));
+                    view.removeChessComponentAtGrid(new ChessboardPoint(i + 1, j));
+                    model.removeChessPiece(new ChessboardPoint(i + 2, j));
+                    view.removeChessComponentAtGrid(new ChessboardPoint(i + 2, j));
+                }
             }
         }
     }
 
     @Override
     public void onPlayerNextStep() {
-        //TODO:onPlayerNextStep
+        // For debug only
+        System.out.println("Next step flag: " + this.onNextStepFlag);
+
+        //user should only click this after something has been swapped & eliminated
+        if (this.onNextStepFlag == NextStepFlag.NO_SWAP_DONE) {
+            System.out.println("Should not click Next Step when nothing swapped & eliminated!");
+
+        }
+
+        if (this.onNextStepFlag == NextStepFlag.SWAP_DONE) {
+            doFallDown();
+            this.onNextStepFlag = NextStepFlag.FALL_DOWN_DONE;
+            view.repaint();
+            return;
+        }
+
+        if (this.onNextStepFlag == NextStepFlag.FALL_DOWN_DONE) {
+            // Fall done has done, if there is any match-3, eliminate them
+            if (Chessboard.checkerBoardValidator(this.model.getGrid())) {
+                doChessEliminate();
+                view.repaint();
+            } else if (checkChessBoardHasEmpty()) {
+                // generate new pieces to fill empty cells
+                // if there are new match-3 take place, user could click next step again to eliminate
+                doGenerateRandomPiecesEmptyCell();
+            } else {
+                // if no empty and nothing to eliminate, back to normal gaming
+                this.onNextStepFlag = NextStepFlag.NO_SWAP_DONE;
+            }
+        }
+
+        //TODO: calculate points add up based on the number of matched pieces
         score++;
         stepLeft--;
         updateScoreAndStepLabel();
         System.out.println("Score updated:" + score);
+    }
+    // pieces above those empty cells will fail down until the empty cells are occupied
+    // TODO: animation here
+    private void doFallDown() {
+        // check every column for empty cells
+        boolean hasEmptyCell = true;
+        while (hasEmptyCell) {
+            hasEmptyCell = false;
+            for (int col = 0; col < CHESSBOARD_COL_SIZE.getNum(); col++) {
+                for (int row = CHESSBOARD_ROW_SIZE.getNum() - 1; row > 0; row--) {
+                    if ( this.model.getGrid()[row][col].getPiece() == null && ! (this.model.getGrid()[row - 1][col].getPiece() == null)) {
+                        // should do swap for model and view
+
+                        ChessboardPoint upperCell = new ChessboardPoint(row-1,col);
+                        ChessboardPoint lowerCell = new ChessboardPoint(row,col);
+
+                        model.swapChessPiece(upperCell, lowerCell);
+                        view.setChessComponentAtGrid(lowerCell, view.removeChessComponentAtGrid(upperCell));
+
+                        hasEmptyCell = true;
+                    }
+                }
+            }
+        }
+    }
+
+    private void doGenerateRandomPiecesEmptyCell() {
+        for (int i = 0; i < CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < CHESSBOARD_COL_SIZE.getNum(); j++) {
+                if (this.model.getGrid()[i][j].getPiece() == null) {
+                    this.model.getGrid()[i][j].setPiece(new ChessPiece(Util.RandomPick(new String[]{"💎", "⚪", "▲", "🔶", "🌞", "🪐"})));
+                    // TODO: chess component set
+                    this.view.setChessComponentAtGrid(new ChessboardPoint(i, j), new ChessComponent(view.getCHESS_SIZE(),
+                            new ChessPiece(model.getGrid()[i][j].getPiece().getName())));
+                }
+            }
+        }
+        view.repaint();
+    }
+
+    // Check if there is any empty cell on chessboard
+    private boolean checkChessBoardHasEmpty() {
+        for (int i = 0; i < CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < CHESSBOARD_COL_SIZE.getNum(); j++) {
+                if (this.model.getGrid()[i][j].getPiece() == null) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
     public void updateScoreAndStepLabel(){
         if (statusLabels[0]==null) setStatusLabels(chessGameFrame.getStatusLabels());
