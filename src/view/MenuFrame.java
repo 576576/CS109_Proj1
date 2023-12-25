@@ -16,7 +16,6 @@ import java.awt.*;
  * as showing the HighScoreFrame if the user wants this view.
  */
 public class MenuFrame extends JFrame implements MyFrame{
-    private final int hgt;
     public static boolean isDarkMode=false,isOnlinePlay=false,isToHost=false;
     public static Difficulty difficulty=new Difficulty(DifficultyPreset.EASY);
     private final int ONE_CHESS_SIZE;
@@ -29,11 +28,10 @@ public class MenuFrame extends JFrame implements MyFrame{
     public MenuFrame(int width, int height) {
         setTitle("MENU");
         //    public final Dimension FRAME_SIZE ;
-        this.hgt = height;
-        this.ONE_CHESS_SIZE = (hgt * 4 / 5) / 9;
+        this.ONE_CHESS_SIZE = (height * 4 / 5) / 9;
         setMinimumSize(new Dimension(905,600));
 
-        setSize(width, hgt);
+        setSize(width, height);
         setLocationRelativeTo(null); // Center the window.
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE); //设置程序关闭按键，如果点击右上方的叉就游戏全部关闭了
         setLayout(gbl);
