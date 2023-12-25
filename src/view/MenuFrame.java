@@ -17,30 +17,31 @@ import java.awt.*;
  */
 public class MenuFrame extends JFrame implements MyFrame{
     public static boolean isDarkMode=false,isOnlinePlay=false,isToHost=false;
+    public static int soundStrength=0;
     public static Difficulty difficulty=new Difficulty(DifficultyPreset.EASY);
     private final int ONE_CHESS_SIZE;
 
-    private final JPanel controlPanel = new JPanel(new GridLayout(4,1,4,8));
+    private final JPanel controlPanel = new JPanel(new GridLayout(5,1,4,8));
     private final JPanel chessPanel = new JPanel(new BorderLayout());
     private final GridBagLayout gbl = new GridBagLayout();
 
 
     public MenuFrame(int width, int height) {
-        setTitle("MENU");
+        setTitle("MATCH-3 CS109");
         //    public final Dimension FRAME_SIZE ;
         this.ONE_CHESS_SIZE = (height * 4 / 5) / 9;
         setMinimumSize(new Dimension(905,600));
 
         setSize(width, height);
-        setLocationRelativeTo(null); // Center the window.
-        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE); //设置程序关闭按键，如果点击右上方的叉就游戏全部关闭了
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setLayout(gbl);
-
 
         //initChessboard(); //TODO:add an auto play chessBoard(optional)
         initLabel();
         initPlayButton();
         initOnlineButton();
+        initSettingButton();
         initExitButton();
         MyFrame.addComponent(this,gbl,controlPanel,1,1,5,5,0,0);
     }
@@ -66,7 +67,7 @@ public class MenuFrame extends JFrame implements MyFrame{
         MyFrame.addComponent(this,gbl,chessPanel,0,0,560,560,0,0);
     }
     private void initLabel() {
-        JLabel label = new JLabel("MENU ");
+        JLabel label = new JLabel("MATCH-3");
         label.setSize(200, 60);
         label.setHorizontalAlignment(JLabel.CENTER);
         label.setFont(new Font("Rockwell", Font.BOLD, 20));
@@ -88,6 +89,14 @@ public class MenuFrame extends JFrame implements MyFrame{
             isOnlinePlay=true;
             DifficultySelectFrame difficultySelectFrame = new DifficultySelectFrame(this);
             difficultySelectFrame.setVisible(true);
+        });
+        controlPanel.add(button);
+    }
+    private void initSettingButton(){
+        JButton button = MyFrame.initButton("Settings");
+        button.addActionListener(e -> {
+            SettingFrame settingFrame = new SettingFrame(this);
+            settingFrame.setVisible(true);
         });
         controlPanel.add(button);
     }

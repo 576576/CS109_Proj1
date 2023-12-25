@@ -18,7 +18,8 @@ public class ChessGameFrame extends JFrame implements MyFrame{
     private MenuFrame menuFrame;
     private ChessboardComponent chessboardComponent;
     private JButton swapConfirmButton,nextStepButton;
-    private final JPanel controlPanel = new JPanel();
+    private final JPanel controlPanelRight = new JPanel();
+    private final JPanel controlPanelLeft = new JPanel();
     private final JPanel statusPanel = new JPanel(new GridLayout(10,1,2,6));
     private final JLabel[] statusLabels = new JLabel[4];
     private final GridBagLayout gbl = new GridBagLayout();
@@ -44,7 +45,7 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         initBasicComponents();
         if (!isOnlinePlay) initLocalPlayPanel();
         else initOnlinePlayPanel();
-        MyFrame.addComponent(this,gbl,controlPanel,590,1,560,4,0,1);
+        MyFrame.addComponent(this,gbl, controlPanelRight,590,1,560,4,0,1);
         SwingUtilities.invokeLater(()->{
             setDarkMode();setDarkMode();
         });
@@ -65,7 +66,7 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         initAutoConfirmButton();
     }
     private void initLocalPlayPanel(){
-        controlPanel.setLayout(new GridLayout(10,1,2,6));
+        controlPanelRight.setLayout(new GridLayout(10,1,2,6));
         initNewGameButton();
         initHintButton();
         initSwapConfirmButton();
@@ -74,16 +75,16 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         initSaveButton();
         initReturnTitleButton();
         initExitButton();
-        for (var component: controlComponents) controlPanel.add(component);
+        for (var component: controlComponents) controlPanelRight.add(component);
     }
     private void initOnlinePlayPanel(){
-        controlPanel.setLayout(new GridLayout(8,1,2,6));
+        controlPanelRight.setLayout(new GridLayout(8,1,2,6));
         initNewGameButton();
         initSwapConfirmButton();
         initNextStepButton();
         initReturnTitleButton();
         initExitButton();
-        for (var component: controlComponents) controlPanel.add(component);
+        for (var component: controlComponents) controlPanelRight.add(component);
     }
     public ChessboardComponent getChessboardComponent() {
         return chessboardComponent;
@@ -116,6 +117,7 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         statusLabels[1] = MyFrame.initLabel("Score:0/30");
         statusLabels[2] = MyFrame.initLabel("StepLeft:∞");
         statusLabels[3] = MyFrame.initLabel("TimeLimit:∞");
+        for (JLabel statusLabel : statusLabels) statusLabel.setHorizontalAlignment(SwingConstants.RIGHT);
     }
     public JLabel[] getStatusLabels(){
         if (statusLabels==null) initStatusLabels();
@@ -166,6 +168,12 @@ public class ChessGameFrame extends JFrame implements MyFrame{
     public void initHintButton(){
         JButton button = initButton("Hint!");
         button.addActionListener(e -> gameController.hint());
+    }
+    public void initShuffleButton(){
+        JButton button = initButton("Shuffle");
+        button.addActionListener(e -> {
+
+        });
     }
     private void initSwapConfirmButton() {
         JButton button = initButton("Confirm Swap");
