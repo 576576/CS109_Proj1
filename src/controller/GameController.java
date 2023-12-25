@@ -57,6 +57,7 @@ public class GameController implements GameListener {
         this.view = view;
         this.model = model;
         this.net = net;
+        // TODO: set difficulty
         this.onNextStepFlag = NextStepFlag.NO_SWAP_DONE; // first, no swap done so initiate with this state
         net.registerController(this);
         view.registerController(this);
@@ -117,6 +118,12 @@ public class GameController implements GameListener {
      */
     @Override
     public void onPlayerSwapChess() {
+        if ( stepLeft<0 && !this.difficulty.getName().equals("EASY")){
+            // TODO: notice player no step. using a window
+            System.out.println("No step left!");
+            initialize();
+        }
+
         try {
             // Try to swap, then check if they are matchable
             model.swapChessPiece(selectedPoint, selectedPoint2);
@@ -143,6 +150,7 @@ public class GameController implements GameListener {
             selectedPoint2 = null;
         } finally {
             view.repaint();
+            updateScoreAndStepLabel();
         }
     }
 
@@ -157,56 +165,73 @@ public class GameController implements GameListener {
         int rows = model.getGrid().length;
         int cols = model.getGrid()[0].length;
 
-        // For debug only. Print chessboard of model to manually see what it is.
-        //Chessboard.printChessBoardGrid(model.getGrid());
-
         // Check for horizontal adjacency
         for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols - 2; j++) {
-                // get the name of chess and the adjacent chess (horizontal)
-
+            int j = 0;
+            while (j < cols - 2) {
                 ChessPiece chess1 = model.getChessPieceAt(new ChessboardPoint(i, j));
-                ChessPiece chess2 = model.getChessPieceAt(new ChessboardPoint(i, j + 1));
-                ChessPiece chess3 = model.getChessPieceAt(new ChessboardPoint(i, j + 2));
-
-
-                // if they are equal, they can match
-                if (
-                        chess1 != null && chess2 != null && chess3 != null &&
-                        chess1.getName().equals(chess2.getName()) && chess2.getName().equals(chess3.getName())
-                ) {
-                    // Do elimination 3 chess, should remove on both "model" and "view"
-                    model.removeChessPiece(new ChessboardPoint(i, j));
-                    view.removeChessComponentAtGrid(new ChessboardPoint(i, j));
-                    model.removeChessPiece(new ChessboardPoint(i, j + 1));
-                    view.removeChessComponentAtGrid(new ChessboardPoint(i, j + 1));
-                    model.removeChessPiece(new ChessboardPoint(i, j + 2));
-                    view.removeChessComponentAtGrid(new ChessboardPoint(i, j + 2));
+                if (chess1 == null) {
+                    j++;
+                    continue;
                 }
+
+                int matchCount = 1;
+                int k = j + 1;
+                while (k < cols && chess1.getName().equals(model.getChessPieceAt(new ChessboardPoint(i, k)).getName())) {
+                    matchCount++;
+                    k++;
+                }
+
+                if (matchCount >= 3) {
+                    // Do elimination for matched chess pieces
+                    for (int m = j; m < j + matchCount; m++) {
+                        model.removeChessPiece(new ChessboardPoint(i, m));
+                        view.removeChessComponentAtGrid(new ChessboardPoint(i, m));
+                    }
+                    score += matchCount ;
+                }
+
+                j = k;
             }
         }
 
         // Check for vertical adjacency
-        for (int i = 0; i < rows - 2; i++) {
-            for (int j = 0; j < cols; j++) {
-                // get the name of chess and the adjacent chess (vertical)
+        for (int j = 0; j < cols; j++) {
+            int i = 0;
+            while (i < rows - 2) {
                 ChessPiece chess1 = model.getChessPieceAt(new ChessboardPoint(i, j));
-                ChessPiece chess2 = model.getChessPieceAt(new ChessboardPoint(i + 1, j));
-                ChessPiece chess3 = model.getChessPieceAt(new ChessboardPoint(i + 2, j));
-
-                // if they are equal, they can match
-                if (chess1 != null && chess2 != null && chess3 != null &&
-                        chess1.getName().equals(chess2.getName()) && chess2.getName().equals(chess3.getName())) {
-                    // Do elimination 3 chess, should remove on both "model" and "view"
-                    model.removeChessPiece(new ChessboardPoint(i, j));
-                    view.removeChessComponentAtGrid(new ChessboardPoint(i, j));
-                    model.removeChessPiece(new ChessboardPoint(i + 1, j));
-                    view.removeChessComponentAtGrid(new ChessboardPoint(i + 1, j));
-                    model.removeChessPiece(new ChessboardPoint(i + 2, j));
-                    view.removeChessComponentAtGrid(new ChessboardPoint(i + 2, j));
+                if (chess1 == null) {
+                    i++;
+                    continue;
                 }
+
+                int matchCount = 1;
+                int k = i + 1;
+                while (k < rows && chess1.getName().equals(model.getChessPieceAt(new ChessboardPoint(k, j)).getName())) {
+                    matchCount++;
+                    k++;
+                }
+
+                if (matchCount >= 3) {
+                    // Do elimination for matched chess pieces
+                    for (int m = i; m < i + matchCount; m++) {
+                        model.removeChessPiece(new ChessboardPoint(m, j));
+                        view.removeChessComponentAtGrid(new ChessboardPoint(m, j));
+                    }
+                    score += matchCount ;
+                }
+
+                i = k;
             }
         }
+        view.repaint();
+        updateScoreAndStepLabel();
+        if (score > this.difficulty.getGoal()){
+            // TODO: send UI message to notice the user got victory
+            System.out.println("You have passed the target score!");
+            initialize();
+        }
+        stepLeft--;
     }
 
     @Override
@@ -231,22 +256,27 @@ public class GameController implements GameListener {
             // Fall done has done, if there is any match-3, eliminate them
             if (Chessboard.checkerBoardValidator(this.model.getGrid())) {
                 doChessEliminate();
+                // in case of any lower empty cell occurs
+                this.onNextStepFlag = NextStepFlag.FALL_DOWN_DONE;
                 view.repaint();
             } else if (checkChessBoardHasEmpty()) {
                 // generate new pieces to fill empty cells
                 // if there are new match-3 take place, user could click next step again to eliminate
                 doGenerateRandomPiecesEmptyCell();
+                view.repaint();
             } else {
                 // if no empty and nothing to eliminate, back to normal gaming
                 this.onNextStepFlag = NextStepFlag.NO_SWAP_DONE;
             }
         }
 
-        //TODO: calculate points add up based on the number of matched pieces
-        score++;
-        stepLeft--;
         updateScoreAndStepLabel();
         System.out.println("Score updated:" + score);
+        if (score > this.difficulty.getGoal()){
+            // TODO: send UI message to notice the user got victory
+            System.out.println("You have passed the target score!");
+            initialize();
+        }
     }
     // pieces above those empty cells will fail down until the empty cells are occupied
     // TODO: animation here
@@ -278,7 +308,6 @@ public class GameController implements GameListener {
             for (int j = 0; j < CHESSBOARD_COL_SIZE.getNum(); j++) {
                 if (this.model.getGrid()[i][j].getPiece() == null) {
                     this.model.getGrid()[i][j].setPiece(new ChessPiece(Util.RandomPick(new String[]{"💎", "⚪", "▲", "🔶", "🌞", "🪐"})));
-                    // TODO: chess component set
                     this.view.setChessComponentAtGrid(new ChessboardPoint(i, j), new ChessComponent(view.getCHESS_SIZE(),
                             new ChessPiece(model.getGrid()[i][j].getPiece().getName())));
                 }
@@ -340,6 +369,7 @@ public class GameController implements GameListener {
 
             for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
                 String pName = new String[]{"💎", "⚪", "▲", "🔶"}[Math.min(Math.max(csb[j][i], 0), 3)];
+                // TODO: is there a bug? ChessboardPoint(j, i) or ChessboardPoint(i, j)?
                 view.setChessComponentAtGrid(new ChessboardPoint(j, i), new ChessComponent(view.getCHESS_SIZE(),
                         new ChessPiece(pName)));
                 model.setChessPiece(new ChessboardPoint(j, i), new ChessPiece(pName));

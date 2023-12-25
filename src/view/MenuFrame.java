@@ -78,16 +78,9 @@ public class MenuFrame extends JFrame implements MyFrame{
     private void addPlay() {
         JButton button = MyFrame.initButton("Play");
         button.addActionListener(e -> {
-
-            //!important (comment by 576) please use a frame or panel instead of simple JOptionPane to have more flexibility.
-            //of course that's ok to change the existing code if u can make it run appropriately.
-            //TODO:FIX THIS
-
-            //JOptionPane.showMessageDialog(this, "FIX THIS");
-            // close.setVisible(false); //hides it temporarily
-            //frame2.setVisible(true); //shows it
-            //Custom button text
             isOnlinePlay=false;
+            DifficultySelectFrame difficultySelectFrame = new DifficultySelectFrame(this);
+            difficultySelectFrame.setVisible(true);
         });
         controlPanel.add(button);
     }
