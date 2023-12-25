@@ -89,7 +89,7 @@ public class GameController implements GameListener {
         // fetch contents of Chessboard to view
         for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
             for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
-                view.setChessComponentAtGrid(new ChessboardPoint(j, i), new ChessComponent(view.getCHESS_SIZE(),
+                view.setChessComponentAtGrid(new ChessboardPoint(i, j), new ChessComponent(view.getCHESS_SIZE(),
                         new ChessPiece(model.getGrid()[i][j].getPiece().getName())));
             }
         }

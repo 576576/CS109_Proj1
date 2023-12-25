@@ -95,7 +95,6 @@ class Handler extends Thread {
                 gameController.onlineGameTerminate(false);
                 break;
             }
-            writer.write("ok me: " + s + "\n");
             writer.flush();
         }
     }
