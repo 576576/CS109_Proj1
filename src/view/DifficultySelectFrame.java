@@ -16,6 +16,7 @@ public class DifficultySelectFrame extends JFrame implements MyFrame {
         setTitle("Select a difficulty");
         setSize(600,400);
         setLayout(new GridLayout(1,1));
+        setLocationRelativeTo(null);
         JPanel selectPanel = new JPanel(new GridLayout(3,1));
         var startButton = MyFrame.initButton("Start Game!");
         startButton.addActionListener(e -> {
@@ -37,8 +38,13 @@ public class DifficultySelectFrame extends JFrame implements MyFrame {
             selectPanel.add(panel);
         }
         else {
-            JPanel panel0 = new JPanel();
+            JPanel panel0 = new JPanel(new BorderLayout());
+            JLabel label0 = MyFrame.initLabel("Play Locally");
             panel0.setBackground(Color.DARK_GRAY);
+            label0.setHorizontalAlignment(JLabel.CENTER);
+            label0.setBackground(Color.DARK_GRAY);
+            label0.setForeground(Color.WHITE);
+            panel0.add(label0,BorderLayout.CENTER);
             selectPanel.add(panel0);
         }
 

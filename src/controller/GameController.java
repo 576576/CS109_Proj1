@@ -177,7 +177,12 @@ public class GameController implements GameListener {
 
                 int matchCount = 1;
                 int k = j + 1;
-                while (k < cols && chess1.getName().equals(model.getChessPieceAt(new ChessboardPoint(i, k)).getName())) {
+
+                while (k < cols) {
+                    ChessPiece chess2 = model.getChessPieceAt(new ChessboardPoint(i, k));
+                    if (chess2 == null || !chess1.getName().equals(chess2.getName())) {
+                        break;
+                    }
                     matchCount++;
                     k++;
                 }
@@ -207,7 +212,11 @@ public class GameController implements GameListener {
 
                 int matchCount = 1;
                 int k = i + 1;
-                while (k < rows && chess1.getName().equals(model.getChessPieceAt(new ChessboardPoint(k, j)).getName())) {
+                while (k < rows) {
+                    ChessPiece chess2 = model.getChessPieceAt(new ChessboardPoint(k, j));
+                    if (chess2 == null || !chess1.getName().equals(chess2.getName())) {
+                        break;
+                    }
                     matchCount++;
                     k++;
                 }
@@ -248,22 +257,26 @@ public class GameController implements GameListener {
         if (this.onNextStepFlag == NextStepFlag.SWAP_DONE) {
             doFallDown();
             this.onNextStepFlag = NextStepFlag.FALL_DOWN_DONE;
+            doChessEliminate();
+            // Fall done has done, if there is any match-3, eliminate them
+            System.out.println("Bonus! Match occurs when pieces fall down.");
             view.repaint();
             return;
         }
 
         if (this.onNextStepFlag == NextStepFlag.FALL_DOWN_DONE) {
-            // Fall done has done, if there is any match-3, eliminate them
-            if (Chessboard.checkerBoardValidator(this.model.getGrid())) {
-                doChessEliminate();
-                // in case of any lower empty cell occurs
-                this.onNextStepFlag = NextStepFlag.FALL_DOWN_DONE;
-                view.repaint();
-            } else if (checkChessBoardHasEmpty()) {
+            if (checkChessBoardHasEmpty()) {
                 // generate new pieces to fill empty cells
                 // if there are new match-3 take place, user could click next step again to eliminate
                 doGenerateRandomPiecesEmptyCell();
                 view.repaint();
+                // in case any new match take place after generated
+                while(isMatchable()){
+                    doChessEliminate();
+                    doGenerateRandomPiecesEmptyCell();
+                    view.repaint();
+                    System.out.println("New match occurs after generated new pieces!");
+                }
             } else {
                 // if no empty and nothing to eliminate, back to normal gaming
                 this.onNextStepFlag = NextStepFlag.NO_SWAP_DONE;
@@ -491,7 +504,6 @@ public class GameController implements GameListener {
         }
         component.setSelected(true);
         component.repaint();
-
     }
 
     public void onPlayerHostGame() {
@@ -511,7 +523,6 @@ public class GameController implements GameListener {
         //TODO:terminate the game
     }
     public void onlineGameTerminate(boolean isWinner){
-        //TODO:(576)terminate the online game
         if (isWinner){
             net.callHostTerminate();
         }
@@ -605,7 +616,6 @@ public class GameController implements GameListener {
     public void setAutoConfirm(boolean autoConfirm) {
         isAutoConfirm = autoConfirm;
     }
-
     public boolean isAutoConfirm() {
         return isAutoConfirm;
     }

@@ -9,7 +9,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
 public class NetGame {
-    private GameController gameController;
+    public GameController gameController;
     private int port = 14723;
     Socket sock;
     public void startOnlineGame(int port,boolean isHost){
@@ -36,16 +36,14 @@ public class NetGame {
         }
         jd.dispose();
         System.out.println("connected from " + sock.getRemoteSocketAddress());
-        Thread t = new Handler(sock);
+        Thread t = new Handler(sock,true,gameController);
         t.start();
     }
     public void connectHost(){
-        try (ServerSocket ss = new ServerSocket(port)) {
-            try {
-                sock = ss.accept();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
+        try {
+            sock = new Socket("localhost", port);
+            Thread t = new Handler(sock,false,gameController);
+            t.start();
         }catch (IOException ioe){
             System.err.println("ioe");
         }
@@ -61,8 +59,12 @@ public class NetGame {
 }
 class Handler extends Thread {
     Socket sock;
-    public Handler(Socket sock) {
+    boolean isHost;
+    GameController gameController;
+    public Handler(Socket sock,boolean isHost,GameController gameController) {
         this.sock = sock;
+        this.isHost = isHost;
+        this.gameController=gameController;
     }
     @Override
     public void run() {
@@ -83,12 +85,14 @@ class Handler extends Thread {
     private void handle(InputStream input, OutputStream output) throws IOException {
         var writer = new BufferedWriter(new OutputStreamWriter(output, StandardCharsets.UTF_8));
         var reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
-        writer.write("helloAsChessGame\n");
+        if (isHost) {
+            writer.write(gameController.getDifficulty().getDifficultyInfo());
+        }
         writer.flush();
         for (;;) {
             String s = reader.readLine();
             if (s.equals("clientDone")) {
-
+                gameController.onlineGameTerminate(false);
                 break;
             }
             writer.write("ok me: " + s + "\n");

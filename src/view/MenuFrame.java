@@ -21,9 +21,8 @@ public class MenuFrame extends JFrame implements MyFrame{
     public static Difficulty difficulty=new Difficulty(DifficultyPreset.EASY);
     private final int ONE_CHESS_SIZE;
 
-    private final JPanel controlPanel = new JPanel(new GridLayout(5,1,4,8));
+    private final JPanel controlPanel = new JPanel(new GridLayout(4,1,4,8));
     private final JPanel chessPanel = new JPanel(new BorderLayout());
-    private JLabel label;
     private final GridBagLayout gbl = new GridBagLayout();
 
 
@@ -40,13 +39,12 @@ public class MenuFrame extends JFrame implements MyFrame{
         setLayout(gbl);
 
 
-        //addChessboard();
-        addLabel();
-        addPlay();
-        addOnlineButton();
-        addSettings();
-        addExitButton();
-        MyFrame.addComponent(this,gbl,controlPanel,1,1,0,0,0,0);
+        //initChessboard(); //TODO:add an auto play chessBoard(optional)
+        initLabel();
+        initPlayButton();
+        initOnlineButton();
+        initExitButton();
+        MyFrame.addComponent(this,gbl,controlPanel,1,1,5,5,0,0);
     }
     public boolean setDarkMode() {
         isDarkMode = !isDarkMode;
@@ -61,21 +59,20 @@ public class MenuFrame extends JFrame implements MyFrame{
         }
         return isDarkMode;
     }
-
-    private void addLabel() {
-        label = new JLabel("MENU");
-        label.setLocation(hgt - 360, hgt / 10 + 200);
-        label.setSize(200, 60);
-        label.setFont(new Font("Rockwell", Font.BOLD, 20));
-        controlPanel.add(label);
-    }
     private void initChessboard() {
         //planning to add autoplaying chessboard
         ChessboardComponent chessboardComponent = new ChessboardComponent(ONE_CHESS_SIZE);
         chessPanel.add(chessboardComponent,BorderLayout.CENTER);
-        MyFrame.addComponent(this,gbl,chessPanel,0,0,12,12,0,0);
+        MyFrame.addComponent(this,gbl,chessPanel,0,0,560,560,0,0);
     }
-    private void addPlay() {
+    private void initLabel() {
+        JLabel label = new JLabel("MENU ");
+        label.setSize(200, 60);
+        label.setHorizontalAlignment(JLabel.CENTER);
+        label.setFont(new Font("Rockwell", Font.BOLD, 20));
+        controlPanel.add(label);
+    }
+    private void initPlayButton() {
         JButton button = MyFrame.initButton("Play");
         button.addActionListener(e -> {
             isOnlinePlay=false;
@@ -84,8 +81,7 @@ public class MenuFrame extends JFrame implements MyFrame{
         });
         controlPanel.add(button);
     }
-
-    private void addOnlineButton() {
+    private void initOnlineButton() {
         JButton button = MyFrame.initButton("Online Play");
 
         button.addActionListener(e -> {
@@ -95,17 +91,7 @@ public class MenuFrame extends JFrame implements MyFrame{
         });
         controlPanel.add(button);
     }
-
-    private void addSettings() {
-        JButton button = MyFrame.initButton("Settings");
-        button.addActionListener(e -> {
-            //TODO:add settings panel
-            JOptionPane.showMessageDialog(this, "FIX THIS");
-        });
-        controlPanel.add(button);
-    }
-
-    public void addExitButton(){
+    public void initExitButton(){
         JButton button = MyFrame.initButton("Exit");
         button.addActionListener(e -> System.exit(0));
         controlPanel.add(button);

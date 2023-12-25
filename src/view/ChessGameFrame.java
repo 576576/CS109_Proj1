@@ -66,8 +66,8 @@ public class ChessGameFrame extends JFrame implements MyFrame{
     }
     private void initLocalPlayPanel(){
         controlPanel.setLayout(new GridLayout(10,1,2,6));
-        initHintButton();
         initNewGameButton();
+        initHintButton();
         initSwapConfirmButton();
         initNextStepButton();
         initLoadButton();
