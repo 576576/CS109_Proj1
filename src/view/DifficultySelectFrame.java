@@ -70,7 +70,7 @@ public class DifficultySelectFrame extends JFrame implements MyFrame {
             if (!isOnlinePlay){
                 for (var i:difficultyButtons){
                     i.setBackground(Color.DARK_GRAY);
-                    i.setForeground(Color.WHITE);
+                    i.setForeground(Color.BLACK);
                 }
             }
         });
