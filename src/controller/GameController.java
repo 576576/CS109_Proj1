@@ -31,8 +31,10 @@ public class GameController implements GameListener{
     private final Chessboard model;
     private final ChessboardComponent view;
     private final NetGame net;
-    private boolean isAutoConfirm=false;
+    public boolean isAutoConfirm=false;
     private ChessGameFrame chessGameFrame;
+
+    private boolean isAutoMode=false;
 
     // Record whether there is a selected piece before
     private ChessboardPoint selectedPoint;
@@ -59,6 +61,7 @@ public class GameController implements GameListener{
         this.view = view;
         this.model = model;
         this.net = net;
+        setDifficulty(difficulty);
         this.onNextStepFlag = NextStepFlag.NO_SWAP_DONE; // first, no swap done so initiate with this state
         net.registerController(this);
         view.registerController(this);
@@ -95,14 +98,14 @@ public class GameController implements GameListener{
             }
         }
 
-
+        updateDifficultyLabel();
         updateScoreAndStepLabel();
         view.repaint();
         System.out.println("New game initialized");
 
-        //todo: complete it when restart game (auto-mode)
-        if(isAutoConfirm()){
-            doAutoConfirm();
+        //complete it when restart game (auto-mode)
+        if(isAutoMode){
+            doAutoMode();
         }
     }
 
@@ -464,6 +467,10 @@ public class GameController implements GameListener{
                 selectedPoint2 = point;
                 component.setSelected(true);
                 component.repaint();
+                if (isAutoConfirm()){
+                    //TODO: fix UI
+                    doAutoConfirm();
+                }
             } else if (distance2point2 == 1 && point1 != null) {
                 point1.setSelected(false);
                 point1.repaint();
@@ -471,6 +478,10 @@ public class GameController implements GameListener{
                 selectedPoint2 = point;
                 component.setSelected(true);
                 component.repaint();
+                if (isAutoConfirm()){
+                    //TODO: fix UI
+                    doAutoConfirm();
+                }
             } else if (distance2point1 > 1 && distance2point2 > 1) {
                 point1.setSelected(false);
                 point2.setSelected(false);
@@ -504,6 +515,10 @@ public class GameController implements GameListener{
 
         if (distance2point1 == 1) {
             selectedPoint2 = point;
+            if (isAutoConfirm()){
+                //TODO: fix UI
+                doAutoConfirm();
+            }
         } else {
             var grid = (ChessComponent) view.getGridComponentAt(selectedPoint).getComponent(0);
             if (grid == null) return;
@@ -623,18 +638,26 @@ public class GameController implements GameListener{
         jd.setVisible(true);
     }
 
+
     public void setAutoConfirm(boolean autoConfirm) {
         isAutoConfirm = autoConfirm;
-        if (isAutoConfirm()){
-            doAutoConfirm();
+        System.out.println("autoConfirm "+autoConfirm);
+    }
+
+    // TODO: toggle auto mode from UI interaction
+    public void setAutoMode(boolean autoMode){
+        isAutoMode=autoMode;
+        if (isAutoMode()){
+            doAutoMode();
         }
     }
 
-    public void doAutoConfirm(){
+
+    // Implement auto-mode
+    private void doAutoMode(){
         //TODO: fix UI freeze when executing this method
-        while(true){
+        while(score<=difficulty.getGoal()){
             hint();
-            view.repaint();
             onPlayerSwapChess();
             pause1Second();
             while(this.onNextStepFlag!=NextStepFlag.NO_SWAP_DONE){
@@ -644,10 +667,22 @@ public class GameController implements GameListener{
         }
     }
 
+    private void doAutoConfirm() {
+        onPlayerSwapChess();
+        pause1Second();
+        while (this.onNextStepFlag != NextStepFlag.NO_SWAP_DONE) {
+            pause1Second();
+            onPlayerNextStep(); //pls don't use while() on main thread which will let the thread wait till done... can create a new thread to run it
+        }
+    }
+
     public boolean isAutoConfirm() {
         return isAutoConfirm;
     }
 
+    public boolean isAutoMode(){
+        return isAutoMode;
+    }
     public Difficulty getDifficulty() {
         return difficulty;
     }

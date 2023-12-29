@@ -66,9 +66,10 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         initAutoConfirmButton();
     }
     private void initLocalPlayPanel(){
-        controlPanelRight.setLayout(new GridLayout(10,1,2,6));
+        controlPanelRight.setLayout(new GridLayout(11,1,2,6));
         initNewGameButton();
         initHintButton();
+        initAutoGoButton();
         initSwapConfirmButton();
         initNextStepButton();
         initLoadButton();
@@ -163,6 +164,12 @@ public class ChessGameFrame extends JFrame implements MyFrame{
             button.setText(isAutoConfirm?"Auto":"Manual");
             swapConfirmButton.setVisible(!isAutoConfirm);
             nextStepButton.setVisible(!isAutoConfirm);
+        });
+    }
+    private void initAutoGoButton(){
+        JButton button = initButton("AutoGo");
+        button.addActionListener(e -> {
+            //todo:add action here
         });
     }
     public void initHintButton(){
