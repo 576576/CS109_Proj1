@@ -17,7 +17,7 @@ import java.awt.*;
  */
 public class MenuFrame extends JFrame implements MyFrame{
     public static boolean isDarkMode=false,isOnlinePlay=false,isToHost=false;
-    public static int soundStrength=0;
+    public static int musicVolume =0,themeMode=0;//themeMode:0=system 1=light 2=dark
     public static Difficulty difficulty=new Difficulty(DifficultyPreset.EASY);
     private final int ONE_CHESS_SIZE;
 

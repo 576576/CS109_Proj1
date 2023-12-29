@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Random;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
+
 import static model.Constant.CHESSBOARD_COL_SIZE;
 import static model.Constant.CHESSBOARD_ROW_SIZE;
 import static view.MenuFrame.difficulty;
@@ -92,11 +94,16 @@ public class GameController implements GameListener{
                         new ChessPiece(model.getGrid()[i][j].getPiece().getName())));
             }
         }
-        //todo: complete it when restart game (auto-mode)
+
 
         updateScoreAndStepLabel();
         view.repaint();
         System.out.println("New game initialized");
+
+        //todo: complete it when restart game (auto-mode)
+        if(isAutoConfirm()){
+            doAutoConfirm();
+        }
     }
 
     public void setDifficulty(Difficulty difficulty1) {
@@ -618,12 +625,39 @@ public class GameController implements GameListener{
 
     public void setAutoConfirm(boolean autoConfirm) {
         isAutoConfirm = autoConfirm;
+        if (isAutoConfirm()){
+            doAutoConfirm();
+        }
     }
+
+    public void doAutoConfirm(){
+        //TODO: fix UI freeze when executing this method
+        while(true){
+            hint();
+            view.repaint();
+            onPlayerSwapChess();
+            pause1Second();
+            while(this.onNextStepFlag!=NextStepFlag.NO_SWAP_DONE){
+                pause1Second();
+                onPlayerNextStep();
+            }
+        }
+    }
+
     public boolean isAutoConfirm() {
         return isAutoConfirm;
     }
 
     public Difficulty getDifficulty() {
         return difficulty;
+    }
+
+    // For auto mode, to avoid it ends immediately
+    // a workaround
+    private void pause1Second(){
+        try {
+            TimeUnit.SECONDS.sleep(1);
+        }
+        catch (InterruptedException e){}
     }
 }

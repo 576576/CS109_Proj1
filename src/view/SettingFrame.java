@@ -2,6 +2,10 @@ package view;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.prefs.Preferences;
+
+import static view.MenuFrame.isDarkMode;
+import static view.MenuFrame.musicVolume;
 
 public class SettingFrame extends JFrame implements MyFrame {
     public SettingFrame(MenuFrame menuFrame){
@@ -16,72 +20,61 @@ public class SettingFrame extends JFrame implements MyFrame {
         JLabel nameLabel = new JLabel("Music:");
         JSlider soundSlider = new JSlider(0,100,20);
         soundSlider.addChangeListener(e -> {
-            MenuFrame.soundStrength=soundSlider.getValue();
+            MenuFrame.musicVolume =soundSlider.getValue();
         });
 
-        JLabel genderLabel = new JLabel("性别：");
-        JRadioButton maleRadioButton = new JRadioButton("男");
-        JRadioButton femaleRadioButton = new JRadioButton("女");
+        JLabel themeLabel = new JLabel("Theme:");
+        JRadioButton lightRadioButton = new JRadioButton("Light");
+        JRadioButton darkRadioButton = new JRadioButton("Dark");
+        JRadioButton themeSystemRadioButton = new JRadioButton("System");
         ButtonGroup genderButtonGroup = new ButtonGroup();
-        genderButtonGroup.add(maleRadioButton);
-        genderButtonGroup.add(femaleRadioButton);
+        genderButtonGroup.add(lightRadioButton);
+        genderButtonGroup.add(darkRadioButton);
+        genderButtonGroup.add(themeSystemRadioButton);
+        ;
 
-        JLabel hobbyLabel = new JLabel("DarkMode: ");
-        JCheckBox followSystemCheckBox = new JCheckBox("Follow System");
-        JCheckBox lightCheckBox = new JCheckBox(UIManager.getIcon("FileView.settingIcon"));
+        JButton submitButton = MyFrame.initButton("Confirm");
+        submitButton.addActionListener(e -> {
 
-        JLabel introLabel = new JLabel("简介：");
-        JTextArea introTextArea = new JTextArea(5, 20);
-
-        JLabel dropdownLabel = new JLabel("下拉：");
-        String[] dropdownOptions = {"不内卷", "规避竞争的最好方法是避免竞争", "养生上班才好"};
-        JComboBox<String> dropdownComboBox = new JComboBox<>(dropdownOptions);
+        });
 
         //设置布局
-        constraints.gridx = 0;//设置x坐标
-        constraints.gridy = 0;//设置y坐标
-        formPanel.add(nameLabel, constraints);//添加组件
+        constraints.gridx = 0;
+        constraints.gridy = 0;
+        formPanel.add(nameLabel, constraints);
 
         constraints.gridx = 1;
-        constraints.gridwidth = 3;//设置宽度
+        constraints.gridwidth = 3;
+        constraints.gridheight = 6;
         formPanel.add(soundSlider, constraints);
 
         constraints.gridx = 0;
         constraints.gridy = 1;
-        formPanel.add(genderLabel, constraints);
+        formPanel.add(themeLabel, constraints);
 
         constraints.gridx = 1;
-        formPanel.add(maleRadioButton, constraints);
+        formPanel.add(lightRadioButton, constraints);
 
         constraints.gridx = 2;
-        formPanel.add(femaleRadioButton, constraints);
+        formPanel.add(darkRadioButton, constraints);
 
-        constraints.gridx = 0;
-        constraints.gridy = 2;
-        formPanel.add(hobbyLabel, constraints);
+        constraints.gridx = 3;
+        formPanel.add(themeSystemRadioButton,constraints);
 
         constraints.gridx = 0;
         constraints.gridy = 3;
-        formPanel.add(introLabel, constraints);
-
-        constraints.gridx = 1;
-        constraints.gridwidth = 3;
-        formPanel.add(introTextArea, constraints);
-
-        constraints.gridx = 0;
-        constraints.gridy = 4;
-        formPanel.add(dropdownLabel, constraints);
-
-        constraints.gridx = 1;
-        constraints.gridwidth = 3;
-        formPanel.add(dropdownComboBox, constraints);
-
-        constraints.gridx = 5;
-        constraints.gridy = 6;
-        constraints.gridwidth = 4;
+        constraints.gridheight = 8;
+        formPanel.add(submitButton, constraints);
 
         add(formPanel, BorderLayout.CENTER);
 
         setVisible(true);
+    }
+    private void saveConfigure(int themeMode,boolean isMute,int volume){
+        if (themeMode==0){
+            isDarkMode=Integer.parseInt(Preferences.userRoot().get("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\\AppsUseLightTheme",null))==0;
+        }
+        else isDarkMode=themeMode!=1;
+        musicVolume=volume;
     }
 }
