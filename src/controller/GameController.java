@@ -467,8 +467,7 @@ public class GameController implements GameListener{
                 selectedPoint2 = point;
                 component.setSelected(true);
                 component.repaint();
-                if (isAutoConfirm()){
-                    //TODO: fix UI
+                if (isAutoConfirm()&& !isAutoConfirm()){
                     doAutoConfirm();
                 }
             } else if (distance2point2 == 1 && point1 != null) {
@@ -478,8 +477,8 @@ public class GameController implements GameListener{
                 selectedPoint2 = point;
                 component.setSelected(true);
                 component.repaint();
-                if (isAutoConfirm()){
-                    //TODO: fix UI
+                // should do auto confirm only on auto confirm is on, and auto mode is off
+                if (isAutoConfirm()&& !isAutoMode()){
                     doAutoConfirm();
                 }
             } else if (distance2point1 > 1 && distance2point2 > 1) {
@@ -515,8 +514,7 @@ public class GameController implements GameListener{
 
         if (distance2point1 == 1) {
             selectedPoint2 = point;
-            if (isAutoConfirm()){
-                //TODO: fix UI
+            if (isAutoConfirm()&&!isAutoMode()){
                 doAutoConfirm();
             }
         } else {
@@ -654,26 +652,40 @@ public class GameController implements GameListener{
 
 
     // Implement auto-mode
-    private void doAutoMode(){
-        //TODO: fix UI freeze when executing this method
-        while(score<=difficulty.getGoal()){
-            hint();
-            onPlayerSwapChess();
-            pause1Second();
-            while(this.onNextStepFlag!=NextStepFlag.NO_SWAP_DONE){
+    private void doAutoMode() {
+        // Create a new thread to run the auto mode logic.
+        new Thread(() -> {
+            while (score <= difficulty.getGoal() && isAutoMode) {
+                hint();
+                onPlayerSwapChess();
                 pause1Second();
-                onPlayerNextStep();
+
+                // Wait until the player has made their next move.
+                while (this.onNextStepFlag != NextStepFlag.NO_SWAP_DONE) {
+                    pause1Second();
+                    onPlayerNextStep();
+                }
             }
-        }
+        }).start();
     }
 
+    // To handle auto confirm when it is on
     private void doAutoConfirm() {
         onPlayerSwapChess();
+        view.repaint();
         pause1Second();
-        while (this.onNextStepFlag != NextStepFlag.NO_SWAP_DONE) {
-            pause1Second();
-            onPlayerNextStep(); //pls don't use while() on main thread which will let the thread wait till done... can create a new thread to run it
-        }
+        // runner for new thread, to avoid UI freeze
+        Runnable runnable = new Runnable() {
+            public void run() {
+                while (onNextStepFlag != NextStepFlag.NO_SWAP_DONE) {
+                    pause1Second();
+                    onPlayerNextStep();
+                    view.repaint();
+                }
+            }
+        };
+        Thread thread = new Thread(runnable);
+        thread.start();
     }
 
     public boolean isAutoConfirm() {

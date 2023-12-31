@@ -169,7 +169,9 @@ public class ChessGameFrame extends JFrame implements MyFrame{
     private void initAutoGoButton(){
         JButton button = initButton("AutoGo");
         button.addActionListener(e -> {
-            //todo:add action here
+            boolean isAutoMode = !getGameController().isAutoMode();
+            button.setText(isAutoMode?"FullAuto":"AutoGo");
+            getGameController().setAutoMode(isAutoMode);
         });
     }
     public void initHintButton(){
