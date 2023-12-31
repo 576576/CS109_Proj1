@@ -675,13 +675,11 @@ public class GameController implements GameListener{
         view.repaint();
         pause1Second();
         // runner for new thread, to avoid UI freeze
-        Runnable runnable = new Runnable() {
-            public void run() {
-                while (onNextStepFlag != NextStepFlag.NO_SWAP_DONE) {
-                    pause1Second();
-                    onPlayerNextStep();
-                    view.repaint();
-                }
+        Runnable runnable = () -> {
+            while (onNextStepFlag != NextStepFlag.NO_SWAP_DONE) {
+                pause1Second();
+                onPlayerNextStep();
+                view.repaint();
             }
         };
         Thread thread = new Thread(runnable);
@@ -705,6 +703,6 @@ public class GameController implements GameListener{
         try {
             TimeUnit.SECONDS.sleep(1);
         }
-        catch (InterruptedException e){}
+        catch (InterruptedException ignored){}
     }
 }

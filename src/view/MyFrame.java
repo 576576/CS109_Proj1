@@ -43,4 +43,5 @@ public interface MyFrame {
         label.setForeground(Color.BLACK);
         return label;
     }
+    void setDarkMode();
 }

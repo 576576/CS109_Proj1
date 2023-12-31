@@ -95,4 +95,7 @@ public class DifficultySelectFrame extends JFrame implements MyFrame {
         }
         return true;
     }
+    public void setDarkMode() {
+
+    }
 }

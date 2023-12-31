@@ -45,8 +45,15 @@ public class MenuFrame extends JFrame implements MyFrame{
         initExitButton();
         MyFrame.addComponent(this,gbl,controlPanel,1,1,5,5,0,0);
     }
-    public boolean setDarkMode() {
-        isDarkMode = !isDarkMode;
+    public static void switchTheme(){
+        try {
+            for (var i:getFrames()) {
+                MyFrame myFrame = (MyFrame) i;
+                myFrame.setDarkMode();
+            }
+        } catch (Exception ignored) {}
+    }
+    public void setDarkMode() {
         getContentPane().setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
         controlPanel.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
         for (var i : controlPanel.getComponents()) {
@@ -58,7 +65,6 @@ public class MenuFrame extends JFrame implements MyFrame{
                 i.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
             }
         }
-        return isDarkMode;
     }
     private void initChessboard() {
         //planning to add autoplaying chessboard
@@ -95,7 +101,7 @@ public class MenuFrame extends JFrame implements MyFrame{
     private void initSettingButton(){
         JButton button = MyFrame.initButton("Settings");
         button.addActionListener(e -> {
-            SettingFrame settingFrame = new SettingFrame(this);
+            SettingFrame settingFrame = new SettingFrame();
             settingFrame.setVisible(true);
         });
         controlPanel.add(button);
