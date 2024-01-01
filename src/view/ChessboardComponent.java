@@ -29,6 +29,7 @@ public class ChessboardComponent extends JComponent {
     }
 
     private GameController gameController;
+    public static String[] chessTypes = new String[]{"💎", "⚪", "▲", "🔶", "🌞", "🪐"};
 
     public ChessboardComponent(int chessSize) {
         CHESS_SIZE = chessSize;
@@ -63,7 +64,6 @@ public class ChessboardComponent extends JComponent {
     }
 
     public void initiateGridComponents() {
-
         for (int i = 0; i < CHESSBOARD_ROW_SIZE.getNum(); i++) {
             for (int j = 0; j < CHESSBOARD_COL_SIZE.getNum(); j++) {
                 ChessboardPoint temp = new ChessboardPoint(i, j);
@@ -157,5 +157,8 @@ public class ChessboardComponent extends JComponent {
     @Override
     public Dimension getPreferredSize() {
         return new Dimension(getWidth(),getHeight());
+    }
+    public void repaint(){
+        super.repaint();
     }
 }

@@ -5,8 +5,6 @@ import controller.GameController;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
-import java.awt.event.ComponentAdapter;
-import java.awt.event.ComponentEvent;
 import java.io.File;
 import java.util.ArrayList;
 
@@ -44,20 +42,24 @@ public class ChessGameFrame extends JFrame implements MyFrame{
 
         initChessboard();
         initStatusLabels();
-        if (!isOnlinePlay) initLocalPlayPanel();
+        if (startPlayMode<=1) initLocalPlayPanel();
         else initOnlinePlayPanel();
 
         MyFrame.addComponent(this,gbl, panelLeft,1,1,24,24,0,1);
         MyFrame.addComponent(this,gbl, controlPanelRight,590,1,560,4,0,1);
-        SwingUtilities.invokeLater(()->{switchTheme();switchTheme();});
+        setDarkMode();
 
-        addComponentListener(new ComponentAdapter() {
-            @Override
-            public void componentResized(ComponentEvent e) {
-                super.componentResized(e);
-                SwingUtilities.invokeLater(()-> System.out.println("Window size changed to ["+getWidth()+" , "+getHeight()+"]"));
+        musicThread = new Thread(() -> {
+            int i=0;
+            while (true) {
+                var f = musicFiles.get(i);
+                i++;
+                i%=musicFiles.size();
+                musicPlayer.play(f);
             }
         });
+        musicThread.start();
+        setDarkMode();
     }
     private void initLocalPlayPanel(){
         panelLeft.setLayout(new GridLayout(8,1,2,6));
@@ -78,13 +80,18 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         initExitButton();
     }
     private void initOnlinePlayPanel(){
-        controlPanelRight.setLayout(new GridLayout(8,1,2,6));
+        panelLeft.setLayout(new GridLayout(6,1,2,6));
+        initThemeButton();
+        initShuffleButton();
+
+        controlPanelRight.setLayout(new GridLayout(7,1,2,6));
+        initSettingButton();
         initNewGameButton();
+        initAutoConfirmButton();
         initSwapConfirmButton();
         initNextStepButton();
         initReturnTitleButton();
         initExitButton();
-        for (var component: controlComponents) controlPanelRight.add(component);
     }
     public ChessboardComponent getChessboardComponent() {
         return chessboardComponent;
@@ -194,9 +201,7 @@ public class ChessGameFrame extends JFrame implements MyFrame{
     }
     public void initShuffleButton(){
         JButton button = initButton("Shuffle");
-        button.addActionListener(e -> {
-            //TODO:add shuffle
-        });
+        button.addActionListener(e -> gameController.onPlayerShuffle());
         panelLeft.add(button);
     }
     private void initSwapConfirmButton() {
@@ -235,14 +240,20 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         controlPanelRight.add(button);
     }
     private void initReturnTitleButton(){
-        JButton button = initButton(isOnlinePlay?"Disconnect":"Return Title");
+        JButton button = initButton(startPlayMode>1?"Disconnect":"Return Title");
         button.addActionListener(e -> {
-            gameController.terminate();
-            menuFrame.setState(Frame.NORMAL);
-            dispose();
+            returnToTitle();
         });
         controlPanelRight.add(button);
     }
+
+    public void returnToTitle() {
+        gameController.terminate();
+        menuFrame.setState(Frame.NORMAL);
+        musicPlayer.close();
+        dispose();
+    }
+
     public void initExitButton(){
         JButton button = initButton("Exit");
         button.addActionListener(e -> System.exit(0));
@@ -253,5 +264,4 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         controlComponents.add(button);
         return button;
     }
-
 }

@@ -20,7 +20,9 @@ public class CellComponent extends JPanel {
 
     @Override
     protected void paintComponent(Graphics g) {
-        super.paintComponents(g);
+        try {
+            super.paintComponents(g);
+        } catch (Exception ignored) {}
         g.setColor(background);
         g.fillRect(1, 1, this.getWidth()-2, this.getHeight()-2);
     }

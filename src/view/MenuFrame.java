@@ -5,9 +5,13 @@ import model.Chessboard;
 import model.Difficulty;
 import model.DifficultyPreset;
 import net.NetGame;
+import player.MusicPlayer;
 
+import javax.sound.sampled.*;
 import javax.swing.*;
 import java.awt.*;
+import java.io.File;
+import java.util.ArrayList;
 
 /**
  * This class build the frame of the main menu window. It defines its size via a constant and creates
@@ -16,15 +20,19 @@ import java.awt.*;
  * as showing the HighScoreFrame if the user wants this view.
  */
 public class MenuFrame extends JFrame implements MyFrame{
-    public static boolean isDarkMode=false,isOnlinePlay=false,isToHost=false;
-    public static int musicVolume =0,themeMode=0;//themeMode:0=system 1=light 2=dark
+    public static boolean isDarkMode=false;
+    public static int musicVolume;
+    public static int startPlayMode=0;// 0=not to start 1=play new game locally 2=play locally load from file 3=host game 4=join game
     public static Difficulty difficulty=new Difficulty(DifficultyPreset.EASY);
     private final int ONE_CHESS_SIZE;
 
     private final JPanel controlPanel = new JPanel(new GridLayout(5,1,4,8));
     private final JPanel chessPanel = new JPanel(new BorderLayout());
     private final GridBagLayout gbl = new GridBagLayout();
+    public static ArrayList<File> musicFiles = new ArrayList<>();
+    public static Thread musicThread;
 
+    public static MusicPlayer musicPlayer = new MusicPlayer();
 
     public MenuFrame(int width, int height) {
         setTitle("MATCH-3 CS109");
@@ -37,13 +45,17 @@ public class MenuFrame extends JFrame implements MyFrame{
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setLayout(gbl);
 
-        //initChessboard(); //TODO:add an auto play chessBoard(optional)
+        //initChessboard();
         initLabel();
         initPlayButton();
         initOnlineButton();
         initSettingButton();
         initExitButton();
         MyFrame.addComponent(this,gbl,controlPanel,1,1,5,5,0,0);
+        readMusicFiles("resource/music");
+        if (musicFiles.isEmpty()) return;
+        System.out.println("Musics: "+musicFiles.size());
+        setDarkMode();
     }
     public static void switchTheme(){
         try {
@@ -82,7 +94,7 @@ public class MenuFrame extends JFrame implements MyFrame{
     private void initPlayButton() {
         JButton button = MyFrame.initButton("Play");
         button.addActionListener(e -> {
-            isOnlinePlay=false;
+            startPlayMode=0;
             DifficultySelectFrame difficultySelectFrame = new DifficultySelectFrame(this);
             difficultySelectFrame.setVisible(true);
         });
@@ -92,7 +104,7 @@ public class MenuFrame extends JFrame implements MyFrame{
         JButton button = MyFrame.initButton("Online Play");
 
         button.addActionListener(e -> {
-            isOnlinePlay=true;
+            startPlayMode=0;
             DifficultySelectFrame difficultySelectFrame = new DifficultySelectFrame(this);
             difficultySelectFrame.setVisible(true);
         });
@@ -112,14 +124,50 @@ public class MenuFrame extends JFrame implements MyFrame{
         controlPanel.add(button);
     }
     public void generateNewGame(){
-        ChessGameFrame mainFrame = new ChessGameFrame(1100, 810);
-        GameController gameController = new GameController(mainFrame.getChessboardComponent(),
-                new Chessboard(), new NetGame());
-        mainFrame.setGameController(gameController);
-        mainFrame.setMenuFrame(this);
-        gameController.setChessGameFrame(mainFrame);
-        mainFrame.setVisible(true);
-        this.setState(Frame.ICONIFIED);
+        if (startPlayMode!=0) {
+            ChessGameFrame mainFrame = new ChessGameFrame(1100, 810);
+            GameController gameController = new GameController(mainFrame.getChessboardComponent(),
+                    new Chessboard(), new NetGame());
+            mainFrame.setGameController(gameController);
+            mainFrame.setMenuFrame(this);
+            gameController.setChessGameFrame(mainFrame);
+            mainFrame.setVisible(true);
+            this.setState(Frame.ICONIFIED);
+        }
+        else JOptionPane.showMessageDialog(this,"No game-mode selected!");
+    }
+
+    public static void setVolume(int volume) {
+        musicVolume=volume;
+        for (var mixerInfo : AudioSystem.getMixerInfo()) {
+            try {
+                var mixer = AudioSystem.getMixer(mixerInfo);
+                mixer.open();
+//                Line.Info[] lineInfos = mixer.getSourceLineInfo(); // 获取音频设备的Line.Info对象
+                SourceDataLine sourceDataLine = (SourceDataLine) mixer.getLine(mixer.getSourceLineInfo()[3]); // 选择第一个音频设备
+                FloatControl.Type volumeControlType = FloatControl.Type.MASTER_GAIN; // 主音量控制
+                if (!sourceDataLine.isControlSupported(volumeControlType)) {
+                    System.out.println("不支持音量控制");
+                    return;
+                }
+                FloatControl volumeControl = (FloatControl) sourceDataLine.getControl(volumeControlType); // 获取音量控制对象
+                float dB = (float) (Math.log(musicVolume) / Math.log(10.0) * 20.0);
+                volumeControl.setValue(dB);
+            } catch (Exception ignored) {}
+        }
+    }
+
+    public static void readMusicFiles(String filePath) {
+        File file = new File(filePath);
+        if (file.isDirectory()) {
+            File[] files = file.listFiles();
+            if (files != null) {
+                for (File f : files) {
+                    if (f.isDirectory()) readMusicFiles(f.getAbsolutePath());
+                    else musicFiles.add(f);
+                }
+            }
+        } else musicFiles.add(file);
     }
 }
 

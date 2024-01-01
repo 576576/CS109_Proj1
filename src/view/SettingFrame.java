@@ -4,34 +4,33 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.prefs.Preferences;
 
-import static view.MenuFrame.isDarkMode;
-import static view.MenuFrame.switchTheme;
+import static view.MenuFrame.*;
 
 public class SettingFrame extends JFrame implements MyFrame {
+    JPanel formPanel = new JPanel(new GridLayout(2,1));
+    JPanel volumePanel = new JPanel(new FlowLayout());
+    JPanel themePanel = getjPanel();
+    JButton submitButton;
     public SettingFrame(){
         setTitle("Settings");
-        setSize(400, 500);
+        setSize(500, 300);
         setLocationRelativeTo(null);
-
-        JPanel formPanel = new JPanel(new GridLayout(3,1));
+        setLayout(new BorderLayout());
 
         JLabel volumeLabel = new JLabel("Music:");
         JSlider soundSlider = new JSlider(0,100,20);
-        soundSlider.addChangeListener(e -> MenuFrame.musicVolume =soundSlider.getValue());
-        JPanel volumePanel = new JPanel(new FlowLayout());
+        soundSlider.addChangeListener(e -> setVolume(soundSlider.getValue()));
         volumePanel.add(volumeLabel);
         volumePanel.add(soundSlider);
 
-        JPanel themePanel = getjPanel();
-
-        JButton submitButton = MyFrame.initButton("Confirm");
+        submitButton = MyFrame.initButton("Confirm");
         submitButton.addActionListener(e -> this.dispose());
 
         formPanel.add(volumePanel);
         formPanel.add(themePanel);
         add(formPanel, BorderLayout.CENTER);
         add(submitButton,BorderLayout.SOUTH);
-
+        setDarkMode();
         setVisible(true);
     }
 
@@ -52,7 +51,7 @@ public class SettingFrame extends JFrame implements MyFrame {
         JRadioButton themeSystemRadioButton = new JRadioButton("System");
         themeSystemRadioButton.addActionListener(e -> {
             //todo:fix the bug here
-            isDarkMode=Integer.parseInt(Preferences.userRoot().get("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\\AppsUseLightTheme",null))==0;
+            isDarkMode=Integer.parseInt(Preferences.userRoot().get("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\\AppsUseLightTheme","0"))==0;
             switchTheme();
         });
         ButtonGroup themeButtonGroup = new ButtonGroup();
@@ -68,16 +67,26 @@ public class SettingFrame extends JFrame implements MyFrame {
     }
 
     public void setDarkMode(){
+        setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
         getContentPane().setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
-        for (var i : getComponents()) {
-            if (i instanceof JPanel) {
-                for (var j : ((JPanel) i).getComponents()) {
-                    j.setForeground(isDarkMode ? Color.WHITE : Color.BLACK);
-                    j.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
-                }
+        setDarkModeStatic(formPanel);
+        submitButton.setBackground(isDarkMode ? Color.DARK_GRAY : Color.LIGHT_GRAY);
+        submitButton.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
+        this.repaint();
+    }
+    public static <T extends JComponent> void setDarkModeStatic(T component){
+        for (var i:component.getComponents()){
+            if (!(i instanceof JComponent)) continue;
+            if (i instanceof JPanel){
+                i.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
+                setDarkModeStatic((JComponent) i);
             }
             if (i instanceof JButton){
                 i.setBackground(isDarkMode ? Color.DARK_GRAY : Color.LIGHT_GRAY);
+                i.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
+            }
+            else {
+                i.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
                 i.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
             }
         }
