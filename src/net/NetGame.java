@@ -8,41 +8,47 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
+import static view.MenuFrame.startPlayMode;
+
 public class NetGame {
     public GameController gameController;
-    private int port = 14723;
+    private final int port = 14723;
     Socket sock;
+    static JDialog jd = new JDialog();
+    public NetGame(){
+        jd.setLocationRelativeTo(null);
+        jd.setResizable(false);
+    }
     public void serverHost() {
-        JDialog jd;
+        jd = new JDialog(gameController.getChessGameFrame(), "Wait for player");
+        jd.setVisible(true);
+        System.out.println("OnlineGame: Wait for player");
         try (ServerSocket ss = new ServerSocket(port)){
             try {
-                jd = new JDialog(new JFrame("Oh no"), "Wait for player");
-                jd.setVisible(true);
                 sock = ss.accept();
             } catch (IOException e) {
-                throw new RuntimeException(e);
+                System.err.println("Fail: Connection fail");
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        jd.dispose();
         System.out.println("connected from " + sock.getRemoteSocketAddress());
-        Thread t = new Handler(sock,true,gameController);
+        Thread t = new Handler(sock,gameController);
         t.start();
     }
     public void connectHost(){
+        jd = new JDialog(gameController.getChessGameFrame(), "Wait for player");
+        jd.setVisible(true);
+        System.out.println("OnlineGame: Wait for player");
         try {
             sock = new Socket("localhost", port);
-            Thread t = new Handler(sock,false,gameController);
+            Thread t = new Handler(sock,gameController);
             t.start();
         }catch (IOException ioe){
-            System.err.println("ioe");
+            System.err.println("Fail: Connection fail");
+            ioe.printStackTrace();
         }
     }
-    public void callHostTerminate(){
-
-    }
-
     public void registerController(GameController gameController) {
         this.gameController = gameController;
     }
@@ -50,11 +56,9 @@ public class NetGame {
 }
 class Handler extends Thread {
     Socket sock;
-    boolean isHost;
     GameController gameController;
-    public Handler(Socket sock,boolean isHost,GameController gameController) {
+    public Handler(Socket sock,GameController gameController) {
         this.sock = sock;
-        this.isHost = isHost;
         this.gameController=gameController;
     }
     @Override
@@ -76,17 +80,45 @@ class Handler extends Thread {
     private void handle(InputStream input, OutputStream output) throws IOException {
         var writer = new BufferedWriter(new OutputStreamWriter(output, StandardCharsets.UTF_8));
         var reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
-        if (isHost) {
-            writer.write(gameController.getDifficulty().getDifficultyInfo());
+        if (startPlayMode==3) {
+            writer.write("InitializeGame\n");
+            writer.write(gameController.toString());
+            writer.flush();
+            for (;;){
+                String s = reader.readLine();
+                if (s.equals("receiveInitializedGame")) {
+                    NetGame.jd.dispose();
+                    break;
+                }
+            }
         }
-        writer.flush();
+        if (startPlayMode==4) {
+            reader.readLine();
+            for (;;){
+                String s =reader.readLine();
+                if (s.equals("InitializeGame")){
+                    StringBuilder sb = new StringBuilder();
+                    for (int i=0;i<9;i++) sb.append(reader.readLine());
+                    gameController.loadFromString(sb.toString());
+                    writer.write("receiveInitializedGame");
+                    writer.flush();
+                    NetGame.jd.dispose();
+                    break;
+                }
+            }
+        }
         for (;;) {
             String s = reader.readLine();
             if (s.equals("clientDone")) {
-                gameController.onlineGameTerminate(false);
+                gameController.onlineGameTerminate(reader.readLine().equals("2"));
                 break;
             }
-            writer.flush();
+            if (!gameController.isAlive()){
+                writer.write("clientDone\n");
+                writer.write(gameController.getVictoryMode());
+                writer.flush();
+                break;
+            }
         }
     }
 }

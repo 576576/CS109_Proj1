@@ -37,7 +37,6 @@ public class GameController implements GameListener{
     private ChessGameFrame chessGameFrame;
 
     private boolean isAutoMode=false;
-    private static String lossReason;
 
     // Record whether there is a selected piece before
     private ChessboardPoint selectedPoint;
@@ -45,6 +44,7 @@ public class GameController implements GameListener{
 
     private int score, timeLeft, stepLeft;
     private boolean isAlive=true;
+    private int victoryMode=0; // 1=win 2=loss
 
     enum NextStepFlag {
         NO_SWAP_DONE,        // 0: no swap done, user cannot click "Next Step"
@@ -88,6 +88,8 @@ public class GameController implements GameListener{
     // When initialize from the gaming interface, this was used
     public void initialize() {
         score = 0;
+        victoryMode=0;
+        isAlive=true;
         view.removeAllChessComponentsAtGrids();
         this.onNextStepFlag = NextStepFlag.NO_SWAP_DONE;  // first, no swap done, so initiate it with this state
 
@@ -178,11 +180,20 @@ public class GameController implements GameListener{
                 //TODO: cancel cell selection after eliminate? it may cause null pointer exception
             }
         } catch (NullPointerException | InterruptedException e) {
-            // if the selected cell contains empty content, do nothing
             System.out.println("Swap Failed!");
-            selectedPoint = null;
-            selectedPoint2 = null;
         } finally {
+            if (selectedPoint!=null) {
+                var point1 = (ChessComponent) view.getGridComponentAt(selectedPoint).getComponent(0);
+                point1.setSelected(false);
+                point1.repaint();
+                selectedPoint=null;
+            }
+            if (selectedPoint2!=null) {
+                var point2 = (ChessComponent) view.getGridComponentAt(selectedPoint2).getComponent(0);
+                point2.setSelected(false);
+                point2.repaint();
+                selectedPoint2=null;
+            }
             view.repaint();
             updateScoreAndStepLabel();
         }
@@ -277,6 +288,7 @@ public class GameController implements GameListener{
         if (score >= difficulty.getGoal()) {
             JOptionPane.showMessageDialog(chessGameFrame,"Congratulations! You win.");
             System.out.println("Victory: Reach the goal");
+            victoryMode=1;
             SwingUtilities.invokeLater(()-> chessGameFrame.returnToTitle());
             this.terminate();
         }
@@ -289,6 +301,7 @@ public class GameController implements GameListener{
                 JOptionPane.showMessageDialog(chessGameFrame,"Oh no, you DON'T have time!");
                 System.out.println("Loss: Time limit exceeded");
             }
+            victoryMode=2;
             SwingUtilities.invokeLater(()-> chessGameFrame.returnToTitle());
             this.terminate();
         }
@@ -323,7 +336,7 @@ public class GameController implements GameListener{
                     doGenerateRandomPiecesOnTop();
                     view.repaint();
                     try {
-                        Thread.sleep(200);
+                        Thread.sleep(300);
                     } catch (InterruptedException ignored) {}
                     doFallDown();
                 }
@@ -458,6 +471,50 @@ public class GameController implements GameListener{
         view.repaint();
         checkVictory();
     }
+    public void loadFromString(String string){
+        Scanner sc;
+        try {
+            sc = new Scanner(string);
+        } catch (NullPointerException e) {
+            throw new RuntimeException(e);
+        }
+        var csb = new int[8][8];
+        score = sc.nextInt();
+        timeLeft = sc.nextInt();
+        stepLeft = sc.nextInt();
+        int goal = sc.nextInt(), timeLimit = sc.nextInt(), stepLimit = sc.nextInt();
+        difficulty = new Difficulty(goal, stepLimit, timeLimit);
+        for (var dp : difficultyPresets) {
+            if (difficulty.equals(new Difficulty(dp))) {
+                difficulty = new Difficulty(dp);
+                break;
+            }
+        }
+        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+                csb[i][j] = sc.hasNextInt() ? sc.nextInt() : new Random().nextInt(4);
+            }
+        }
+        System.out.println("Game Loaded.\n" + score+" "+difficulty.getName());
+        view.removeAllChessComponentsAtGrids();
+        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            String str = Arrays.toString(csb[i]);
+            str = str.replaceAll("\\[", "");
+            str = str.replaceAll("]", "");
+            str = str.replaceAll(",", "");
+            System.out.println(str);
+
+            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+                String pName = chessTypes[Math.min(Math.max(csb[j][i], 0), chessTypes.length)];
+                view.setChessComponentAtGrid(new ChessboardPoint(j, i), new ChessComponent(view.getCHESS_SIZE(),
+                        new ChessPiece(pName)));
+                model.setChessPiece(new ChessboardPoint(j, i), new ChessPiece(pName));
+            }
+        }
+        updateScoreAndStepLabel();
+        view.repaint();
+        checkVictory();
+    }
 
     @Override
     public void saveToFile(File file) {
@@ -483,9 +540,29 @@ public class GameController implements GameListener{
             writer.write(sb.toString());
             writer.flush();
             writer.close();
+            System.out.println("at"+file.getAbsolutePath()+file.getName());
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            System.err.println("Save Fail: IOException");
         }
+    }
+    public String toString(){
+        StringBuilder sb = new StringBuilder();
+        sb.append(score).append(" ").append(timeLeft).append(" ").append(stepLeft).append(" ").append(difficulty.getGoal())
+                .append(" ").append(difficulty.getTimeLimit()).append(" ").append(difficulty.getStepLimit()).append("\n");
+        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+                var cp = model.getChessPieceAt(new ChessboardPoint(i, j)).getName();
+                for (int k = 0; k < chessTypes.length; k++) {
+                    if (cp.equals(chessTypes[k])) {
+                        sb.append(k);
+                        break;
+                    }
+                }
+                sb.append(" ");
+            }
+            sb.append("\n");
+        }
+        return sb.toString();
     }
 
     // click a cell with a chess
@@ -583,17 +660,22 @@ public class GameController implements GameListener{
         net.connectHost();
     }
 
-    public String getNetGameData() {
-        return difficulty.getDifficultyInfo() + " " + score;
-    }
-
     public void onlineGameTerminate(boolean isWinner){
         if (isWinner){
-            net.callHostTerminate();
+            JOptionPane.showMessageDialog(chessGameFrame,"Congratulations! You win.");
+            System.out.println("Victory: Your Competitor Loss");
+            victoryMode=1;
         }
         else {
-            terminate();
+            JOptionPane.showMessageDialog(chessGameFrame,"Oh no! Your competitor win.");
+            System.out.println("Loss: Your Competitor Win");
+            victoryMode=2;
         }
+        score=0;
+        timeLeft=-1;
+        stepLeft=-1;
+        isAlive=false;
+        SwingUtilities.invokeLater(()-> chessGameFrame.returnToTitle());
     }
     public boolean isContinuable(){
         for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
@@ -749,10 +831,20 @@ public class GameController implements GameListener{
     }
     @Override
     public void terminate() {
-        //TODO:terminate the game
         score=0;
         timeLeft=-1;
         stepLeft=-1;
         isAlive=false;
+    }
+    public boolean isAlive(){
+        return isAlive;
+    }
+
+    public int getVictoryMode() {
+        return victoryMode;
+    }
+
+    public ChessGameFrame getChessGameFrame() {
+        return chessGameFrame;
     }
 }

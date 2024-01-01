@@ -13,6 +13,8 @@ import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
 
+import static view.ChessGameFrame.isInitDone;
+
 /**
  * This class build the frame of the main menu window. It defines its size via a constant and creates
  * the layout with JFrame methods. It is also home to mnemonic-actions that activate the buttons in the frame.
@@ -104,7 +106,7 @@ public class MenuFrame extends JFrame implements MyFrame{
         JButton button = MyFrame.initButton("Online Play");
 
         button.addActionListener(e -> {
-            startPlayMode=0;
+            startPlayMode=4;
             DifficultySelectFrame difficultySelectFrame = new DifficultySelectFrame(this);
             difficultySelectFrame.setVisible(true);
         });
@@ -131,6 +133,8 @@ public class MenuFrame extends JFrame implements MyFrame{
             mainFrame.setGameController(gameController);
             mainFrame.setMenuFrame(this);
             gameController.setChessGameFrame(mainFrame);
+            isInitDone=true;
+            System.out.println("isInitDone=true");
             mainFrame.setVisible(true);
             this.setState(Frame.ICONIFIED);
         }

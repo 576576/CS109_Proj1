@@ -5,11 +5,14 @@ import java.util.Objects;
 public class Difficulty {
     private final int goal,stepLimit,timeLimit;
     private final String name;
-    public Difficulty(int goal, int stepLimit, int timeLimit){
+    public Difficulty(int goal, int stepLimit, int timeLimit, String name){
         this.goal=goal;
         this.stepLimit=stepLimit;
         this.timeLimit=timeLimit;
-        name="CUSTOM";
+        this.name=name;
+    }
+    public Difficulty(int goal, int stepLimit, int timeLimit){
+        this(goal,stepLimit,timeLimit,"CUSTOM");
     }
     public Difficulty(DifficultyPreset dPreset){
         this.goal=dPreset.goal;

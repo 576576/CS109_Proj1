@@ -23,7 +23,7 @@ public class DifficultySelectFrame extends JFrame implements MyFrame {
             this.dispose();
         });
         selectPanel.add(startButton);
-        if (startPlayMode>1){
+        if (startPlayMode>2){
             var onlineButtons = MyFrame.initSelectButtons("Host Game","Join Game");
             for (var i:onlineButtons){
                 i.setBackground(Color.DARK_GRAY);
@@ -82,6 +82,10 @@ public class DifficultySelectFrame extends JFrame implements MyFrame {
                 }
             }
         });
+//        difficultyButtons.get(3).addActionListener(e -> {
+//            var difficultyCreateFrame = new DifficultyCreateFrame();
+//            difficultyCreateFrame.setVisible(true);
+//        });
         JPanel panel = new JPanel(new GridLayout(1,4));
         for (int i = 0; i < 4; i++) panel.add(difficultyButtons.get(i));
         selectPanel.add(panel);

@@ -13,13 +13,12 @@ public class MusicPlayer {
     SourceDataLine sourceDataLine;
     public static Player player_mp3;
     public void play(File f) {
-        System.out.println("Current Music"+f.getName());
+        System.out.println("Current Music: "+f.getName());
         if (isFileExtensionName(f,"flac")) {
             try {
                 AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(f);
                 AudioFormat audioFormat = audioInputStream.getFormat();
                 if (audioFormat.getEncoding() != AudioFormat.Encoding.PCM_SIGNED) {
-                    System.out.println(audioFormat.getEncoding());
                     audioFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, audioFormat.getSampleRate(), 16, audioFormat.getChannels(), audioFormat.getChannels() * 2, audioFormat.getSampleRate(), false);
                     audioInputStream = AudioSystem.getAudioInputStream(audioFormat, audioInputStream);
                 }

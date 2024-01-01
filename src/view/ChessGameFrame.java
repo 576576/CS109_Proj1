@@ -12,7 +12,7 @@ import static view.MenuFrame.*;
 
 public class ChessGameFrame extends JFrame implements MyFrame{
     private final int ONE_CHESS_SIZE;
-
+    public static boolean isInitDone=false;
     private GameController gameController;
     private MenuFrame menuFrame;
     private ChessboardComponent chessboardComponent;
@@ -58,8 +58,19 @@ public class ChessGameFrame extends JFrame implements MyFrame{
                 musicPlayer.play(f);
             }
         });
-        musicThread.start();
         setDarkMode();
+        System.out.println("OnlineGame: start");
+        SwingUtilities.invokeLater(()->{
+            while (startPlayMode>2) {
+                if (isInitDone) {
+                    if (startPlayMode == 3) gameController.onPlayerHostGame();
+                    if (startPlayMode == 4) gameController.onPlayerJoinGame();
+                    break;
+                }
+                System.out.print("");
+            }
+        });
+        musicThread.start();
     }
     private void initLocalPlayPanel(){
         panelLeft.setLayout(new GridLayout(8,1,2,6));
