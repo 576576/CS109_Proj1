@@ -14,14 +14,14 @@ public class NetGame {
     public GameController gameController;
     private final int port = 14723;
     Socket sock;
-    static JDialog jd = new JDialog();
+    static Thread t;
     public NetGame(){
-        jd.setLocationRelativeTo(null);
-        jd.setResizable(false);
     }
     public void serverHost() {
-        jd = new JDialog(gameController.getChessGameFrame(), "Wait for player");
-        jd.setVisible(true);
+        JFrame waitFrame = new JFrame("Wait For Player");
+        waitFrame.setSize(400,0);
+        waitFrame.setLocationRelativeTo(null);
+        waitFrame.setVisible(true);
         System.out.println("OnlineGame: Wait for player");
         try (ServerSocket ss = new ServerSocket(port)){
             try {
@@ -30,23 +30,25 @@ public class NetGame {
                 System.err.println("Fail: Connection fail");
             }
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            JOptionPane.showMessageDialog(gameController.getChessGameFrame(),"Host open Error");
+            gameController.getChessGameFrame().returnToTitle();
+        }finally {
+            waitFrame.dispose();
         }
         System.out.println("connected from " + sock.getRemoteSocketAddress());
-        Thread t = new Handler(sock,gameController);
+        t = new Handler(sock,gameController);
         t.start();
     }
     public void connectHost(){
-        jd = new JDialog(gameController.getChessGameFrame(), "Wait for player");
-        jd.setVisible(true);
         System.out.println("OnlineGame: Wait for player");
         try {
             sock = new Socket("localhost", port);
-            Thread t = new Handler(sock,gameController);
+            t = new Handler(sock,gameController);
             t.start();
         }catch (IOException ioe){
-            System.err.println("Fail: Connection fail");
-            ioe.printStackTrace();
+            System.err.println("Fail: Server Not Found");
+            JOptionPane.showMessageDialog(gameController.getChessGameFrame(),"Please open host first!");
+            gameController.getChessGameFrame().returnToTitle();
         }
     }
     public void registerController(GameController gameController) {
@@ -86,23 +88,21 @@ class Handler extends Thread {
             writer.flush();
             for (;;){
                 String s = reader.readLine();
-                if (s.equals("receiveInitializedGame")) {
-                    NetGame.jd.dispose();
-                    break;
-                }
+                System.out.println(s);
+                if (s.equals("receiveInitializedGame")) break;
             }
         }
         if (startPlayMode==4) {
             reader.readLine();
             for (;;){
                 String s =reader.readLine();
+                System.out.println(s);
                 if (s.equals("InitializeGame")){
                     StringBuilder sb = new StringBuilder();
                     for (int i=0;i<9;i++) sb.append(reader.readLine());
                     gameController.loadFromString(sb.toString());
                     writer.write("receiveInitializedGame");
                     writer.flush();
-                    NetGame.jd.dispose();
                     break;
                 }
             }
@@ -113,7 +113,7 @@ class Handler extends Thread {
                 gameController.onlineGameTerminate(reader.readLine().equals("2"));
                 break;
             }
-            if (!gameController.isAlive()){
+            if (!gameController.isAlive() || isInterrupted()){
                 writer.write("clientDone\n");
                 writer.write(gameController.getVictoryMode());
                 writer.flush();
