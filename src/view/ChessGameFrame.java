@@ -117,9 +117,8 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         initThemeButton();
         initShuffleButton();
 
-        controlPanelRight.setLayout(new GridLayout(7,1,2,6));
+        controlPanelRight.setLayout(new GridLayout(6,1,2,6));
         initSettingButton();
-        initNewGameButton();
         initAutoConfirmButton();
         initSwapConfirmButton();
         initNextStepButton();

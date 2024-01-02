@@ -152,7 +152,7 @@ public class MenuFrame extends JFrame implements MyFrame{
                 var mixer = AudioSystem.getMixer(mixerInfo);
                 mixer.open();
 //                Line.Info[] lineInfos = mixer.getSourceLineInfo(); // 获取音频设备的Line.Info对象
-                SourceDataLine sourceDataLine = (SourceDataLine) mixer.getLine(mixer.getSourceLineInfo()[3]); // 选择第n个音频设备
+                SourceDataLine sourceDataLine = (SourceDataLine) mixer.getLine(mixer.getSourceLineInfo()[0]); // 选择第n个音频设备
                 FloatControl.Type volumeControlType = FloatControl.Type.MASTER_GAIN; // 主音量控制
                 if (!sourceDataLine.isControlSupported(volumeControlType)) {
                     System.out.println("不支持音量控制");
