@@ -10,14 +10,12 @@ import view.ChessboardComponent;
 
 import javax.swing.*;
 import java.io.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Random;
-import java.util.Scanner;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 import static model.Constant.CHESSBOARD_COL_SIZE;
 import static model.Constant.CHESSBOARD_ROW_SIZE;
+import static view.ChessGameFrame.isOnlinePlay;
 import static view.ChessboardComponent.chessTypes;
 import static view.MenuFrame.difficulty;
 
@@ -34,6 +32,7 @@ public class GameController implements GameListener{
     private final ChessboardComponent view;
     private final NetGame net;
     public boolean isAutoConfirm=false;
+    public static boolean isNewGameInitialized=false;
     private ChessGameFrame chessGameFrame;
 
     private boolean isAutoMode=false;
@@ -42,7 +41,8 @@ public class GameController implements GameListener{
     private ChessboardPoint selectedPoint;
     private ChessboardPoint selectedPoint2;
 
-    private int score, timeLeft, stepLeft;
+    private int score, stepLeft;
+    public int timeLeft;
     private boolean isAlive=true;
     private int victoryMode=0; // 1=win 2=loss
 
@@ -54,18 +54,48 @@ public class GameController implements GameListener{
         //    if no more match left, reset the flag to NO_SWAP_DONE.
     }
 
+    public void resetTimeLeft() {
+        timeLeft = difficulty.getTimeLimit();
+    }
+
+    public void setTimeLeft(int timeLeft) {
+        this.timeLeft = timeLeft;
+    }
+
     private NextStepFlag onNextStepFlag;
     private final ArrayList<DifficultyPreset> difficultyPresets = new ArrayList<>();
     private JLabel[] statusLabels = new JLabel[4];
     public void setStatusLabels(JLabel[] statusLabels) {
         this.statusLabels = statusLabels;
     }
+    public Thread timerThread = new Thread(()->{
+        timeLeft=difficulty.getTimeLimit();
+        updateTimerLabel();
+        System.out.println("Timer Start: "+difficulty.getTimeLimit()+"s");
+        for (;;) {
+            if (difficulty.getTimeLimit()!=-1){
+                for (int i = difficulty.getTimeLimit(); i >=0 ; i--) {
+                    if (!isAlive) break;
+                    try{
+                        Thread.sleep(998);
+                    }catch (Exception ignored){}
+                    timeLeft--;
+                    updateTimerLabel();
+                    checkVictory();
+                    if (timeLeft%10==0 || timeLeft<=5) {
+                        System.out.println("TimeLeft:"+timeLeft);
+                    }
+                    System.out.print("");
+                }
+            }
+            System.out.print("");
+        }
+    });
     public GameController(ChessboardComponent view, Chessboard model, NetGame net) {
         initDifficultyPresets();
         this.view = view;
         this.model = model;
         this.net = net;
-        setDifficulty(difficulty);
         this.onNextStepFlag = NextStepFlag.NO_SWAP_DONE; // first, no swap done so initiate with this state
         net.registerController(this);
         view.registerController(this);
@@ -77,7 +107,6 @@ public class GameController implements GameListener{
     }
 
     private void initDifficultyPresets() {
-        difficulty=new Difficulty(DifficultyPreset.EASY);
         difficultyPresets.add(DifficultyPreset.EASY);
         difficultyPresets.add(DifficultyPreset.NORMAL);
         difficultyPresets.add(DifficultyPreset.HARD);
@@ -87,7 +116,9 @@ public class GameController implements GameListener{
 
     // When initialize from the gaming interface, this was used
     public void initialize() {
+        isNewGameInitialized=false;
         score = 0;
+        timeLeft=difficulty.getTimeLimit();
         victoryMode=0;
         isAlive=true;
         view.removeAllChessComponentsAtGrids();
@@ -107,6 +138,7 @@ public class GameController implements GameListener{
         updateScoreAndStepLabel();
         view.repaint();
         System.out.println("New game initialized");
+        isNewGameInitialized=true;
 
         //complete it when restart game (auto-mode)
         if(isAutoMode){
@@ -133,10 +165,6 @@ public class GameController implements GameListener{
         if(isAutoMode){
             doAutoMode();
         }
-    }
-
-    public void setDifficulty(Difficulty difficulty1) {
-        difficulty = difficulty1;
     }
 
     // click an empty cell
@@ -292,12 +320,12 @@ public class GameController implements GameListener{
             SwingUtilities.invokeLater(()-> chessGameFrame.returnToTitle());
             this.terminate();
         }
-        if (score<difficulty.getGoal() && stepLeft==0 || timeLeft>=difficulty.getTimeLimit() && difficulty.getTimeLimit()>0){
+        if (score<difficulty.getGoal() && stepLeft==0 || timeLeft<=0 && difficulty.getTimeLimit()>0){
             if (stepLeft==0){
                 JOptionPane.showMessageDialog(chessGameFrame,"Oh no, no more steps!");
                 System.out.println("Loss: Step limit exceeded");
             }
-            else {
+            else if (timeLeft<=0 && difficulty.getTimeLimit()>0){
                 JOptionPane.showMessageDialog(chessGameFrame,"Oh no, you DON'T have time!");
                 System.out.println("Loss: Time limit exceeded");
             }
@@ -425,6 +453,10 @@ public class GameController implements GameListener{
         if (statusLabels[0]==null) setStatusLabels(chessGameFrame.getStatusLabels());
         statusLabels[0].setText("Difficulty:" + difficulty.getName());
     }
+    public void updateTimerLabel(){
+        if (difficulty.getTimeLimit()==-1) statusLabels[3].setText("TimeLimit:∞");
+        else statusLabels[3].setText("TimeLimit:"+timeLeft);
+    }
     public void loadFromFile(File file) {
         if (!file.exists() || !file.canRead()) return;
         Scanner sc;
@@ -451,7 +483,7 @@ public class GameController implements GameListener{
             }
         }
         sc.close();
-        System.out.println("Game Loaded.\n" + score+" "+difficulty.getName());
+        System.out.println("Difficulty:"+difficulty.getName()+"\nLoaded from File:");
         view.removeAllChessComponentsAtGrids();
         for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
             String str = Arrays.toString(csb[i]);
@@ -467,11 +499,13 @@ public class GameController implements GameListener{
                 model.setChessPiece(new ChessboardPoint(j, i), new ChessPiece(pName));
             }
         }
+        updateDifficultyLabel();
         updateScoreAndStepLabel();
         view.repaint();
         checkVictory();
     }
     public void loadFromString(String string){
+        initialize();
         Scanner sc;
         try {
             sc = new Scanner(string);
@@ -492,11 +526,14 @@ public class GameController implements GameListener{
         }
         for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
             for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
-                csb[i][j] = sc.hasNextInt() ? sc.nextInt() : new Random().nextInt(4);
+                csb[i][j] = sc.hasNextInt() ? sc.nextInt() : new Random().nextInt(chessTypes.length);
             }
         }
-        System.out.println("Game Loaded.\n" + score+" "+difficulty.getName());
-        view.removeAllChessComponentsAtGrids();
+        System.out.println("Difficulty:"+difficulty.getName()+"\nLoaded from String:");
+        System.out.println(score+" "+timeLeft+" "+stepLeft+" "+goal+" "+timeLimit+" "+stepLimit);
+        try {
+            view.removeAllChessComponentsAtGrids();
+        } catch (Exception ignored) {}
         for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
             String str = Arrays.toString(csb[i]);
             str = str.replaceAll("\\[", "");
@@ -511,7 +548,10 @@ public class GameController implements GameListener{
                 model.setChessPiece(new ChessboardPoint(j, i), new ChessPiece(pName));
             }
         }
+        updateDifficultyLabel();
         updateScoreAndStepLabel();
+        updateTimerLabel();
+        startTimer();
         view.repaint();
         checkVictory();
     }
@@ -545,10 +585,10 @@ public class GameController implements GameListener{
             System.err.println("Save Fail: IOException");
         }
     }
-    public String toString(){
+    public String ConvertToString(){
         StringBuilder sb = new StringBuilder();
         sb.append(score).append(" ").append(timeLeft).append(" ").append(stepLeft).append(" ").append(difficulty.getGoal())
-                .append(" ").append(difficulty.getTimeLimit()).append(" ").append(difficulty.getStepLimit()).append("\n");
+                .append(" ").append(difficulty.getTimeLimit()).append(" ").append(difficulty.getStepLimit()).append(" \n");
         for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
             for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
                 var cp = model.getChessPieceAt(new ChessboardPoint(i, j)).getName();
@@ -562,6 +602,8 @@ public class GameController implements GameListener{
             }
             sb.append("\n");
         }
+        System.out.println("Converted to String:");
+        System.out.println(sb);
         return sb.toString();
     }
 
@@ -672,8 +714,6 @@ public class GameController implements GameListener{
             victoryMode=2;
         }
         score=0;
-        timeLeft=-1;
-        stepLeft=-1;
         isAlive=false;
         SwingUtilities.invokeLater(()-> chessGameFrame.returnToTitle());
     }
@@ -817,9 +857,6 @@ public class GameController implements GameListener{
     public boolean isAutoMode(){
         return isAutoMode;
     }
-    public Difficulty getDifficulty() {
-        return difficulty;
-    }
 
     // For auto mode, to avoid it ends immediately
     // a workaround
@@ -832,8 +869,9 @@ public class GameController implements GameListener{
     @Override
     public void terminate() {
         score=0;
-        timeLeft=-1;
-        stepLeft=-1;
+        if (isOnlinePlay()){
+            NetGame.t.interrupt();
+        }
         isAlive=false;
     }
     public boolean isAlive(){
@@ -846,5 +884,11 @@ public class GameController implements GameListener{
 
     public ChessGameFrame getChessGameFrame() {
         return chessGameFrame;
+    }
+    public void startTimer(){
+        timeLeft=difficulty.getTimeLimit();
+        try {
+            timerThread.start();
+        } catch (Exception ignored) {}
     }
 }

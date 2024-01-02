@@ -9,10 +9,11 @@ import java.io.File;
 import java.util.ArrayList;
 
 import static view.MenuFrame.*;
+import static view.DifficultySelectFrame.selectedFile;
 
 public class ChessGameFrame extends JFrame implements MyFrame{
     private final int ONE_CHESS_SIZE;
-    public static boolean isInitDone=false;
+    public static boolean isGameFrameInitDone =false;
     private GameController gameController;
     private MenuFrame menuFrame;
     private ChessboardComponent chessboardComponent;
@@ -31,23 +32,36 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         setMinimumSize(new Dimension(905,600));
 
         jf.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        FileNameExtensionFilter ff = new FileNameExtensionFilter("txt", "txt");
+        FileNameExtensionFilter ff = new FileNameExtensionFilter("savedGame.txt", "txt");
         jf.addChoosableFileFilter(ff);
         jf.setFileFilter(ff);
 
         setSize(width, height);
-        setLocationRelativeTo(null); // Center the window.
-        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        setLocationRelativeTo(null);
+        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setLayout(gbl);
+
+        System.out.println("Play Start: "+startPlayMode);
 
         initChessboard();
         initStatusLabels();
-        if (startPlayMode<=1) initLocalPlayPanel();
+        if (!isOnlinePlay()) initLocalPlayPanel();
         else initOnlinePlayPanel();
 
         MyFrame.addComponent(this,gbl, panelLeft,1,1,24,24,0,1);
         MyFrame.addComponent(this,gbl, controlPanelRight,590,1,560,4,0,1);
         setDarkMode();
+        new Thread(()->{ //initialize the gui thread
+            for (;;){
+                if (isGameFrameInitDone){
+                    gameController.updateDifficultyLabel();
+                    gameController.updateScoreAndStepLabel();
+                    gameController.startTimer();
+                    break;
+                }
+                else System.out.print("");
+            }
+        }).start();
 
         musicThread = new Thread(() -> {
             int i=0;
@@ -59,15 +73,23 @@ public class ChessGameFrame extends JFrame implements MyFrame{
             }
         });
         setDarkMode();
-        System.out.println("OnlineGame: start");
         SwingUtilities.invokeLater(()->{
-            while (startPlayMode>2) {
-                if (isInitDone) {
+            while (isOnlinePlay()) {
+                System.out.println("OnlineGame: start");
+                if (isGameFrameInitDone) {
                     if (startPlayMode == 3) gameController.onPlayerHostGame();
                     if (startPlayMode == 4) gameController.onPlayerJoinGame();
                     break;
                 }
                 System.out.print("");
+            }
+            if (startPlayMode==2){
+                for (;;){
+                    if (isGameFrameInitDone){
+                        gameController.loadFromFile(selectedFile);
+                        break;
+                    }
+                }
             }
         });
         musicThread.start();
@@ -131,10 +153,10 @@ public class ChessGameFrame extends JFrame implements MyFrame{
      * 在游戏面板中添加标签面板
      */
     private void initStatusLabels() {
-        statusLabels[0] = MyFrame.initLabel("Difficulty:EASY");
-        statusLabels[1] = MyFrame.initLabel("Score:0/30");
-        statusLabels[2] = MyFrame.initLabel("StepLeft:∞");
-        statusLabels[3] = MyFrame.initLabel("TimeLimit:∞");
+        statusLabels[0] = MyFrame.initLabel("Difficulty:"+difficulty.getName());
+        statusLabels[1] = MyFrame.initLabel("Score:0/"+difficulty.getGoal());
+        statusLabels[2] = MyFrame.initLabel("StepLeft:"+(difficulty.getStepLimit()!=-1?difficulty.getStepLimit():"∞"));
+        statusLabels[3] = MyFrame.initLabel("TimeLimit:"+(difficulty.getTimeLimit()!=-1?difficulty.getTimeLimit():"∞"));
         for (JLabel statusLabel : statusLabels) statusLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         for (var i:statusLabels) panelLeft.add(i);
     }
@@ -251,10 +273,8 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         controlPanelRight.add(button);
     }
     private void initReturnTitleButton(){
-        JButton button = initButton(startPlayMode>1?"Disconnect":"Return Title");
-        button.addActionListener(e -> {
-            returnToTitle();
-        });
+        JButton button = initButton(isOnlinePlay()?"Disconnect":"Return Title");
+        button.addActionListener(e -> returnToTitle());
         controlPanelRight.add(button);
     }
 
@@ -274,5 +294,8 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         JButton button = MyFrame.initButton(name);
         controlComponents.add(button);
         return button;
+    }
+    public static boolean isOnlinePlay(){
+        return startPlayMode>2;
     }
 }

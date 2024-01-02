@@ -7,13 +7,15 @@ import model.DifficultyPreset;
 import net.NetGame;
 import player.MusicPlayer;
 
-import javax.sound.sampled.*;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.FloatControl;
+import javax.sound.sampled.SourceDataLine;
 import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
 
-import static view.ChessGameFrame.isInitDone;
+import static view.ChessGameFrame.isGameFrameInitDone;
 
 /**
  * This class build the frame of the main menu window. It defines its size via a constant and creates
@@ -56,7 +58,7 @@ public class MenuFrame extends JFrame implements MyFrame{
         MyFrame.addComponent(this,gbl,controlPanel,1,1,5,5,0,0);
         readMusicFiles("resource/music");
         if (musicFiles.isEmpty()) return;
-        System.out.println("Musics: "+musicFiles.size());
+        System.out.println("Musics Loaded: "+musicFiles.size());
         setDarkMode();
     }
     public static void switchTheme(){
@@ -96,7 +98,7 @@ public class MenuFrame extends JFrame implements MyFrame{
     private void initPlayButton() {
         JButton button = MyFrame.initButton("Play");
         button.addActionListener(e -> {
-            startPlayMode=0;
+            startPlayMode=1;
             DifficultySelectFrame difficultySelectFrame = new DifficultySelectFrame(this);
             difficultySelectFrame.setVisible(true);
         });
@@ -126,17 +128,19 @@ public class MenuFrame extends JFrame implements MyFrame{
         controlPanel.add(button);
     }
     public void generateNewGame(){
-        if (startPlayMode!=0) {
+        isGameFrameInitDone=false;
+        if (startPlayMode!=0) { //when game start, generate new game
             ChessGameFrame mainFrame = new ChessGameFrame(1100, 810);
             GameController gameController = new GameController(mainFrame.getChessboardComponent(),
                     new Chessboard(), new NetGame());
             mainFrame.setGameController(gameController);
             mainFrame.setMenuFrame(this);
             gameController.setChessGameFrame(mainFrame);
-            isInitDone=true;
-            System.out.println("isInitDone=true");
+            System.out.println("GameFrame: Initialize done");
+            System.out.println("Difficulty: "+difficulty.getName());
             mainFrame.setVisible(true);
             this.setState(Frame.ICONIFIED);
+            isGameFrameInitDone =true;
         }
         else JOptionPane.showMessageDialog(this,"No game-mode selected!");
     }
@@ -148,7 +152,7 @@ public class MenuFrame extends JFrame implements MyFrame{
                 var mixer = AudioSystem.getMixer(mixerInfo);
                 mixer.open();
 //                Line.Info[] lineInfos = mixer.getSourceLineInfo(); // 获取音频设备的Line.Info对象
-                SourceDataLine sourceDataLine = (SourceDataLine) mixer.getLine(mixer.getSourceLineInfo()[3]); // 选择第一个音频设备
+                SourceDataLine sourceDataLine = (SourceDataLine) mixer.getLine(mixer.getSourceLineInfo()[3]); // 选择第n个音频设备
                 FloatControl.Type volumeControlType = FloatControl.Type.MASTER_GAIN; // 主音量控制
                 if (!sourceDataLine.isControlSupported(volumeControlType)) {
                     System.out.println("不支持音量控制");

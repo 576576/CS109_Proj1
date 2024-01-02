@@ -4,18 +4,30 @@ import model.Difficulty;
 import model.DifficultyPreset;
 
 import javax.swing.*;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
+import java.io.File;
 
-import static view.MenuFrame.*;
+import static view.ChessGameFrame.isOnlinePlay;
+import static view.MenuFrame.difficulty;
+import static view.MenuFrame.startPlayMode;
 
 public class DifficultySelectFrame extends JFrame implements MyFrame {
     private int goal=0,timeLimit=0,stepLimit=0;
+    public static File selectedFile;
+    private final JFileChooser jf = new JFileChooser(".\\");
 
     public DifficultySelectFrame(MenuFrame menuFrame){
         setTitle("Select a difficulty");
         setSize(600,400);
         setLayout(new GridLayout(1,1));
         setLocationRelativeTo(null);
+
+        jf.setFileSelectionMode(JFileChooser.FILES_ONLY);
+        FileNameExtensionFilter ff = new FileNameExtensionFilter("savedGame.txt", "txt");
+        jf.addChoosableFileFilter(ff);
+        jf.setFileFilter(ff);
+
         JPanel selectPanel = new JPanel(new GridLayout(3,1));
         var startButton = MyFrame.initButton("Start Game!");
         startButton.addActionListener(e -> {
@@ -23,7 +35,7 @@ public class DifficultySelectFrame extends JFrame implements MyFrame {
             this.dispose();
         });
         selectPanel.add(startButton);
-        if (startPlayMode>2){
+        if (isOnlinePlay()){
             var onlineButtons = MyFrame.initSelectButtons("Host Game","Join Game");
             for (var i:onlineButtons){
                 i.setBackground(Color.DARK_GRAY);
@@ -43,7 +55,19 @@ public class DifficultySelectFrame extends JFrame implements MyFrame {
                 i.setForeground(Color.WHITE);
             }
             localButtons.get(0).addActionListener(e -> startPlayMode = 1);
-            localButtons.get(1).addActionListener(e -> startPlayMode=2);
+            localButtons.get(1).addActionListener(e -> {
+                startPlayMode = 0;
+                int result = jf.showOpenDialog(this);
+                if (result == JFileChooser.APPROVE_OPTION) {
+                    selectedFile = jf.getSelectedFile();
+                    startPlayMode=2;
+                }else {
+                    localButtons.getFirst().setSelected(true);
+                    startPlayMode=1;
+                    System.out.println("No file selected!");
+                    JOptionPane.showMessageDialog(this,"\"No file selected!\"");
+                }
+            });
             localButtons.get(0).setSelected(true);
             JPanel panel = new JPanel(new GridLayout(1,2));
             for (int i = 0; i < 2; i++) panel.add(localButtons.get(i));
@@ -51,9 +75,18 @@ public class DifficultySelectFrame extends JFrame implements MyFrame {
         }
 
         var difficultyButtons = MyFrame.initSelectButtons("Easy","Normal","Hard","Custom");
-        difficultyButtons.get(0).addActionListener(e -> difficulty=new Difficulty(DifficultyPreset.EASY));
-        difficultyButtons.get(1).addActionListener(e -> difficulty=new Difficulty(DifficultyPreset.NORMAL));
-        difficultyButtons.get(2).addActionListener(e -> difficulty=new Difficulty(DifficultyPreset.NORMAL));
+        difficultyButtons.get(0).addActionListener(e -> {
+            difficulty=new Difficulty(DifficultyPreset.EASY);
+            System.out.println("Difficulty Selected: "+difficulty.getName());
+        });
+        difficultyButtons.get(1).addActionListener(e -> {
+            difficulty=new Difficulty(DifficultyPreset.NORMAL);
+            System.out.println("Difficulty Selected: "+difficulty.getName());
+        });
+        difficultyButtons.get(2).addActionListener(e -> {
+            difficulty=new Difficulty(DifficultyPreset.HARD);
+            System.out.println("Difficulty Selected: "+difficulty.getName());
+        });
         difficultyButtons.get(3).addActionListener(e -> {
             try {
                 String input;
@@ -72,14 +105,10 @@ public class DifficultySelectFrame extends JFrame implements MyFrame {
                 difficulty=new Difficulty(goal,stepLimit,timeLimit);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(null,"Custom Difficulty Stop,set difficulty to Easy.","Error",JOptionPane.WARNING_MESSAGE);
-                difficultyButtons.get(3).setSelected(false);
-                difficultyButtons.get(0).setSelected(true);
-            }
-            if (startPlayMode<=1){
-                for (var i:difficultyButtons){
-                    i.setBackground(Color.DARK_GRAY);
-                    i.setForeground(Color.BLACK);
-                }
+                difficultyButtons.getFirst().setSelected(true);
+                difficulty=new Difficulty(DifficultyPreset.EASY);
+            } finally {
+                System.out.println("Difficulty Selected: "+difficulty.getName());
             }
         });
 //        difficultyButtons.get(3).addActionListener(e -> {
@@ -89,7 +118,7 @@ public class DifficultySelectFrame extends JFrame implements MyFrame {
         JPanel panel = new JPanel(new GridLayout(1,4));
         for (int i = 0; i < 4; i++) panel.add(difficultyButtons.get(i));
         selectPanel.add(panel);
-        difficultyButtons.get(1).setSelected(true);
+        difficultyButtons.getFirst().setSelected(true);
         add(selectPanel);
     }
 

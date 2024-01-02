@@ -38,7 +38,7 @@ public class ChessboardComponent extends JComponent {
         enableEvents(AWTEvent.MOUSE_EVENT_MASK);// Allow mouse events to occur
         setLayout(null); // Use absolute layout.
         setSize(width, height);
-        System.out.printf("chessboard width, height = [%d : %d], chess size = %d\n", width, height, CHESS_SIZE);
+        System.out.printf("Chessboard: size=(%d,%d), chess size=%d\n", width, height, CHESS_SIZE);
 
         initiateGridComponents();
     }
@@ -94,15 +94,14 @@ public class ChessboardComponent extends JComponent {
 
     public ChessComponent removeChessComponentAtGrid(ChessboardPoint point) {
         // Note re-validation is required after remove / removeAll.
+        ChessComponent chess = null;
         try {
-            ChessComponent chess = (ChessComponent) getGridComponentAt(point).getComponents()[0];
-            getGridComponentAt(point).removeAll();
-            getGridComponentAt(point).revalidate();
+            chess = (ChessComponent) getGridComponentAt(point).getComponents()[0];
             chess.setSelected(false);
-            return chess;
-        } catch (Exception e) {
-            return null;
-        }
+        } catch (ClassCastException ignored) {}
+        getGridComponentAt(point).removeAll();
+        getGridComponentAt(point).revalidate();
+        return chess;
     }
 
     public CellComponent getGridComponentAt(ChessboardPoint point) {

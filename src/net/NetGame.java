@@ -8,13 +8,14 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 
+import static controller.GameController.isNewGameInitialized;
 import static view.MenuFrame.startPlayMode;
 
 public class NetGame {
     public GameController gameController;
     private final int port = 14723;
     Socket sock;
-    static Thread t;
+    public static Thread t;
     public NetGame(){
     }
     public void serverHost() {
@@ -22,7 +23,7 @@ public class NetGame {
         waitFrame.setSize(400,0);
         waitFrame.setLocationRelativeTo(null);
         waitFrame.setVisible(true);
-        System.out.println("OnlineGame: Wait for player");
+        System.out.println("OnlineGame Host: Wait for player");
         try (ServerSocket ss = new ServerSocket(port)){
             try {
                 sock = ss.accept();
@@ -40,7 +41,7 @@ public class NetGame {
         t.start();
     }
     public void connectHost(){
-        System.out.println("OnlineGame: Wait for player");
+        System.out.println("OnlineGame Joiner: Wait for player");
         try {
             sock = new Socket("localhost", port);
             t = new Handler(sock,gameController);
@@ -79,46 +80,75 @@ class Handler extends Thread {
         }
     }
 
-    private void handle(InputStream input, OutputStream output) throws IOException {
+    private void handle(InputStream input, OutputStream output){
         var writer = new BufferedWriter(new OutputStreamWriter(output, StandardCharsets.UTF_8));
         var reader = new BufferedReader(new InputStreamReader(input, StandardCharsets.UTF_8));
-        if (startPlayMode==3) {
-            writer.write("InitializeGame\n");
-            writer.write(gameController.toString());
-            writer.flush();
-            for (;;){
-                String s = reader.readLine();
-                System.out.println(s);
-                if (s.equals("receiveInitializedGame")) break;
+        String s;
+        try {
+            if (startPlayMode==3) { //To host a game: send the same level to joiner
+                for (;;) {
+                    if (isNewGameInitialized) {
+                        do {
+                            writer.write("InitializeGame\n");
+                            writer.flush();
+                            writer.write(gameController.ConvertToString());
+                            writer.flush();
+                            s = reader.readLine();
+                        } while (!s.equals("receiveInitializedGame"));
+                        System.out.println("Host Initialized");
+                        break;
+                    }
+                    System.out.print("");
+                }
+                writer.flush();
+
+                do {
+                    s = reader.readLine();
+                    System.out.println(s);
+                } while (!s.equals("receiveInitializedGame"));
             }
-        }
-        if (startPlayMode==4) {
-            reader.readLine();
-            for (;;){
-                String s =reader.readLine();
-                System.out.println(s);
-                if (s.equals("InitializeGame")){
-                    StringBuilder sb = new StringBuilder();
-                    for (int i=0;i<9;i++) sb.append(reader.readLine());
-                    gameController.loadFromString(sb.toString());
-                    writer.write("receiveInitializedGame");
+            if (startPlayMode==4) { //As joiner: receive the level
+                for (;;){
+                    s =reader.readLine();
+                    if (s.equals("InitializeGame")){
+                        StringBuilder sb = new StringBuilder();
+                        for (int i=0;i<9;i++){
+                            s =reader.readLine();
+                            sb.append(s);
+                        }
+                        gameController.loadFromString(sb.toString());
+                        writer.write("receiveInitializedGame");
+                        writer.flush();
+                        break;
+                    }
+                    System.out.print("");
+                }
+            }
+            gameController.resetTimeLeft();
+            for (;;) {
+                s = reader.readLine();
+                if (s.equals("clientDone")) {
+                    gameController.onlineGameTerminate(reader.readLine().equals("2"));
+                    break;
+                }
+                if (!gameController.isAlive() || isInterrupted()){
+                    writer.write("clientDone\n");
+                    writer.write(gameController.getVictoryMode());
                     writer.flush();
                     break;
                 }
+                if (s.equals("synchronization")){
+                    gameController.setTimeLeft(Integer.parseInt(reader.readLine()));
+                }
+                if (gameController.timeLeft%10==0){
+                    writer.write("synchronization\n");
+                    writer.write(gameController.timeLeft);
+                    writer.flush();
+                }
             }
-        }
-        for (;;) {
-            String s = reader.readLine();
-            if (s.equals("clientDone")) {
-                gameController.onlineGameTerminate(reader.readLine().equals("2"));
-                break;
-            }
-            if (!gameController.isAlive() || isInterrupted()){
-                writer.write("clientDone\n");
-                writer.write(gameController.getVictoryMode());
-                writer.flush();
-                break;
-            }
+        } catch (IOException e) {
+            System.err.println("Disconnected.");
+            gameController.onlineGameTerminate(true);
         }
     }
 }

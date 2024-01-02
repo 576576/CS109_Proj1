@@ -14,7 +14,7 @@ public class ChessComponent extends JComponent {
 
     private boolean selected;
 
-    private ChessPiece chessPiece;
+    private final ChessPiece chessPiece;
 
 
 

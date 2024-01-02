@@ -1,5 +1,8 @@
 package model;
 
+import static view.ChessboardComponent.chessTypes;
+import static controller.GameController.isNewGameInitialized;
+
 /**
  * This class store the real chess information.
  * The Chessboard has 8 * 8 cells, and each cell has a position for chess
@@ -24,23 +27,25 @@ public class Chessboard {
 
     // When initialize from the main menu, this method was used
     public void initPieces() {
+        isNewGameInitialized=false;
 
         for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
             for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
-                grid[i][j].setPiece(new ChessPiece(Util.RandomPick(new String[]{"💎", "⚪", "▲", "🔶","🌞","🪐"})));
+                grid[i][j].setPiece(new ChessPiece(Util.RandomPick(chessTypes)));
             }
         }
 
         while(checkerBoardValidator(grid)){
             for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
                 for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
-                    grid[i][j].setPiece(new ChessPiece(Util.RandomPick(new String[]{"💎", "⚪", "▲", "🔶","🌞","🪐"})));
+                    grid[i][j].setPiece(new ChessPiece(Util.RandomPick(chessTypes)));
                 }
             }
             // for debug, print generated chessboard
             // printChessBoardGrid(grid);
         }
         System.out.println("New pieces initialized");
+        isNewGameInitialized=true;
     }
 
     public static void printChessBoardGrid(Cell[][] grid){
