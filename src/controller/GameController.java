@@ -237,6 +237,13 @@ public class GameController implements GameListener{
     private void doChessEliminate() {
         int rows = model.getGrid().length;
         int cols = model.getGrid()[0].length;
+        boolean[][] labeledChess = new boolean[rows][cols];
+
+        for (int i = 0; i < rows; i++){
+            for (int j = 0; j < cols; j++){
+                labeledChess[i][j]=false;
+            }
+        }
 
         // Check for horizontal adjacency
         for (int i = 0; i < rows; i++) {
@@ -263,10 +270,8 @@ public class GameController implements GameListener{
                 if (matchCount >= 3) {
                     // Do elimination for matched chess pieces
                     for (int m = j; m < j + matchCount; m++) {
-                        model.removeChessPiece(new ChessboardPoint(i, m));
-                        view.removeChessComponentAtGrid(new ChessboardPoint(i, m));
+                        labeledChess[i][m]=true;
                     }
-                    score += matchCount ;
                 }
 
                 j = k;
@@ -297,15 +302,24 @@ public class GameController implements GameListener{
                 if (matchCount >= 3) {
                     // Do elimination for matched chess pieces
                     for (int m = i; m < i + matchCount; m++) {
-                        model.removeChessPiece(new ChessboardPoint(m, j));
-                        view.removeChessComponentAtGrid(new ChessboardPoint(m, j));
+                        labeledChess[m][j]=true;
                     }
-                    score += matchCount ;
                 }
 
                 i = k;
             }
         }
+
+        for (int i = 0; i < rows; i++){
+            for (int j = 0; j < cols; j++){
+                if (labeledChess[i][j]){
+                    model.removeChessPiece(new ChessboardPoint(i, j));
+                    view.removeChessComponentAtGrid(new ChessboardPoint(i, j));
+                    score += 1 ;
+                }
+            }
+        }
+
         view.repaint();
         updateScoreAndStepLabel();
         checkVictory();
@@ -364,7 +378,7 @@ public class GameController implements GameListener{
                     doGenerateRandomPiecesOnTop();
                     view.repaint();
                     try {
-                        Thread.sleep(300);
+                        Thread.sleep(200);
                     } catch (InterruptedException ignored) {}
                     doFallDown();
                 }
