@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 import static model.Constant.CHESSBOARD_COL_SIZE;
 import static model.Constant.CHESSBOARD_ROW_SIZE;
+import static player.MusicPlayer.isFileExtensionName;
 import static view.ChessGameFrame.isOnlinePlay;
 import static view.ChessboardComponent.chessTypes;
 import static view.MenuFrame.difficulty;
@@ -474,12 +475,20 @@ public class GameController implements GameListener{
         else statusLabels[3].setText("TimeLimit:"+timeLeft);
     }
     public void loadFromFile(File file) {
-        if (!file.exists() || !file.canRead()) return;
+        if (!file.exists() || !file.canRead()) {
+            JOptionPane.showMessageDialog(chessGameFrame,"Can't Access the file!");
+            return;
+        }
+        if (!isFileExtensionName(file,"txt")){
+            JOptionPane.showMessageDialog(chessGameFrame,"File format error:101");
+            return;
+        }
         Scanner sc;
         try {
             sc = new Scanner(file);
         } catch (FileNotFoundException e) {
-            throw new RuntimeException(e);
+            JOptionPane.showMessageDialog(chessGameFrame,"Can't Access the file!");
+            return;
         }
         var csb = new int[8][8];
         score = sc.nextInt();
