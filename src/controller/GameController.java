@@ -211,15 +211,19 @@ public class GameController implements GameListener{
             System.out.println("Swap Failed!");
         } finally {
             if (selectedPoint!=null) {
-                var point1 = (ChessComponent) view.getGridComponentAt(selectedPoint).getComponent(0);
-                point1.setSelected(false);
-                point1.repaint();
+                try {
+                    var point1 = (ChessComponent) view.getGridComponentAt(selectedPoint).getComponent(0);
+                    point1.setSelected(false);
+                    point1.repaint();
+                } catch (Exception ignored) {}
                 selectedPoint=null;
             }
             if (selectedPoint2!=null) {
-                var point2 = (ChessComponent) view.getGridComponentAt(selectedPoint2).getComponent(0);
-                point2.setSelected(false);
-                point2.repaint();
+                try {
+                    var point2 = (ChessComponent) view.getGridComponentAt(selectedPoint2).getComponent(0);
+                    point2.setSelected(false);
+                    point2.repaint();
+                } catch (Exception ignored) {}
                 selectedPoint2=null;
             }
             view.repaint();
