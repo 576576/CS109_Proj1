@@ -3,10 +3,7 @@ package controller;
 import listener.GameListener;
 import model.*;
 import net.NetGame;
-import view.CellComponent;
-import view.ChessComponent;
-import view.ChessGameFrame;
-import view.ChessboardComponent;
+import view.*;
 
 import javax.swing.*;
 import java.io.*;
@@ -369,6 +366,7 @@ public class GameController implements GameListener{
             this.onNextStepFlag = NextStepFlag.FALL_DOWN_DONE;
             doChessEliminate();
             // Fall done has done, if there is any match-3, eliminate them
+            JOptionPane.showMessageDialog(chessGameFrame,"Bonus! Match occurs when pieces fall down.");
             System.out.println("Bonus! Match occurs when pieces fall down.");
             view.repaint();
             return;
@@ -889,6 +887,10 @@ public class GameController implements GameListener{
         score=0;
         if (isOnlinePlay()){
             NetGame.t.interrupt();
+        }
+        else {
+            DifficultySelectFrame difficultySelectFrame = new DifficultySelectFrame(chessGameFrame.menuFrame);
+            difficultySelectFrame.setVisible(true);
         }
         isAlive=false;
     }

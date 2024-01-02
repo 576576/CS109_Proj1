@@ -15,7 +15,7 @@ public class ChessGameFrame extends JFrame implements MyFrame{
     private final int ONE_CHESS_SIZE;
     public static boolean isGameFrameInitDone =false;
     private GameController gameController;
-    private MenuFrame menuFrame;
+    public MenuFrame menuFrame;
     private ChessboardComponent chessboardComponent;
     private JButton swapConfirmButton,nextStepButton;
     private final JPanel controlPanelRight = new JPanel();
