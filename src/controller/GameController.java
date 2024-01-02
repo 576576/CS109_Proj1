@@ -770,7 +770,10 @@ public class GameController implements GameListener{
         return false;
     }
     public void hint(){
-        if (!isContinuable()) return;
+        if (!isContinuable()){
+            onPlayerShuffle();
+            return;
+        }
         if (selectedPoint!=null){
             var point1 = (ChessComponent) view.getGridComponentAt(selectedPoint).getComponent(0);
             point1.setSelected(false);
