@@ -7,11 +7,12 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Random;
 
-import static view.MenuFrame.*;
 import static view.DifficultySelectFrame.selectedFile;
+import static view.MenuFrame.*;
 
-public class ChessGameFrame extends JFrame implements MyFrame{
+public class ChessGameFrame extends MyFrame{
     private final int ONE_CHESS_SIZE;
     public static boolean isGameFrameInitDone =false;
     private GameController gameController;
@@ -41,6 +42,14 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setLayout(gbl);
 
+//        JLabel bgLabel = new JLabel(); //add background images
+//        bgLabel.setBounds(0,0,this.getWidth(),this.getHeight());
+//        var backgroundImage = pickBackgroundImage();
+//        if (backgroundImage!=null) bgLabel.setIcon(new ImageIcon(backgroundImage));
+//        JPanel p0 = new JPanel();
+//        p0.add(bgLabel);
+//        getLayeredPane().add(bgLabel,JLayeredPane.DEFAULT_LAYER);
+
         System.out.println("Play Start: "+startPlayMode);
 
         initChessboard();
@@ -50,29 +59,28 @@ public class ChessGameFrame extends JFrame implements MyFrame{
 
         MyFrame.addComponent(this,gbl, panelLeft,1,1,24,24,0,1);
         MyFrame.addComponent(this,gbl, controlPanelRight,590,1,560,4,0,1);
-        setDarkMode();
-        new Thread(()->{ //initialize the gui thread
-            for (;;){
-                if (isGameFrameInitDone){
-                    gameController.updateDifficultyLabel();
-                    gameController.updateScoreAndStepLabel();
-                    gameController.startTimer();
-                    break;
-                }
-                else System.out.print("");
-            }
-        }).start();
-
         musicThread = new Thread(() -> {
-            int i=0;
-            while (true) {
+            int i=new Random().nextInt(musicFiles.size());
+            while (gameController.isAlive()) {
                 var f = musicFiles.get(i);
                 i++;
                 i%=musicFiles.size();
                 musicPlayer.play(f);
             }
         });
-        setDarkMode();
+        new Thread(()->{ //initialize the gui thread
+            for (;;){
+                if (isGameFrameInitDone){
+                    gameController.updateDifficultyLabel();
+                    gameController.updateScoreAndStepLabel();
+                    gameController.startTimer();
+                    musicThread.start();
+                    setDarkMode();
+                    break;
+                }
+                else System.out.print("");
+            }
+        }).start();
         SwingUtilities.invokeLater(()->{
             while (isOnlinePlay()) {
                 System.out.println("OnlineGame: start");
@@ -92,7 +100,6 @@ public class ChessGameFrame extends JFrame implements MyFrame{
                 }
             }
         });
-        musicThread.start();
     }
     private void initLocalPlayPanel(){
         panelLeft.setLayout(new GridLayout(8,1,2,6));
@@ -184,7 +191,7 @@ public class ChessGameFrame extends JFrame implements MyFrame{
     }
 
     private void initThemeButton() {
-        JButton button = initButton("Switch Theme");
+        JButton button = initControlButton("Switch Theme");
         button.addActionListener(e -> switchTheme());
         panelLeft.add(button);
     }
@@ -194,7 +201,7 @@ public class ChessGameFrame extends JFrame implements MyFrame{
     }
 
     private void initSettingButton(){
-        JButton button = initButton("Setting");
+        JButton button = initControlButton("Setting");
         button.addActionListener(e -> {
             SettingFrame settingFrame = new SettingFrame();
             settingFrame.setVisible(true);
@@ -202,12 +209,12 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         controlPanelRight.add(button);
     }
     private void initNewGameButton(){
-        JButton button = initButton("Start New");
+        JButton button = initControlButton("Start New");
         button.addActionListener(e -> chessboardComponent.startNewGame());
         controlPanelRight.add(button);
     }
     private void initAutoConfirmButton(){
-        JButton button = initButton("Auto Confirm");
+        JButton button = initControlButton("Auto Confirm");
         button.addActionListener(e -> {
             boolean isAutoConfirm = !gameController.isAutoConfirm();
             getGameController().setAutoConfirm(isAutoConfirm);
@@ -218,7 +225,7 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         controlPanelRight.add(button);
     }
     private void initAutoGoButton(){
-        JButton button = initButton("AutoGo");
+        JButton button = initControlButton("AutoGo");
         button.addActionListener(e -> {
             boolean isAutoMode = !getGameController().isAutoMode();
             button.setText(isAutoMode?"FullAuto":"AutoGo");
@@ -227,30 +234,30 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         panelLeft.add(button);
     }
     public void initHintButton(){
-        JButton button = initButton("Hint!");
+        JButton button = initControlButton("Hint!");
         button.addActionListener(e -> gameController.hint());
         panelLeft.add(button);
     }
     public void initShuffleButton(){
-        JButton button = initButton("Shuffle");
+        JButton button = initControlButton("Shuffle");
         button.addActionListener(e -> gameController.onPlayerShuffle());
         panelLeft.add(button);
     }
     private void initSwapConfirmButton() {
-        JButton button = initButton("Confirm Swap");
+        JButton button = initControlButton("Confirm Swap");
         button.addActionListener((e) -> chessboardComponent.swapChess());
         swapConfirmButton=button;
         controlPanelRight.add(button);
     }
 
     private void initNextStepButton() {
-        JButton button = initButton("Next Step");
+        JButton button = initControlButton("Next Step");
         button.addActionListener((e) -> chessboardComponent.nextStep());
         nextStepButton=button;
         controlPanelRight.add(button);
     }
     private void initLoadButton() {
-        JButton button = initButton("Load");
+        JButton button = initControlButton("Load");
         button.addActionListener(e -> {
             int result = jf.showOpenDialog(this);
             if (result == JFileChooser.APPROVE_OPTION) {
@@ -261,7 +268,7 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         controlPanelRight.add(button);
     }
     private void initSaveButton(){
-        JButton button = initButton("Save");
+        JButton button = initControlButton("Save");
         button.addActionListener(e -> {
             int result = jf.showOpenDialog(this);
             if (result == JFileChooser.APPROVE_OPTION) {
@@ -272,7 +279,7 @@ public class ChessGameFrame extends JFrame implements MyFrame{
         controlPanelRight.add(button);
     }
     private void initReturnTitleButton(){
-        JButton button = initButton(isOnlinePlay()?"Disconnect":"Return Title");
+        JButton button = initControlButton(isOnlinePlay()?"Disconnect":"Return Title");
         button.addActionListener(e -> returnToTitle());
         controlPanelRight.add(button);
     }
@@ -285,11 +292,11 @@ public class ChessGameFrame extends JFrame implements MyFrame{
     }
 
     public void initExitButton(){
-        JButton button = initButton("Exit");
+        JButton button = initControlButton("Exit");
         button.addActionListener(e -> System.exit(0));
         controlPanelRight.add(button);
     }
-    public JButton initButton(String name){
+    public JButton initControlButton(String name){
         JButton button = MyFrame.initButton(name);
         controlComponents.add(button);
         return button;

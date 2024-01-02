@@ -12,7 +12,7 @@ import static view.ChessGameFrame.isOnlinePlay;
 import static view.MenuFrame.difficulty;
 import static view.MenuFrame.startPlayMode;
 
-public class DifficultySelectFrame extends JFrame implements MyFrame {
+public class DifficultySelectFrame extends MyFrame{
     private int goal=0,timeLimit=0,stepLimit=0;
     public static File selectedFile;
     private final JFileChooser jf = new JFileChooser(".\\");

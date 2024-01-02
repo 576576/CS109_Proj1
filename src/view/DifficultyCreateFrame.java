@@ -7,7 +7,7 @@ import java.awt.event.ActionListener;
 
 import static view.SettingFrame.setDarkModeStatic;
 
-public class DifficultyCreateFrame extends JFrame implements MyFrame{
+public class DifficultyCreateFrame extends MyFrame{
     public DifficultyCreateFrame() {
         setTitle("Create your difficulty");
         setSize(400, 300);

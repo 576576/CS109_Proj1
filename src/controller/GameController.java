@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 import static model.Constant.CHESSBOARD_COL_SIZE;
 import static model.Constant.CHESSBOARD_ROW_SIZE;
 import static player.MusicPlayer.isFileExtensionName;
+import static player.MusicPlayer.playClick;
 import static view.ChessGameFrame.isOnlinePlay;
 import static view.ChessboardComponent.chessTypes;
 import static view.MenuFrame.difficulty;
@@ -179,7 +180,13 @@ public class GameController implements GameListener{
      */
     @Override
     public void onPlayerSwapChess() {
+        if (!isContinuable()) {
+            System.out.println("Dead end: shuffled");
+            JOptionPane.showMessageDialog(chessGameFrame,"Auto Shuffled: Dead end");
+            onPlayerShuffle();
+        }
         checkVictory();
+        playClick();
         try {
             // Try to swap, then check if they are matchable
             model.swapChessPiece(selectedPoint, selectedPoint2);
@@ -770,7 +777,9 @@ public class GameController implements GameListener{
         return false;
     }
     public void hint(){
-        if (!isContinuable()){
+        if (!isContinuable()) {
+            System.out.println("Dead end: shuffled");
+            JOptionPane.showMessageDialog(chessGameFrame,"Auto Shuffled: Dead end");
             onPlayerShuffle();
             return;
         }
@@ -896,7 +905,7 @@ public class GameController implements GameListener{
     }
     @Override
     public void terminate() {
-        score=0;
+        isAlive=false;
         if (isOnlinePlay()){
             NetGame.t.interrupt();
         }
@@ -904,7 +913,6 @@ public class GameController implements GameListener{
             DifficultySelectFrame difficultySelectFrame = new DifficultySelectFrame(chessGameFrame.menuFrame);
             difficultySelectFrame.setVisible(true);
         }
-        isAlive=false;
     }
     public boolean isAlive(){
         return isAlive;

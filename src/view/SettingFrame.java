@@ -6,8 +6,8 @@ import java.util.prefs.Preferences;
 
 import static view.MenuFrame.*;
 
-public class SettingFrame extends JFrame implements MyFrame {
-    JPanel formPanel = new JPanel(new GridLayout(2,1));
+public class SettingFrame extends MyFrame{
+    JPanel formPanel = new JPanel(new GridLayout(3,1));
     JPanel volumePanel = new JPanel(new FlowLayout());
     JPanel themePanel = getjPanel();
     JButton submitButton;
@@ -16,6 +16,7 @@ public class SettingFrame extends JFrame implements MyFrame {
         setSize(500, 300);
         setLocationRelativeTo(null);
         setLayout(new BorderLayout());
+        add(new Box(1),BorderLayout.NORTH);
 
         JLabel volumeLabel = new JLabel("Music:");
         JSlider soundSlider = new JSlider(0,100,20);

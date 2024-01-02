@@ -59,4 +59,12 @@ public class MusicPlayer {
     public static boolean isFileExtensionName(File f,String extension) {
         return f.getName().lastIndexOf('.') > 0 && f.getName().substring(f.getName().lastIndexOf('.') + 1).equals(extension);
     }
+    public static void playClick(){
+        try {
+            BufferedInputStream stream = new BufferedInputStream(new FileInputStream("resource/effect/sound/click.mp3"));
+            new Player(stream).play();
+        } catch (Exception e) {
+            System.err.println("Error:click sound effect");
+        }
+    }
 }

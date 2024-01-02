@@ -3,16 +3,16 @@
 
 为了方便我的国际合作者Grigory，以下说明为英文。 
 ## Basic game system
-- Initialize the gameboard (with different difficulties)
+- Initialize the game
 - Item swap & match
-- save & load from files  *576-done*
+- save & load from files
 ## GUI design
-- window adaptation  *576-planned*
-- scoreboard *576-done*
-- art design 
-- darkMode (or allow skin custom?)  *576-done*
-## Optional part
+- window adaptation *part*
+- scoreboard
+- art design *not done*
+- darkMode (or allow skin custom?) *part*
+## Bonus part
 - music
 - network game *576-planned*
-- autoMode
+- autoMode(autoGo&autoConfirm)
 - ...

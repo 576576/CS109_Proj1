@@ -23,7 +23,7 @@ import static view.ChessGameFrame.isGameFrameInitDone;
  * Since Menu is the first visible window of the used, it is also here that a new game is called upon, as well
  * as showing the HighScoreFrame if the user wants this view.
  */
-public class MenuFrame extends JFrame implements MyFrame{
+public class MenuFrame extends MyFrame{
     public static boolean isDarkMode=false;
     public static int musicVolume;
     public static int startPlayMode=0;// 0=not to start 1=play new game locally 2=play locally load from file 3=host game 4=join game
@@ -56,8 +56,8 @@ public class MenuFrame extends JFrame implements MyFrame{
         initSettingButton();
         initExitButton();
         MyFrame.addComponent(this,gbl,controlPanel,1,1,5,5,0,0);
-        readMusicFiles("resource/music");
-        if (musicFiles.isEmpty()) return;
+        musicFiles = MyFrame.readFiles("resource/music");
+        if (musicFiles==null || musicFiles.isEmpty()) return;
         System.out.println("Musics Loaded: "+musicFiles.size());
         setDarkMode();
     }
@@ -163,19 +163,6 @@ public class MenuFrame extends JFrame implements MyFrame{
                 volumeControl.setValue(dB);
             } catch (Exception ignored) {}
         }
-    }
-
-    public static void readMusicFiles(String filePath) {
-        File file = new File(filePath);
-        if (file.isDirectory()) {
-            File[] files = file.listFiles();
-            if (files != null) {
-                for (File f : files) {
-                    if (f.isDirectory()) readMusicFiles(f.getAbsolutePath());
-                    else musicFiles.add(f);
-                }
-            }
-        } else musicFiles.add(file);
     }
 }
 
