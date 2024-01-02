@@ -4,6 +4,7 @@ import controller.GameController;
 
 import javax.swing.*;
 import java.io.*;
+import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -19,12 +20,14 @@ public class NetGame {
     public NetGame(){
     }
     public void serverHost() {
-        JFrame waitFrame = new JFrame("Wait For Player");
+        JFrame waitFrame = new JFrame("Wait For Player ");
         waitFrame.setSize(400,0);
         waitFrame.setLocationRelativeTo(null);
         waitFrame.setVisible(true);
         System.out.println("OnlineGame Host: Wait for player");
         try (ServerSocket ss = new ServerSocket(port)){
+            waitFrame.setVisible(true);
+            waitFrame.setTitle("Wait for player"+InetAddress.getLocalHost().getHostAddress());
             try {
                 sock = ss.accept();
             } catch (IOException e) {
@@ -42,8 +45,10 @@ public class NetGame {
     }
     public void connectHost(){
         System.out.println("OnlineGame Joiner: Wait for player");
+        String host;
+        host = JOptionPane.showInputDialog(null,"Input host","Connect to host",JOptionPane.PLAIN_MESSAGE);
         try {
-            sock = new Socket("localhost", port);
+            sock = new Socket(host, port);
             t = new Handler(sock,gameController);
             t.start();
         }catch (IOException ioe){
