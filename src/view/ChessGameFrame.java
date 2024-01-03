@@ -59,6 +59,7 @@ public class ChessGameFrame extends MyFrame{
 
         MyFrame.addComponent(this,gbl, panelLeft,1,1,24,24,0,1);
         MyFrame.addComponent(this,gbl, controlPanelRight,590,1,560,4,0,1);
+
         musicThread = new Thread(() -> {
             int i=new Random().nextInt(musicFiles.size());
             while (gameController.isAlive()) {
@@ -68,25 +69,14 @@ public class ChessGameFrame extends MyFrame{
                 musicPlayer.play(f);
             }
         });
-        new Thread(()->{ //initialize the gui thread
-            for (;;){
-                if (isGameFrameInitDone){
-                    gameController.updateDifficultyLabel();
-                    gameController.updateScoreAndStepLabel();
-                    gameController.startTimer();
-                    musicThread.start();
-                    setDarkMode();
-                    break;
-                }
-                else System.out.print("");
-            }
-        }).start();
-        SwingUtilities.invokeLater(()->{
+
+        SwingUtilities.invokeLater(()->{ //initialize game functions in order
             while (isOnlinePlay()) {
                 System.out.println("OnlineGame: start");
                 if (isGameFrameInitDone) {
                     if (startPlayMode == 3) gameController.onPlayerHostGame();
                     if (startPlayMode == 4) gameController.onPlayerJoinGame();
+                    uiInitialize();
                     break;
                 }
                 System.out.print("");
@@ -95,11 +85,27 @@ public class ChessGameFrame extends MyFrame{
                 for (;;){
                     if (isGameFrameInitDone){
                         gameController.loadFromFile(selectedFile);
+                        uiInitialize();
+                        break;
+                    }
+                }
+            }
+            if (startPlayMode==1){
+                for (;;){
+                    if (isGameFrameInitDone){
+                        uiInitialize();
                         break;
                     }
                 }
             }
         });
+    }
+    private void uiInitialize(){ //initialize the gui thread
+        gameController.updateDifficultyLabel();
+        gameController.updateScoreAndStepLabel();
+        gameController.startTimer();
+        musicThread.start();
+        setDarkMode();
     }
     private void initLocalPlayPanel(){
         panelLeft.setLayout(new GridLayout(8,1,2,6));

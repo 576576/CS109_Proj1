@@ -8,6 +8,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.logging.Logger;
 
 import static controller.GameController.isNewGameInitialized;
 import static view.MenuFrame.startPlayMode;
@@ -27,7 +28,7 @@ public class NetGame {
         System.out.println("OnlineGame Host: Wait for player");
         try (ServerSocket ss = new ServerSocket(port)){
             waitFrame.setVisible(true);
-            waitFrame.setTitle("Wait for player"+InetAddress.getLocalHost().getHostAddress());
+            waitFrame.setTitle("Wait for player: "+getPublicIP());
             try {
                 sock = ss.accept();
             } catch (IOException e) {
@@ -60,7 +61,19 @@ public class NetGame {
     public void registerController(GameController gameController) {
         this.gameController = gameController;
     }
-
+    public static String getPublicIP(){
+        String ip = null;
+        try {
+            Socket socket = new Socket("www.baidu.com", 80);
+            InetAddress inetAddress = socket.getLocalAddress();
+            ip = inetAddress.getHostAddress();
+            System.out.println("Local IP: " + ip);
+            socket.close();
+        } catch (Exception e) {
+            Logger.getLogger("Exception occurred on get local IP");
+        }
+        return ip;
+    }
 }
 class Handler extends Thread {
     Socket sock;
