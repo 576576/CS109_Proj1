@@ -55,8 +55,9 @@ public class MenuFrame extends MyFrame{
         initOnlineButton();
         initSettingButton();
         initExitButton();
-        MyFrame.addComponent(this,gbl,controlPanel,1,1,5,5,0,0);
-        musicFiles = MyFrame.readFiles("resource/music");
+        controlPanel.setOpaque(false);
+        addComponent(this,gbl,controlPanel,1,1,5,5,0,0);
+        musicFiles = readFiles("resource/music");
         if (musicFiles==null || musicFiles.isEmpty()) return;
         System.out.println("Musics Loaded: "+musicFiles.size());
         setDarkMode();
@@ -70,8 +71,6 @@ public class MenuFrame extends MyFrame{
         } catch (Exception ignored) {}
     }
     public void setDarkMode() {
-        getContentPane().setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
-        controlPanel.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
         for (var i : controlPanel.getComponents()) {
             if (i instanceof JButton) {
                 i.setBackground(isDarkMode ? Color.DARK_GRAY : Color.LIGHT_GRAY);
@@ -86,7 +85,7 @@ public class MenuFrame extends MyFrame{
         //planning to add autoplaying chessboard
         ChessboardComponent chessboardComponent = new ChessboardComponent(ONE_CHESS_SIZE);
         chessPanel.add(chessboardComponent,BorderLayout.CENTER);
-        MyFrame.addComponent(this,gbl,chessPanel,0,0,560,560,0,0);
+        addComponent(this,gbl,chessPanel,0,0,560,560,0,0);
     }
     private void initLabel() {
         JLabel label = new JLabel("MATCH-3");
@@ -96,7 +95,7 @@ public class MenuFrame extends MyFrame{
         controlPanel.add(label);
     }
     private void initPlayButton() {
-        JButton button = MyFrame.initButton("Play");
+        JButton button = initButton("Play");
         button.addActionListener(e -> {
             startPlayMode=1;
             DifficultySelectFrame difficultySelectFrame = new DifficultySelectFrame(this);
@@ -105,7 +104,7 @@ public class MenuFrame extends MyFrame{
         controlPanel.add(button);
     }
     private void initOnlineButton() {
-        JButton button = MyFrame.initButton("Online Play");
+        JButton button = initButton("Online Play");
 
         button.addActionListener(e -> {
             startPlayMode=4;
@@ -115,7 +114,7 @@ public class MenuFrame extends MyFrame{
         controlPanel.add(button);
     }
     private void initSettingButton(){
-        JButton button = MyFrame.initButton("Settings");
+        JButton button = initButton("Settings");
         button.addActionListener(e -> {
             SettingFrame settingFrame = new SettingFrame();
             settingFrame.setVisible(true);
@@ -123,7 +122,7 @@ public class MenuFrame extends MyFrame{
         controlPanel.add(button);
     }
     public void initExitButton(){
-        JButton button = MyFrame.initButton("Exit");
+        JButton button = initButton("Exit");
         button.addActionListener(e -> System.exit(0));
         controlPanel.add(button);
     }

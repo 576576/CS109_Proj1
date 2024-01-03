@@ -24,6 +24,30 @@ public abstract class MyFrame extends JFrame{
         gbl.setConstraints(comp, gbc);
         motherFrame.add(comp);
     }
+    static void addComponent(JPanel motherPanel, GridBagLayout gbl, Component comp,
+                             int gridx, int grid_y, int grid_height, int grid_width, int weight_x, int weight_y) {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.weightx = weight_x;
+        gbc.weighty = weight_y;
+        gbc.gridheight = grid_height;
+        gbc.gridwidth = grid_width;
+        gbc.gridx = gridx;
+        gbc.gridy = grid_y;
+        gbl.setConstraints(comp, gbc);
+        motherPanel.add(comp);
+    }
+    static <T extends JComponent> void addComponent(T motherPanel, GridBagLayout gbl, Component comp,
+                             int gridx, int grid_y, int grid_height, int grid_width, int weight_x, int weight_y) {
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.weightx = weight_x;
+        gbc.weighty = weight_y;
+        gbc.gridheight = grid_height;
+        gbc.gridwidth = grid_width;
+        gbc.gridx = gridx;
+        gbc.gridy = grid_y;
+        gbl.setConstraints(comp, gbc);
+        motherPanel.add(comp);
+    }
     static JButton initButton(String name){
         JButton button = new JButton(name);
         button.setFont(new Font("Rockwell", Font.BOLD, 20));

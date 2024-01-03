@@ -47,7 +47,8 @@ public class ChessGameFrame extends MyFrame{
 //        var backgroundImage = pickBackgroundImage();
 //        if (backgroundImage!=null) bgLabel.setIcon(new ImageIcon(backgroundImage));
 //        JPanel p0 = new JPanel();
-//        p0.add(bgLabel);
+//        p0.add(bgLabel); //TODO: add isImageBackground function
+//        ((JPanel)getContentPane()).setOpaque(false);
 //        getLayeredPane().add(bgLabel,JLayeredPane.DEFAULT_LAYER);
 
         System.out.println("Play Start: "+startPlayMode);
@@ -57,8 +58,8 @@ public class ChessGameFrame extends MyFrame{
         if (!isOnlinePlay()) initLocalPlayPanel();
         else initOnlinePlayPanel();
 
-        MyFrame.addComponent(this,gbl, panelLeft,1,1,24,24,0,1);
-        MyFrame.addComponent(this,gbl, controlPanelRight,590,1,560,4,0,1);
+        addComponent(this,gbl, panelLeft,1,1,24,24,0,1);
+        addComponent(this,gbl, controlPanelRight,590,1,560,4,0,1);
 
         musicThread = new Thread(() -> {
             int i=new Random().nextInt(musicFiles.size());
@@ -158,17 +159,17 @@ public class ChessGameFrame extends MyFrame{
      */
     private void initChessboard() {
         chessboardComponent = new ChessboardComponent(ONE_CHESS_SIZE);
-        MyFrame.addComponent(this,gbl,chessboardComponent,25,1,560,560,560,560);
+        addComponent(this,gbl,chessboardComponent,25,1,560,560,560,560);
     }
 
     /**
      * 在游戏面板中添加标签面板
      */
     private void initStatusLabels() {
-        statusLabels[0] = MyFrame.initLabel("Difficulty:"+difficulty.getName());
-        statusLabels[1] = MyFrame.initLabel("Score:0/"+difficulty.getGoal());
-        statusLabels[2] = MyFrame.initLabel("StepLeft:"+(difficulty.getStepLimit()!=-1?difficulty.getStepLimit():"∞"));
-        statusLabels[3] = MyFrame.initLabel("TimeLimit:"+(difficulty.getTimeLimit()!=-1?difficulty.getTimeLimit():"∞"));
+        statusLabels[0] = initLabel("Difficulty:"+difficulty.getName());
+        statusLabels[1] = initLabel("Score:0/"+difficulty.getGoal());
+        statusLabels[2] = initLabel("StepLeft:"+(difficulty.getStepLimit()!=-1?difficulty.getStepLimit():"∞"));
+        statusLabels[3] = initLabel("TimeLimit:"+(difficulty.getTimeLimit()!=-1?difficulty.getTimeLimit():"∞"));
         for (JLabel statusLabel : statusLabels) statusLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         for (var i:statusLabels) panelLeft.add(i);
     }
@@ -303,7 +304,7 @@ public class ChessGameFrame extends MyFrame{
         controlPanelRight.add(button);
     }
     public JButton initControlButton(String name){
-        JButton button = MyFrame.initButton(name);
+        JButton button = initButton(name);
         controlComponents.add(button);
         return button;
     }

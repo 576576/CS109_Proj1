@@ -29,14 +29,14 @@ public class DifficultySelectFrame extends MyFrame{
         jf.setFileFilter(ff);
 
         JPanel selectPanel = new JPanel(new GridLayout(3,1));
-        var startButton = MyFrame.initButton("Start Game!");
+        var startButton = initButton("Start Game!");
         startButton.addActionListener(e -> {
             menuFrame.generateNewGame();
             this.dispose();
         });
         selectPanel.add(startButton);
         if (isOnlinePlay()){
-            var onlineButtons = MyFrame.initSelectButtons("Host Game","Join Game");
+            var onlineButtons = initSelectButtons("Host Game","Join Game");
             for (var i:onlineButtons){
                 i.setBackground(Color.DARK_GRAY);
                 i.setForeground(Color.WHITE);
@@ -49,7 +49,7 @@ public class DifficultySelectFrame extends MyFrame{
             selectPanel.add(panel);
         }
         else {
-            var localButtons = MyFrame.initSelectButtons("New","Load");
+            var localButtons = initSelectButtons("New","Load");
             for (var i:localButtons){
                 i.setBackground(Color.DARK_GRAY);
                 i.setForeground(Color.WHITE);
@@ -74,7 +74,7 @@ public class DifficultySelectFrame extends MyFrame{
             selectPanel.add(panel);
         }
 
-        var difficultyButtons = MyFrame.initSelectButtons("Easy","Normal","Hard","Custom");
+        var difficultyButtons = initSelectButtons("Easy","Normal","Hard","Custom");
         difficultyButtons.get(0).addActionListener(e -> {
             difficulty=new Difficulty(DifficultyPreset.EASY);
             System.out.println("Difficulty Selected: "+difficulty.getName());

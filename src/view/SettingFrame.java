@@ -2,14 +2,13 @@ package view;
 
 import javax.swing.*;
 import java.awt.*;
-import java.util.prefs.Preferences;
 
 import static view.MenuFrame.*;
 
 public class SettingFrame extends MyFrame{
-    JPanel formPanel = new JPanel(new GridLayout(3,1));
+    JPanel formPanel = new JPanel(new GridLayout(2,1));
     JPanel volumePanel = new JPanel(new FlowLayout());
-    JPanel themePanel = getjPanel();
+    JPanel themePanel = getThemePanel();
     JButton submitButton;
     public SettingFrame(){
         setTitle("Settings");
@@ -24,7 +23,7 @@ public class SettingFrame extends MyFrame{
         volumePanel.add(volumeLabel);
         volumePanel.add(soundSlider);
 
-        submitButton = MyFrame.initButton("Confirm");
+        submitButton = initButton("Confirm");
         submitButton.addActionListener(e -> this.dispose());
 
         formPanel.add(volumePanel);
@@ -35,7 +34,7 @@ public class SettingFrame extends MyFrame{
         setVisible(true);
     }
 
-    private JPanel getjPanel() {
+    private JPanel getThemePanel() {
         JLabel themeLabel = new JLabel("Theme:");
         JRadioButton lightRadioButton = new JRadioButton("Light");
         lightRadioButton.setSelected(!isDarkMode);
@@ -44,26 +43,33 @@ public class SettingFrame extends MyFrame{
             switchTheme();
         });
         JRadioButton darkRadioButton = new JRadioButton("Dark");
-        lightRadioButton.setSelected(isDarkMode);
+        darkRadioButton.setSelected(isDarkMode);
         darkRadioButton.addActionListener(e -> {
             isDarkMode=true;
             switchTheme();
         });
-        JRadioButton themeSystemRadioButton = new JRadioButton("System");
-        themeSystemRadioButton.addActionListener(e -> {
-            //todo:fix the bug here
-            isDarkMode=Integer.parseInt(Preferences.userRoot().get("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\\AppsUseLightTheme","0"))==0;
+        JCheckBox pictureCheckBox = new JCheckBox("Picture Background");
+        pictureCheckBox.setSelected(isImageBackground);
+        pictureCheckBox.addActionListener(e -> {
+            isImageBackground=pictureCheckBox.isSelected();
             switchTheme();
         });
+//        JRadioButton themeSystemRadioButton = new JRadioButton("System");
+//        themeSystemRadioButton.addActionListener(e -> {
+//            //todo:fix the bug here
+//            isDarkMode=Integer.parseInt(Preferences.userRoot().get("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\\AppsUseLightTheme","0"))==0;
+//            switchTheme();
+//        });
         ButtonGroup themeButtonGroup = new ButtonGroup();
         themeButtonGroup.add(lightRadioButton);
         themeButtonGroup.add(darkRadioButton);
-        themeButtonGroup.add(themeSystemRadioButton);
+//        themeButtonGroup.add(themeSystemRadioButton);
         JPanel themePanel = new JPanel(new FlowLayout());
         themePanel.add(themeLabel);
         themePanel.add(lightRadioButton);
         themePanel.add(darkRadioButton);
-        themePanel.add(themeSystemRadioButton);
+        themePanel.add(pictureCheckBox);
+//        themePanel.add(themeSystemRadioButton);
         return themePanel;
     }
 
