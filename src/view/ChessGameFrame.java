@@ -239,11 +239,10 @@ public class ChessGameFrame extends MyFrame{
     private void initAutoConfirmButton(){
         JButton button = initButton("Auto Confirm");
         button.addActionListener(e -> {
-            boolean isAutoConfirm = !gameController.isAutoConfirm();
-            getGameController().setAutoConfirm(isAutoConfirm);
-            button.setText(isAutoConfirm?"Auto Confirm":"Not Auto");
-            swapConfirmButton.setVisible(!isAutoConfirm);
-            nextStepButton.setVisible(!isAutoConfirm);
+            gameController.isAutoConfirm = !gameController.isAutoConfirm;
+            button.setText(gameController.isAutoConfirm?"Auto Confirm":"Hand Confirm");
+            swapConfirmButton.setEnabled(!gameController.isAutoConfirm);
+            nextStepButton.setEnabled(!gameController.isAutoConfirm);
         });
         panelRight.add(button);
     }

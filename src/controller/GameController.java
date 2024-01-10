@@ -7,17 +7,21 @@ import view.*;
 
 import javax.swing.*;
 import java.io.*;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Random;
+import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
 
 import static model.Chessboard.calculateDistance;
-import static model.Constant.CHESSBOARD_COL_SIZE;
-import static model.Constant.CHESSBOARD_ROW_SIZE;
+import static model.Constant.DEFAULT_CHESSBOARD_COL_SIZE;
+import static model.Constant.DEFAULT_CHESSBOARD_ROW_SIZE;
 import static player.MusicPlayer.isFileExtensionName;
 import static player.MusicPlayer.playClick;
+import static view.ChessComponent.chessTypes;
 import static view.ChessGameFrame.isOnlinePlay;
-import static view.ChessboardComponent.chessTypes;
 import static view.MenuFrame.difficulty;
+import static view.MenuFrame.isDetailedDialog;
 
 /**
  * Controller is the connection between model and view,
@@ -46,14 +50,6 @@ public class GameController implements GameListener{
     private boolean isAlive=true;
     private int victoryMode=0; // 1=win 2=loss
 
-    enum NextStepFlag {
-        NO_SWAP_DONE,        // 0: no swap done, user cannot click "Next Step"
-        SWAP_DONE,      // 1: swap done, user can click "Next Step" for the first time to make it fall down
-        FALL_DOWN_DONE, // 2: fall down done. Click "Next Step" again to check if match-3 or more continue to take place,
-        //    the player can continue eliminating them by clicking the "Next Step" button until there are no more match left.
-        //    if no more match left, reset the flag to NO_SWAP_DONE.
-    }
-
     public void resetTimeLeft() {
         timeLeft = difficulty.getTimeLimit();
     }
@@ -61,8 +57,6 @@ public class GameController implements GameListener{
     public void setTimeLeft(int timeLeft) {
         this.timeLeft = timeLeft;
     }
-
-    private NextStepFlag onNextStepFlag;
     private final ArrayList<DifficultyPreset> difficultyPresets = new ArrayList<>();
     private JLabel[] statusLabels = new JLabel[4];
     public void setStatusLabels(JLabel[] statusLabels) {
@@ -76,9 +70,7 @@ public class GameController implements GameListener{
             if (difficulty.getTimeLimit()!=-1){
                 for (int i = difficulty.getTimeLimit(); i >=0 ; i--) {
                     if (!isAlive) break;
-                    try{
-                        Thread.sleep(998);
-                    }catch (Exception ignored){}
+                    pauseMilliSeconds(998);
                     timeLeft--;
                     updateTimerLabel();
                     checkVictory();
@@ -96,7 +88,6 @@ public class GameController implements GameListener{
         this.view = view;
         this.model = model;
         this.net = net;
-        this.onNextStepFlag = NextStepFlag.NO_SWAP_DONE; // first, no swap done so initiate with this state
         net.registerController(this);
         view.registerController(this);
         view.initiateChessComponent(model);
@@ -122,13 +113,12 @@ public class GameController implements GameListener{
         victoryMode=0;
         isAlive=true;
         view.removeAllChessComponentsAtGrids();
-        this.onNextStepFlag = NextStepFlag.NO_SWAP_DONE;  // first, no swap done, so initiate it with this state
 
         // call method to refresh a chessboard with new random pieces
         this.model.initPieces();
         // fetch contents of Chessboard to view
-        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
-            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+        for (int i = 0; i < Constant.DEFAULT_CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < Constant.DEFAULT_CHESSBOARD_COL_SIZE.getNum(); j++) {
                 view.setChessComponentAtGrid(new ChessboardPoint(i, j), new ChessComponent(view.getCHESS_SIZE(),
                         new ChessPiece(model.getGrid()[i][j].getPiece().getName())));
             }
@@ -139,21 +129,19 @@ public class GameController implements GameListener{
         view.repaint();
         System.out.println("New game initialized");
         isNewGameInitialized=true;
+        if (!isContinuable()) initialize();
 
         //complete it when restart game (auto-mode)
-        if(isAutoMode){
-            doAutoMode();
-        }
+        if(isAutoMode) doAutoMode();
     }
     public void onPlayerShuffle(){
         view.removeAllChessComponentsAtGrids();
-        this.onNextStepFlag = NextStepFlag.NO_SWAP_DONE;  // first, no swap done, so initiate it with this state
 
         // call method to refresh a chessboard with new random pieces
         this.model.initPieces();
         // fetch contents of Chessboard to view
-        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
-            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+        for (int i = 0; i < Constant.DEFAULT_CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < Constant.DEFAULT_CHESSBOARD_COL_SIZE.getNum(); j++) {
                 view.setChessComponentAtGrid(new ChessboardPoint(i, j), new ChessComponent(view.getCHESS_SIZE(),
                         new ChessPiece(model.getGrid()[i][j].getPiece().getName())));
             }
@@ -183,34 +171,35 @@ public class GameController implements GameListener{
     public void onPlayerSwapChess() {
         if (!isContinuable()) {
             System.out.println("Dead end: shuffled");
-            JOptionPane.showMessageDialog(chessGameFrame,"Auto Shuffled: Dead end");
+            if (isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame,"Auto Shuffled: Dead end");
             onPlayerShuffle();
         }
         checkVictory();
         playClick();
         try {
-            // Try to swap, then check if they are matchable
+            // Swap, then check if they are matchable
             model.swapChessPiece(selectedPoint, selectedPoint2);
             ChessComponent tmp = view.removeChessComponentAtGrid(selectedPoint);
             view.setChessComponentAtGrid(selectedPoint, view.removeChessComponentAtGrid(selectedPoint2));
             view.setChessComponentAtGrid(selectedPoint2, tmp);
-            view.repaint();
-            if (!isMatchable()) {
-                // Do nothing if there is nothing matchable
-                Thread.sleep(500);
+            var point1 = (ChessComponent) view.getGridComponentAt(selectedPoint).getComponent(0);
+            var point2 = (ChessComponent) view.getGridComponentAt(selectedPoint2).getComponent(0);
+            point1.repaint();
+            point2.repaint();
+            Thread.sleep(500);
+
+            if (isMatchable()) {
+                doChessEliminate();
+            } else {
+                // Recover if there is nothing matchable
                 model.swapChessPiece(selectedPoint, selectedPoint2);
                 tmp = view.removeChessComponentAtGrid(selectedPoint);
                 view.setChessComponentAtGrid(selectedPoint, view.removeChessComponentAtGrid(selectedPoint2));
                 view.setChessComponentAtGrid(selectedPoint2, tmp);
-                System.out.println("Swap Fail! Nothing can be match");
-            } else {
-                // Do swap two chess (in view) if matchable
-                // Do the elimination
-                this.onNextStepFlag = NextStepFlag.SWAP_DONE; // Swap done, eliminated, so set the state to SWAP_DONE
-
-                doChessEliminate();
+                if (isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame,"Swap Fail! Nothing can be match");
+                System.out.println("Swap Fail: Nothing can be match");
             }
-        } catch (NullPointerException | InterruptedException e) {
+        } catch (Exception e) {
             System.out.println("Swap Failed!");
         } finally {
             if (selectedPoint!=null) {
@@ -241,18 +230,13 @@ public class GameController implements GameListener{
 
     // do the elimination, only after chessboard has been checked
     // notice that there may be multiple matched simultaneously
-    private void doChessEliminate() {
+    private boolean doChessEliminate() {
+        int score_before = score;
         int rows = model.getGrid().length;
         int cols = model.getGrid()[0].length;
         boolean[][] labeledChess = new boolean[rows][cols];
 
-        for (int i = 0; i < rows; i++){
-            for (int j = 0; j < cols; j++){
-                labeledChess[i][j]=false;
-            }
-        }
-
-        // Check for horizontal adjacency
+        // Check for adjacency
         for (int i = 0; i < rows; i++) {
             int j = 0;
             while (j < cols - 2) {
@@ -261,10 +245,8 @@ public class GameController implements GameListener{
                     j++;
                     continue;
                 }
-
                 int matchCount = 1;
                 int k = j + 1;
-
                 while (k < cols) {
                     ChessPiece chess2 = model.getChessPieceAt(new ChessboardPoint(i, k));
                     if (chess2 == null || !chess1.getName().equals(chess2.getName())) {
@@ -273,19 +255,14 @@ public class GameController implements GameListener{
                     matchCount++;
                     k++;
                 }
-
                 if (matchCount >= 3) {
-                    // Do elimination for matched chess pieces
                     for (int m = j; m < j + matchCount; m++) {
                         labeledChess[i][m]=true;
                     }
                 }
-
                 j = k;
             }
         }
-
-        // Check for vertical adjacency
         for (int j = 0; j < cols; j++) {
             int i = 0;
             while (i < rows - 2) {
@@ -294,7 +271,6 @@ public class GameController implements GameListener{
                     i++;
                     continue;
                 }
-
                 int matchCount = 1;
                 int k = i + 1;
                 while (k < rows) {
@@ -305,18 +281,16 @@ public class GameController implements GameListener{
                     matchCount++;
                     k++;
                 }
-
                 if (matchCount >= 3) {
-                    // Do elimination for matched chess pieces
                     for (int m = i; m < i + matchCount; m++) {
                         labeledChess[m][j]=true;
                     }
                 }
-
                 i = k;
             }
         }
 
+        // do elimination
         for (int i = 0; i < rows; i++){
             for (int j = 0; j < cols; j++){
                 if (labeledChess[i][j]){
@@ -330,19 +304,21 @@ public class GameController implements GameListener{
         view.repaint();
         updateScoreAndStepLabel();
         checkVictory();
-        stepLeft--;
+        return score>score_before;
     }
 
     private void checkVictory() {
+        if (!isAlive) return;
         if (score >= difficulty.getGoal()) {
             JOptionPane.showMessageDialog(chessGameFrame,"Congratulations! You win.");
             System.out.println("Victory: Reach the goal");
             victoryMode=1;
-            SwingUtilities.invokeLater(()-> chessGameFrame.returnToTitle());
+            chessGameFrame.returnToTitle();
             this.terminate();
         }
         if (score<difficulty.getGoal() && stepLeft==0 || timeLeft<=0 && difficulty.getTimeLimit()>0){
-            if (stepLeft==0){
+            if (!isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame,"Oh no,you loss.");
+            else if (stepLeft==0){
                 JOptionPane.showMessageDialog(chessGameFrame,"Oh no, no more steps!");
                 System.out.println("Loss: Step limit exceeded");
             }
@@ -351,71 +327,43 @@ public class GameController implements GameListener{
                 System.out.println("Loss: Time limit exceeded");
             }
             victoryMode=2;
-            SwingUtilities.invokeLater(()-> chessGameFrame.returnToTitle());
+            chessGameFrame.returnToTitle();
             this.terminate();
         }
     }
 
     @Override
     public void onPlayerNextStep() {
-//        // For debug only
-//        System.out.println("Next step flag: " + this.onNextStepFlag);
 
-        //user should only click this after something has been swapped & eliminated
-        if (this.onNextStepFlag == NextStepFlag.NO_SWAP_DONE) {
-            JOptionPane.showMessageDialog(chessGameFrame,"Nothing matches, next step failed.");
-            System.out.println("NextStep Fail: nothing matches");
-        }
-
-        if (this.onNextStepFlag == NextStepFlag.SWAP_DONE) {
-            doFallDown();
-            this.onNextStepFlag = NextStepFlag.FALL_DOWN_DONE;
-            doChessEliminate();
-            // Fall done has done, if there is any match-3, eliminate them
-            JOptionPane.showMessageDialog(chessGameFrame,"Bonus! Match occurs when pieces fall down.");
-            System.out.println("Bonus! Match occurs when pieces fall down.");
-            view.repaint();
+        if (!checkChessBoardHasEmpty()) {
+            if (isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame,"NextStep failed: no empty");
+            System.out.println("NextStep Fail: no empty cells");
             return;
         }
 
-        if (this.onNextStepFlag == NextStepFlag.FALL_DOWN_DONE) {
-            if (checkChessBoardHasEmpty()) {
-                // generate new pieces to fill empty cells
-                // if there are new match-3 take place, user could click next step again to eliminate
-                while (checkChessBoardHasEmpty()) {
-                    doGenerateRandomPiecesOnTop();
-                    view.repaint();
-                    try {
-                        Thread.sleep(200);
-                    } catch (InterruptedException ignored) {}
-                    doFallDown();
-                }
-                // in case any new match take place after generated
-                while(isMatchable()){
-                    doChessEliminate();
-                    doGenerateRandomPiecesEmptyCell();
-                    view.repaint();
-                    System.out.println("New match occurs after generated new pieces!");
-                }
-            } else {
-                // if no empty and nothing to eliminate, back to normal gaming
-                this.onNextStepFlag = NextStepFlag.NO_SWAP_DONE;
-            }
-        }
+        doFallDown();
+        do {
+            // Fall done has done, if there is any match-3, eliminate them
+            if (isDetailedDialog)
+                JOptionPane.showMessageDialog(chessGameFrame, "Bonus! Match occurs after falling down.");
+            System.out.println("Bonus! Match occurs after falling down.");
+            view.repaint();
+            doFallDown();
+        } while (doChessEliminate());
 
+        stepLeft--;
         updateScoreAndStepLabel();
-        System.out.println("Score updated:" + score);
         checkVictory();
     }
-    // pieces above those empty cells will fail down until the empty cells are occupied
-    // TODO: animation here
+
     private void doFallDown() {
         // check every column for empty cells
         boolean hasEmptyCell = true;
         while (hasEmptyCell) {
             hasEmptyCell = false;
-            for (int col = 0; col < CHESSBOARD_COL_SIZE.getNum(); col++) {
-                for (int row = CHESSBOARD_ROW_SIZE.getNum() - 1; row > 0; row--) {
+            doGenerateRandomPiecesOnTop();
+            for (int col = 0; col < DEFAULT_CHESSBOARD_COL_SIZE.getNum(); col++) {
+                for (int row = DEFAULT_CHESSBOARD_ROW_SIZE.getNum() - 1; row > 0; row--) {
                     if ( this.model.getGrid()[row][col].getPiece() == null && ! (this.model.getGrid()[row - 1][col].getPiece() == null)) {
                         // should do swap for model and view
 
@@ -425,7 +373,7 @@ public class GameController implements GameListener{
                         model.swapChessPiece(upperCell, lowerCell);
                         view.setChessComponentAtGrid(lowerCell, view.removeChessComponentAtGrid(upperCell));
                         view.repaint();
-
+                        pauseMilliSeconds(200);
                         hasEmptyCell = true;
                     }
                 }
@@ -433,20 +381,8 @@ public class GameController implements GameListener{
         }
     }
 
-    private void doGenerateRandomPiecesEmptyCell() {
-        for (int i = 0; i < CHESSBOARD_ROW_SIZE.getNum(); i++) {
-            for (int j = 0; j < CHESSBOARD_COL_SIZE.getNum(); j++) {
-                if (this.model.getGrid()[i][j].getPiece() == null) {
-                    this.model.getGrid()[i][j].setPiece(new ChessPiece(Util.RandomPick(chessTypes)));
-                    this.view.setChessComponentAtGrid(new ChessboardPoint(i, j), new ChessComponent(view.getCHESS_SIZE(),
-                            new ChessPiece(model.getGrid()[i][j].getPiece().getName())));
-                }
-            }
-        }
-        view.repaint();
-    }
     private void doGenerateRandomPiecesOnTop(){
-        for (int j = 0; j < CHESSBOARD_COL_SIZE.getNum(); j++) {
+        for (int j = 0; j < DEFAULT_CHESSBOARD_COL_SIZE.getNum(); j++) {
             if (this.model.getGrid()[0][j].getPiece() == null) {
                 this.model.getGrid()[0][j].setPiece(new ChessPiece(Util.RandomPick(chessTypes)));
                 this.view.setChessComponentAtGrid(new ChessboardPoint(0, j), new ChessComponent(view.getCHESS_SIZE(),
@@ -457,8 +393,8 @@ public class GameController implements GameListener{
 
     // Check if there is any empty cell on chessboard
     private boolean checkChessBoardHasEmpty() {
-        for (int i = 0; i < CHESSBOARD_ROW_SIZE.getNum(); i++) {
-            for (int j = 0; j < CHESSBOARD_COL_SIZE.getNum(); j++) {
+        for (int i = 0; i < DEFAULT_CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < DEFAULT_CHESSBOARD_COL_SIZE.getNum(); j++) {
                 if (this.model.getGrid()[i][j].getPiece() == null) {
                     return true;
                 }
@@ -507,22 +443,22 @@ public class GameController implements GameListener{
                 break;
             }
         }
-        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
-            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+        for (int i = 0; i < Constant.DEFAULT_CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < Constant.DEFAULT_CHESSBOARD_COL_SIZE.getNum(); j++) {
                 csb[i][j] = sc.hasNextInt() ? sc.nextInt() : new Random().nextInt(4);
             }
         }
         sc.close();
         System.out.println("Difficulty:"+difficulty.getName()+"\nLoaded from File:");
         view.removeAllChessComponentsAtGrids();
-        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
+        for (int i = 0; i < Constant.DEFAULT_CHESSBOARD_ROW_SIZE.getNum(); i++) {
             String str = Arrays.toString(csb[i]);
             str = str.replaceAll("\\[", "");
             str = str.replaceAll("]", "");
             str = str.replaceAll(",", "");
             System.out.println(str);
 
-            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+            for (int j = 0; j < Constant.DEFAULT_CHESSBOARD_COL_SIZE.getNum(); j++) {
                 String pName = chessTypes[Math.min(Math.max(csb[j][i], 0), chessTypes.length)];
                 view.setChessComponentAtGrid(new ChessboardPoint(j, i), new ChessComponent(view.getCHESS_SIZE(),
                         new ChessPiece(pName)));
@@ -554,8 +490,8 @@ public class GameController implements GameListener{
                 break;
             }
         }
-        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
-            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+        for (int i = 0; i < Constant.DEFAULT_CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < Constant.DEFAULT_CHESSBOARD_COL_SIZE.getNum(); j++) {
                 csb[i][j] = sc.hasNextInt() ? sc.nextInt() : new Random().nextInt(chessTypes.length);
             }
         }
@@ -564,14 +500,14 @@ public class GameController implements GameListener{
         try {
             view.removeAllChessComponentsAtGrids();
         } catch (Exception ignored) {}
-        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
+        for (int i = 0; i < Constant.DEFAULT_CHESSBOARD_ROW_SIZE.getNum(); i++) {
             String str = Arrays.toString(csb[i]);
             str = str.replaceAll("\\[", "");
             str = str.replaceAll("]", "");
             str = str.replaceAll(",", "");
             System.out.println(str);
 
-            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+            for (int j = 0; j < Constant.DEFAULT_CHESSBOARD_COL_SIZE.getNum(); j++) {
                 String pName = chessTypes[Math.min(Math.max(csb[j][i], 0), chessTypes.length)];
                 view.setChessComponentAtGrid(new ChessboardPoint(j, i), new ChessComponent(view.getCHESS_SIZE(),
                         new ChessPiece(pName)));
@@ -591,8 +527,8 @@ public class GameController implements GameListener{
         StringBuilder sb = new StringBuilder();
         sb.append(score).append(" ").append(timeLeft).append(" ").append(stepLeft).append(" ").append(difficulty.getGoal())
                 .append(" ").append(difficulty.getTimeLimit()).append(" ").append(difficulty.getStepLimit()).append("\n");
-        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
-            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+        for (int i = 0; i < Constant.DEFAULT_CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < Constant.DEFAULT_CHESSBOARD_COL_SIZE.getNum(); j++) {
                 var cp = model.getChessPieceAt(new ChessboardPoint(i, j)).getName();
                 for (int k = 0; k < chessTypes.length; k++) {
                     if (cp.equals(chessTypes[k])) {
@@ -619,8 +555,8 @@ public class GameController implements GameListener{
         StringBuilder sb = new StringBuilder();
         sb.append(score).append(" ").append(timeLeft).append(" ").append(stepLeft).append(" ").append(difficulty.getGoal())
                 .append(" ").append(difficulty.getTimeLimit()).append(" ").append(difficulty.getStepLimit()).append(" \n");
-        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
-            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+        for (int i = 0; i < Constant.DEFAULT_CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < Constant.DEFAULT_CHESSBOARD_COL_SIZE.getNum(); j++) {
                 var cp = model.getChessPieceAt(new ChessboardPoint(i, j)).getName();
                 for (int k = 0; k < chessTypes.length; k++) {
                     if (cp.equals(chessTypes[k])) {
@@ -743,11 +679,11 @@ public class GameController implements GameListener{
         }
         score=0;
         isAlive=false;
-        SwingUtilities.invokeLater(()-> chessGameFrame.returnToTitle());
+        chessGameFrame.returnToTitle();
     }
     public boolean isContinuable(){
-        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
-            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum()-1; j++) {
+        for (int i = 0; i < Constant.DEFAULT_CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < Constant.DEFAULT_CHESSBOARD_COL_SIZE.getNum()-1; j++) {
                 var p1=new ChessboardPoint(i,j);
                 var p2=new ChessboardPoint(i,j+1);
                 model.swapChessPiece(p1,p2);
@@ -758,8 +694,8 @@ public class GameController implements GameListener{
                 model.swapChessPiece(p1,p2);
             }
         }
-        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum()-1; i++) {
-            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+        for (int i = 0; i < Constant.DEFAULT_CHESSBOARD_ROW_SIZE.getNum()-1; i++) {
+            for (int j = 0; j < Constant.DEFAULT_CHESSBOARD_COL_SIZE.getNum(); j++) {
                 var p1=new ChessboardPoint(i,j);
                 var p2=new ChessboardPoint(i+1,j);
                 model.swapChessPiece(p1,p2);
@@ -774,7 +710,7 @@ public class GameController implements GameListener{
     }
     public void hint(){
         if (!isContinuable()) {
-            System.out.println("Dead end: shuffled");
+            if (isDetailedDialog) System.out.println("Dead end: shuffled");
             JOptionPane.showMessageDialog(chessGameFrame,"Auto Shuffled: Dead end");
             onPlayerShuffle();
             return;
@@ -791,8 +727,8 @@ public class GameController implements GameListener{
             point2.repaint();
             selectedPoint2=null;
         }
-        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
-            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum()-1; j++) {
+        for (int i = 0; i < Constant.DEFAULT_CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < Constant.DEFAULT_CHESSBOARD_COL_SIZE.getNum()-1; j++) {
                 selectedPoint=new ChessboardPoint(i,j);
                 selectedPoint2=new ChessboardPoint(i,j+1);
                 model.swapChessPiece(selectedPoint,selectedPoint2);
@@ -811,8 +747,8 @@ public class GameController implements GameListener{
                 selectedPoint2=null;
             }
         }
-        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum()-1; i++) {
-            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+        for (int i = 0; i < Constant.DEFAULT_CHESSBOARD_ROW_SIZE.getNum()-1; i++) {
+            for (int j = 0; j < Constant.DEFAULT_CHESSBOARD_COL_SIZE.getNum(); j++) {
                 selectedPoint=new ChessboardPoint(i,j);
                 selectedPoint2=new ChessboardPoint(i+1,j);
                 model.swapChessPiece(selectedPoint,selectedPoint2);
@@ -833,20 +769,10 @@ public class GameController implements GameListener{
         jd.setVisible(true);
     }
 
-
-    public void setAutoConfirm(boolean autoConfirm) {
-        isAutoConfirm = autoConfirm;
-        System.out.println("autoConfirm "+autoConfirm);
-    }
-
-    // TODO: toggle auto mode from UI interaction
     public void setAutoMode(boolean autoMode){
         isAutoMode=autoMode;
-        if (isAutoMode()){
-            doAutoMode();
-        }
+        if (isAutoMode()) doAutoMode();
     }
-
 
     // Implement auto-mode
     private void doAutoMode() {
@@ -855,32 +781,22 @@ public class GameController implements GameListener{
             while (score <= difficulty.getGoal() && isAutoMode && isAlive) {
                 hint();
                 onPlayerSwapChess();
-                pause1Second();
-
-                // Wait until the player has made their next move.
-                while (this.onNextStepFlag != NextStepFlag.NO_SWAP_DONE) {
-                    pause1Second();
-                    onPlayerNextStep();
-                }
+                onPlayerNextStep();
             }
         }).start();
     }
 
     // To handle auto confirm when it is on
     private void doAutoConfirm() {
-        onPlayerSwapChess();
-        view.repaint();
-        pause1Second();
-        // runner for new thread, to avoid UI freeze
-        Runnable runnable = () -> {
-            while (onNextStepFlag != NextStepFlag.NO_SWAP_DONE && isAlive) {
-                pause1Second();
-                onPlayerNextStep();
-                view.repaint();
+        // Create a new thread to run the auto confirm logic.
+        new Thread(() -> {
+            while (isAutoConfirm && isAlive) {
+                if (selectedPoint!=null && selectedPoint2!=null){
+                    onPlayerSwapChess();
+                    onPlayerNextStep();
+                }
             }
-        };
-        Thread thread = new Thread(runnable);
-        thread.start();
+        }).start();
     }
 
     public boolean isAutoConfirm() {
@@ -893,22 +809,20 @@ public class GameController implements GameListener{
 
     // For auto mode, to avoid it ends immediately
     // a workaround
-    private void pause1Second(){
+    private void pauseMilliSeconds(int ms){
         try {
-            TimeUnit.SECONDS.sleep(1);
+            TimeUnit.MILLISECONDS.sleep(ms);
         }
-        catch (InterruptedException ignored){}
+        catch (Exception ignored){}
     }
     @Override
     public void terminate() {
-        isAlive=false;
-        if (isOnlinePlay()){
-            NetGame.t.interrupt();
-        }
-        else {
+        if (isOnlinePlay()) NetGame.t.interrupt();
+        else if (isAlive){
             DifficultySelectFrame difficultySelectFrame = new DifficultySelectFrame(chessGameFrame.menuFrame);
-            difficultySelectFrame.setVisible(true);
+            SwingUtilities.invokeLater(()->difficultySelectFrame.setVisible(true));
         }
+        isAlive=false;
     }
     public boolean isAlive(){
         return isAlive;

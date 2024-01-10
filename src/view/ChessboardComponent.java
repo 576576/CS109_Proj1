@@ -13,15 +13,15 @@ import java.awt.event.MouseEvent;
 import java.util.HashSet;
 import java.util.Set;
 
-import static model.Constant.CHESSBOARD_COL_SIZE;
-import static model.Constant.CHESSBOARD_ROW_SIZE;
+import static model.Constant.DEFAULT_CHESSBOARD_COL_SIZE;
+import static model.Constant.DEFAULT_CHESSBOARD_ROW_SIZE;
 import static view.MenuFrame.isDarkMode;
 
 /**
  * This class represents the checkerboard component object on the panel
  */
 public class ChessboardComponent extends JComponent {
-    private final CellComponent[][] gridComponents = new CellComponent[CHESSBOARD_ROW_SIZE.getNum()][CHESSBOARD_COL_SIZE.getNum()];
+    private final CellComponent[][] gridComponents = new CellComponent[DEFAULT_CHESSBOARD_ROW_SIZE.getNum()][DEFAULT_CHESSBOARD_COL_SIZE.getNum()];
     private final int CHESS_SIZE;
     private final Set<ChessboardPoint> riverCell = new HashSet<>();
 
@@ -30,7 +30,6 @@ public class ChessboardComponent extends JComponent {
     }
 
     private GameController gameController;
-    public static String[] chessTypes = new String[]{"💎", "⚪", "▲", "🔶", "🌞", "🪐"};
 
     public ChessboardComponent(int chessSize) {
         CHESS_SIZE = chessSize;
@@ -51,8 +50,8 @@ public class ChessboardComponent extends JComponent {
      */
     public void initiateChessComponent(Chessboard chessboard) {
         Cell[][] grid = chessboard.getGrid();
-        for (int i = 0; i < CHESSBOARD_ROW_SIZE.getNum(); i++) {
-            for (int j = 0; j < CHESSBOARD_COL_SIZE.getNum(); j++) {
+        for (int i = 0; i < DEFAULT_CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < DEFAULT_CHESSBOARD_COL_SIZE.getNum(); j++) {
                 // TODO: Implement the initialization checkerboard
                 riverCell.add(new ChessboardPoint(i,j));
                 if (grid[i][j].getPiece() != null) {
@@ -65,8 +64,8 @@ public class ChessboardComponent extends JComponent {
     }
 
     public void initiateGridComponents() {
-        for (int i = 0; i < CHESSBOARD_ROW_SIZE.getNum(); i++) {
-            for (int j = 0; j < CHESSBOARD_COL_SIZE.getNum(); j++) {
+        for (int i = 0; i < DEFAULT_CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < DEFAULT_CHESSBOARD_COL_SIZE.getNum(); j++) {
                 ChessboardPoint temp = new ChessboardPoint(i, j);
                 CellComponent cell;
                 if (riverCell.contains(temp)) {

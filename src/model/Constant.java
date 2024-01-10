@@ -5,7 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public enum Constant {
-    CHESSBOARD_ROW_SIZE(8),CHESSBOARD_COL_SIZE(8);
+    DEFAULT_CHESSBOARD_ROW_SIZE(8), DEFAULT_CHESSBOARD_COL_SIZE(8);
 
     private final int num;
     Constant(int num){
@@ -17,12 +17,12 @@ public enum Constant {
     }
 
     static final Map<String, Color> colorMap = new HashMap<>(){{
-        //chess types:6
-        put("💎",Color.blue);
+        put("💎",Color.blue); //chess types:6
         put("⚪",Color.white);
         put("▲",Color.green);
         put("🔶",Color.orange);
-        //todo:add colorMap(optional)
+        put("🙂",Color.yellow);
+        put("👀",Color.magenta);
     }};
 
 }

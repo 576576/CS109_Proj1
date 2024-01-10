@@ -1,7 +1,7 @@
 package model;
 
-import static view.ChessboardComponent.chessTypes;
 import static controller.GameController.isNewGameInitialized;
+import static view.ChessComponent.chessTypes;
 
 /**
  * This class store the real chess information.
@@ -12,14 +12,14 @@ public class Chessboard {
 
     public Chessboard() {
         this.grid =
-                new Cell[Constant.CHESSBOARD_ROW_SIZE.getNum()][Constant.CHESSBOARD_COL_SIZE.getNum()];
+                new Cell[Constant.DEFAULT_CHESSBOARD_ROW_SIZE.getNum()][Constant.DEFAULT_CHESSBOARD_COL_SIZE.getNum()];
         initGrid();
         initPieces();
     }
 
     private void initGrid() {
-        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
-            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+        for (int i = 0; i < Constant.DEFAULT_CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < Constant.DEFAULT_CHESSBOARD_COL_SIZE.getNum(); j++) {
                 grid[i][j] = new Cell();
             }
         }
@@ -29,15 +29,15 @@ public class Chessboard {
     public void initPieces() {
         isNewGameInitialized=false;
 
-        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
-            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+        for (int i = 0; i < Constant.DEFAULT_CHESSBOARD_ROW_SIZE.getNum(); i++) {
+            for (int j = 0; j < Constant.DEFAULT_CHESSBOARD_COL_SIZE.getNum(); j++) {
                 grid[i][j].setPiece(new ChessPiece(Util.RandomPick(chessTypes)));
             }
         }
 
         while(checkerBoardValidator(grid)){
-            for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
-                for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
+            for (int i = 0; i < Constant.DEFAULT_CHESSBOARD_ROW_SIZE.getNum(); i++) {
+                for (int j = 0; j < Constant.DEFAULT_CHESSBOARD_COL_SIZE.getNum(); j++) {
                     grid[i][j].setPiece(new ChessPiece(Util.RandomPick(chessTypes)));
                 }
             }
@@ -49,8 +49,8 @@ public class Chessboard {
     }
     // This method checks if there is any group of 3 same chess pieces, if there is not, return false.
     public static boolean checkerBoardValidator(Cell[][] grid){
-        int rows = Constant.CHESSBOARD_ROW_SIZE.getNum();
-        int columns = Constant.CHESSBOARD_COL_SIZE.getNum();
+        int rows = Constant.DEFAULT_CHESSBOARD_ROW_SIZE.getNum();
+        int columns = Constant.DEFAULT_CHESSBOARD_COL_SIZE.getNum();
 
         for(int i=0; i<rows; i++) {
             for(int j=0; j<columns; j++) {

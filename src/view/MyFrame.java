@@ -128,10 +128,4 @@ public abstract class MyFrame extends JFrame{
             }
         }
     }
-
-//    @Override
-//    public void paint(Graphics g) {
-//        var backgroundImage = pickBackgroundImage();
-//        if (backgroundImage!=null) g.drawImage(backgroundImage, 0, 0, null);
-//    }
 }
