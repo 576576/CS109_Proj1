@@ -10,6 +10,7 @@ import java.io.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 
+import static model.Chessboard.calculateDistance;
 import static model.Constant.CHESSBOARD_COL_SIZE;
 import static model.Constant.CHESSBOARD_ROW_SIZE;
 import static player.MusicPlayer.isFileExtensionName;
@@ -204,13 +205,10 @@ public class GameController implements GameListener{
                 System.out.println("Swap Fail! Nothing can be match");
             } else {
                 // Do swap two chess (in view) if matchable
-                // TODO: may need animation for swap and eliminate
                 // Do the elimination
                 this.onNextStepFlag = NextStepFlag.SWAP_DONE; // Swap done, eliminated, so set the state to SWAP_DONE
-                //TODO: cancel cell selection after eliminate? something cause null pointer exception
-                doChessEliminate();
 
-                //TODO: cancel cell selection after eliminate? it may cause null pointer exception
+                doChessEliminate();
             }
         } catch (NullPointerException | InterruptedException e) {
             System.out.println("Swap Failed!");
@@ -643,10 +641,8 @@ public class GameController implements GameListener{
     @Override
     public void onPlayerClickChessPiece(ChessboardPoint point, ChessComponent component) {
         if (selectedPoint2 != null) {
-            var distance2point1 =
-                    Math.abs(selectedPoint.col() - point.col()) + Math.abs(selectedPoint.row() - point.row());
-            var distance2point2 =
-                    Math.abs(selectedPoint2.col() - point.col()) + Math.abs(selectedPoint2.row() - point.row());
+            var distance2point1 = calculateDistance(point,selectedPoint);
+            var distance2point2 = calculateDistance(point,selectedPoint2);
             var point1 = (ChessComponent) view.getGridComponentAt(selectedPoint).getComponent(0);
             var point2 = (ChessComponent) view.getGridComponentAt(selectedPoint2).getComponent(0);
             if (distance2point1 == 0 && point1 != null) {
