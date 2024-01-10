@@ -15,6 +15,7 @@ import java.util.Set;
 
 import static model.Constant.CHESSBOARD_COL_SIZE;
 import static model.Constant.CHESSBOARD_ROW_SIZE;
+import static view.MenuFrame.isDarkMode;
 
 /**
  * This class represents the checkerboard component object on the panel
@@ -145,12 +146,8 @@ public class ChessboardComponent extends JComponent {
         }
     }
 
-    public void setDarkMode(boolean isDarkMode) {
-        for (var i:gridComponents){
-            for (var j:i){
-                j.setBackground(isDarkMode ? Color.DARK_GRAY : Color.LIGHT_GRAY);
-            }
-        }
+    public void setDarkMode() {
+        for (var i:gridComponents) for (var j : i) j.setBackground(isDarkMode ? Color.DARK_GRAY : Color.LIGHT_GRAY);
     }
 
     @Override

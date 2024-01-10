@@ -6,10 +6,8 @@ import java.awt.*;
 import static view.MenuFrame.*;
 
 public class SettingFrame extends MyFrame{
-    JPanel formPanel = new JPanel(new GridLayout(2,1));
-    JPanel volumePanel = new JPanel(new FlowLayout());
-    JPanel themePanel = getThemePanel();
-    JButton submitButton;
+    private final JPanel formPanel = new JPanel(new GridLayout(2,1));
+    private final JButton submitButton;
     public SettingFrame(){
         setTitle("Settings");
         setSize(500, 300);
@@ -20,6 +18,7 @@ public class SettingFrame extends MyFrame{
         JLabel volumeLabel = new JLabel("Music:");
         JSlider soundSlider = new JSlider(0,100,20);
         soundSlider.addChangeListener(e -> setVolume(soundSlider.getValue()));
+        JPanel volumePanel = new JPanel(new FlowLayout());
         volumePanel.add(volumeLabel);
         volumePanel.add(soundSlider);
 
@@ -27,6 +26,7 @@ public class SettingFrame extends MyFrame{
         submitButton.addActionListener(e -> this.dispose());
 
         formPanel.add(volumePanel);
+        JPanel themePanel = getThemePanel();
         formPanel.add(themePanel);
         add(formPanel, BorderLayout.CENTER);
         add(submitButton,BorderLayout.SOUTH);
@@ -72,30 +72,12 @@ public class SettingFrame extends MyFrame{
 //        themePanel.add(themeSystemRadioButton);
         return themePanel;
     }
-
     public void setDarkMode(){
         setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
         getContentPane().setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
-        setDarkModeStatic(formPanel);
+        setDarkMode(formPanel);
         submitButton.setBackground(isDarkMode ? Color.DARK_GRAY : Color.LIGHT_GRAY);
         submitButton.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
         this.repaint();
-    }
-    public static <T extends JComponent> void setDarkModeStatic(T component){
-        for (var i:component.getComponents()){
-            if (!(i instanceof JComponent)) continue;
-            if (i instanceof JPanel){
-                i.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
-                setDarkModeStatic((JComponent) i);
-            }
-            if (i instanceof JButton){
-                i.setBackground(isDarkMode ? Color.DARK_GRAY : Color.LIGHT_GRAY);
-                i.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
-            }
-            else {
-                i.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
-                i.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
-            }
-        }
     }
 }

@@ -44,23 +44,9 @@ public class Chessboard {
             // for debug, print generated chessboard
             // printChessBoardGrid(grid);
         }
-        System.out.println("New pieces initialized");
+//        System.out.println("New pieces initialized");
         isNewGameInitialized=true;
     }
-
-    public static void printChessBoardGrid(Cell[][] grid){
-
-        for (int i = 0; i < Constant.CHESSBOARD_ROW_SIZE.getNum(); i++) {
-            System.out.println();
-            for (int j = 0; j < Constant.CHESSBOARD_COL_SIZE.getNum(); j++) {
-
-                System.out.print(grid[i][j].getPiece().getName());
-
-            }
-            }
-        System.out.println();
-    }
-
     // This method checks if there is any group of 3 same chess pieces, if there is not, return false.
     public static boolean checkerBoardValidator(Cell[][] grid){
         int rows = Constant.CHESSBOARD_ROW_SIZE.getNum();
@@ -88,9 +74,7 @@ public class Chessboard {
                         grid[i+2][j].getPiece().getName().equals(currentPieceName)) {
                     return true;
                 }
-                } catch (NullPointerException e) {
-
-                }
+                } catch (NullPointerException ignored) {}
             }
         }
 
@@ -105,7 +89,7 @@ public class Chessboard {
         return grid[point.row()][point.col()];
     }
 
-    private int calculateDistance(ChessboardPoint src, ChessboardPoint destination) {
+    public static int calculateDistance(ChessboardPoint src, ChessboardPoint destination) {
         return Math.abs(src.row() - destination.row()) + Math.abs(src.col() - destination.col());
     }
 

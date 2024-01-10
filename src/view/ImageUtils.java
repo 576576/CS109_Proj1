@@ -4,27 +4,22 @@ import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
 import java.io.InputStream;
 
 public class ImageUtils {
-    public static <T> BufferedImage readImage(T imageInput) throws IOException,NullPointerException{
-        if (imageInput instanceof File){
-            return ImageIO.read((File) imageInput);
-        }
-        if (imageInput instanceof InputStream){
-            return ImageIO.read((InputStream) imageInput);
-        }
-        if (imageInput instanceof String){
-            return ImageIO.read(new File((String) imageInput));
-        }
+    public static <T> BufferedImage readImage(T imageInput){
+        try {
+            if (imageInput instanceof File){
+                return ImageIO.read((File) imageInput);
+            }
+            if (imageInput instanceof InputStream){
+                return ImageIO.read((InputStream) imageInput);
+            }
+            if (imageInput instanceof String){
+                return ImageIO.read(new File((String) imageInput));
+            }
+        } catch (Exception ignored) {}
         return null;
-    }
-    public static int getImageWidth(BufferedImage image) {
-        return image.getWidth();
-    }
-    public static int getImageHeight(BufferedImage image) {
-        return image.getHeight();
     }
     public static BufferedImage createScaledImage(int width, int height) {
         return new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);

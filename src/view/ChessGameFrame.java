@@ -5,8 +5,11 @@ import controller.GameController;
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Random;
 
 import static view.DifficultySelectFrame.selectedFile;
@@ -19,37 +22,42 @@ public class ChessGameFrame extends MyFrame{
     public MenuFrame menuFrame;
     private ChessboardComponent chessboardComponent;
     private JButton swapConfirmButton,nextStepButton;
-    private final JPanel controlPanelRight = new JPanel();
+    private final JPanel panelRight = new JPanel();
     private final JPanel panelLeft = new JPanel();
     private final JLabel[] statusLabels = new JLabel[4];
     private final GridBagLayout gbl = new GridBagLayout();
-    private final ArrayList<JComponent> controlComponents = new ArrayList<>();
+    private final JPanel playPanel = new JPanel(gbl);
+    private final JPanel backgroundPanel = new JPanel(gbl){
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            if (isImageBackground) g.drawImage(currentBackground.getImage(), 0, 0, null);
+        }
+    };
     private final JFileChooser jf = new JFileChooser(".\\");
 
     public ChessGameFrame(int width, int height) {
         setTitle("CS109 消消乐");
         int CHESSBOARD_SIZE = (int) (3 * Math.sqrt(width * height) / 5);
-        this.ONE_CHESS_SIZE = CHESSBOARD_SIZE /8;
+        ONE_CHESS_SIZE = CHESSBOARD_SIZE /8;
         setMinimumSize(new Dimension(905,600));
 
         jf.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        FileNameExtensionFilter ff = new FileNameExtensionFilter("savedGame.txt", "txt");
+        FileNameExtensionFilter ff = new FileNameExtensionFilter("SavedGameFiles", "txt");
         jf.addChoosableFileFilter(ff);
         jf.setFileFilter(ff);
 
         setSize(width, height);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
-        setLayout(gbl);
+        setLayout(null);
 
-//        JLabel bgLabel = new JLabel(); //add background images
-//        bgLabel.setBounds(0,0,this.getWidth(),this.getHeight());
-//        var backgroundImage = pickBackgroundImage();
-//        if (backgroundImage!=null) bgLabel.setIcon(new ImageIcon(backgroundImage));
-//        JPanel p0 = new JPanel();
-//        p0.add(bgLabel); //TODO: add isImageBackground function
-//        ((JPanel)getContentPane()).setOpaque(false);
-//        getLayeredPane().add(bgLabel,JLayeredPane.DEFAULT_LAYER);
+        playPanel.setSize(getSize());
+        backgroundPanel.setSize(getSize());
+        playPanel.setOpaque(false);
+        backgroundPanel.setOpaque(false);
+        add(playPanel);
+        add(backgroundPanel);
 
         System.out.println("Play Start: "+startPlayMode);
 
@@ -58,8 +66,8 @@ public class ChessGameFrame extends MyFrame{
         if (!isOnlinePlay()) initLocalPlayPanel();
         else initOnlinePlayPanel();
 
-        addComponent(this,gbl, panelLeft,1,1,24,24,0,1);
-        addComponent(this,gbl, controlPanelRight,590,1,560,4,0,1);
+        addComponent(playPanel,gbl, panelLeft,1,1,24,24,0,1);
+        addComponent(playPanel,gbl, panelRight,590,1,560,4,0,1);
 
         musicThread = new Thread(() -> {
             int i=new Random().nextInt(musicFiles.size());
@@ -100,8 +108,30 @@ public class ChessGameFrame extends MyFrame{
                 }
             }
         });
+
+        //add listeners to adapt window change
+        addComponentListener(new ComponentAdapter() {
+            @Override
+            public void componentResized(ComponentEvent e) {
+                super.componentResized(e);
+                playPanel.setSize(getSize());
+                scaleBackgroundImage(getSize());
+                backgroundPanel.setSize(getSize());
+            }
+        });
+        addWindowStateListener(new WindowAdapter() {
+            @Override
+            public void windowStateChanged(WindowEvent e) {
+                super.windowStateChanged(e);
+                playPanel.setSize(getSize());
+                scaleBackgroundImage(getSize());
+                backgroundPanel.setSize(getSize());
+            }
+        });
     }
-    private void uiInitialize(){ //initialize the gui thread
+    private void uiInitialize(){ //initialize the gui threads
+        panelLeft.setOpaque(false);
+        panelRight.setOpaque(false);
         gameController.updateDifficultyLabel();
         gameController.updateScoreAndStepLabel();
         gameController.startTimer();
@@ -115,7 +145,7 @@ public class ChessGameFrame extends MyFrame{
         initAutoGoButton();
         initShuffleButton();
 
-        controlPanelRight.setLayout(new GridLayout(9,1,2,6));
+        panelRight.setLayout(new GridLayout(9,1,2,6));
         initSettingButton();
         initNewGameButton();
         initAutoConfirmButton();
@@ -131,7 +161,7 @@ public class ChessGameFrame extends MyFrame{
         initThemeButton();
         initShuffleButton();
 
-        controlPanelRight.setLayout(new GridLayout(6,1,2,6));
+        panelRight.setLayout(new GridLayout(6,1,2,6));
         initSettingButton();
         initAutoConfirmButton();
         initSwapConfirmButton();
@@ -159,7 +189,7 @@ public class ChessGameFrame extends MyFrame{
      */
     private void initChessboard() {
         chessboardComponent = new ChessboardComponent(ONE_CHESS_SIZE);
-        addComponent(this,gbl,chessboardComponent,25,1,560,560,560,560);
+        addComponent(playPanel,gbl,chessboardComponent,25,1,560,560,560,560);
     }
 
     /**
@@ -178,50 +208,36 @@ public class ChessGameFrame extends MyFrame{
         return statusLabels;
     }
     public void setDarkMode() {
-        try {
-            getContentPane().setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
-            chessboardComponent.setDarkMode(isDarkMode);
-            for (var i:getContentPane().getComponents()){
-                i.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
-            }
-            for (var i:panelLeft.getComponents()){
-                i.setForeground(isDarkMode ? Color.WHITE : Color.BLACK);
-                i.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
-            }
-            for (var i: controlComponents){
-                i.setBackground(isDarkMode ? Color.DARK_GRAY : Color.LIGHT_GRAY);
-                i.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
-            }
-            chessboardComponent.setDarkMode(isDarkMode);
-        } catch (Exception ignored){}
+        super.setDarkMode();
+        chessboardComponent.setDarkMode();
+        if (isImageBackground){
+            resetBackgroundImage(getSize());
+        }
         repaint();
     }
-
     private void initThemeButton() {
-        JButton button = initControlButton("Switch Theme");
-        button.addActionListener(e -> switchTheme());
+        JButton button = initButton("Switch Theme");
+        button.addActionListener(e -> {
+            isDarkMode=!isDarkMode;
+            switchTheme();
+        });
         panelLeft.add(button);
     }
-    private void switchTheme(){
-        isDarkMode=!isDarkMode;
-        MenuFrame.switchTheme();
-    }
-
     private void initSettingButton(){
-        JButton button = initControlButton("Setting");
+        JButton button = initButton("Setting");
         button.addActionListener(e -> {
             SettingFrame settingFrame = new SettingFrame();
             settingFrame.setVisible(true);
         });
-        controlPanelRight.add(button);
+        panelRight.add(button);
     }
     private void initNewGameButton(){
-        JButton button = initControlButton("Start New");
+        JButton button = initButton("Start New");
         button.addActionListener(e -> chessboardComponent.startNewGame());
-        controlPanelRight.add(button);
+        panelRight.add(button);
     }
     private void initAutoConfirmButton(){
-        JButton button = initControlButton("Auto Confirm");
+        JButton button = initButton("Auto Confirm");
         button.addActionListener(e -> {
             boolean isAutoConfirm = !gameController.isAutoConfirm();
             getGameController().setAutoConfirm(isAutoConfirm);
@@ -229,10 +245,10 @@ public class ChessGameFrame extends MyFrame{
             swapConfirmButton.setVisible(!isAutoConfirm);
             nextStepButton.setVisible(!isAutoConfirm);
         });
-        controlPanelRight.add(button);
+        panelRight.add(button);
     }
     private void initAutoGoButton(){
-        JButton button = initControlButton("AutoGo");
+        JButton button = initButton("AutoGo");
         button.addActionListener(e -> {
             boolean isAutoMode = !getGameController().isAutoMode();
             button.setText(isAutoMode?"FullAuto":"AutoGo");
@@ -241,30 +257,30 @@ public class ChessGameFrame extends MyFrame{
         panelLeft.add(button);
     }
     public void initHintButton(){
-        JButton button = initControlButton("Hint!");
+        JButton button = initButton("Hint!");
         button.addActionListener(e -> gameController.hint());
         panelLeft.add(button);
     }
     public void initShuffleButton(){
-        JButton button = initControlButton("Shuffle");
+        JButton button = initButton("Shuffle");
         button.addActionListener(e -> gameController.onPlayerShuffle());
         panelLeft.add(button);
     }
     private void initSwapConfirmButton() {
-        JButton button = initControlButton("Confirm Swap");
+        JButton button = initButton("Confirm Swap");
         button.addActionListener((e) -> chessboardComponent.swapChess());
         swapConfirmButton=button;
-        controlPanelRight.add(button);
+        panelRight.add(button);
     }
 
     private void initNextStepButton() {
-        JButton button = initControlButton("Next Step");
+        JButton button = initButton("Next Step");
         button.addActionListener((e) -> chessboardComponent.nextStep());
         nextStepButton=button;
-        controlPanelRight.add(button);
+        panelRight.add(button);
     }
     private void initLoadButton() {
-        JButton button = initControlButton("Load");
+        JButton button = initButton("Load");
         button.addActionListener(e -> {
             int result = jf.showOpenDialog(this);
             if (result == JFileChooser.APPROVE_OPTION) {
@@ -272,10 +288,10 @@ public class ChessGameFrame extends MyFrame{
                 gameController.loadFromFile(file);
             }
         });
-        controlPanelRight.add(button);
+        panelRight.add(button);
     }
     private void initSaveButton(){
-        JButton button = initControlButton("Save");
+        JButton button = initButton("Save");
         button.addActionListener(e -> {
             int result = jf.showOpenDialog(this);
             if (result == JFileChooser.APPROVE_OPTION) {
@@ -283,12 +299,12 @@ public class ChessGameFrame extends MyFrame{
                 gameController.saveToFile(file);
             }
         });
-        controlPanelRight.add(button);
+        panelRight.add(button);
     }
     private void initReturnTitleButton(){
-        JButton button = initControlButton(isOnlinePlay()?"Disconnect":"Return Title");
+        JButton button = initButton(isOnlinePlay()?"Disconnect":"Return Title");
         button.addActionListener(e -> returnToTitle());
-        controlPanelRight.add(button);
+        panelRight.add(button);
     }
 
     public void returnToTitle() {
@@ -299,14 +315,9 @@ public class ChessGameFrame extends MyFrame{
     }
 
     public void initExitButton(){
-        JButton button = initControlButton("Exit");
+        JButton button = initButton("Exit");
         button.addActionListener(e -> System.exit(0));
-        controlPanelRight.add(button);
-    }
-    public JButton initControlButton(String name){
-        JButton button = initButton(name);
-        controlComponents.add(button);
-        return button;
+        panelRight.add(button);
     }
     public static boolean isOnlinePlay(){
         return startPlayMode>2;

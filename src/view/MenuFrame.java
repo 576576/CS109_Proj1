@@ -62,27 +62,8 @@ public class MenuFrame extends MyFrame{
         System.out.println("Musics Loaded: "+musicFiles.size());
         setDarkMode();
     }
-    public static void switchTheme(){
-        try {
-            for (var i:getFrames()) {
-                MyFrame myFrame = (MyFrame) i;
-                myFrame.setDarkMode();
-            }
-        } catch (Exception ignored) {}
-    }
-    public void setDarkMode() {
-        for (var i : controlPanel.getComponents()) {
-            if (i instanceof JButton) {
-                i.setBackground(isDarkMode ? Color.DARK_GRAY : Color.LIGHT_GRAY);
-                i.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
-            } else {
-                i.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
-                i.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
-            }
-        }
-    }
     private void initChessboard() {
-        //planning to add autoplaying chessboard
+        //TODO:planning to add autoplaying chessboard
         ChessboardComponent chessboardComponent = new ChessboardComponent(ONE_CHESS_SIZE);
         chessPanel.add(chessboardComponent,BorderLayout.CENTER);
         addComponent(this,gbl,chessPanel,0,0,560,560,0,0);
