@@ -12,6 +12,7 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.util.Random;
 
+import static controller.GameController.pauseMilliSeconds;
 import static view.DifficultySelectFrame.selectedFile;
 import static view.MenuFrame.*;
 
@@ -237,20 +238,30 @@ public class ChessGameFrame extends MyFrame{
         panelRight.add(button);
     }
     private void initAutoConfirmButton(){
-        JButton button = initButton("Auto Confirm");
+        JButton button = initButton("Hand Confirm");
         button.addActionListener(e -> {
             gameController.isAutoConfirm = !gameController.isAutoConfirm;
             button.setText(gameController.isAutoConfirm?"Auto Confirm":"Hand Confirm");
             swapConfirmButton.setEnabled(!gameController.isAutoConfirm);
             nextStepButton.setEnabled(!gameController.isAutoConfirm);
+            var dialogMode = isDetailedDialog;
+            isDetailedDialog = false;
+            try {
+                gameController.onPlayerSwapChess();
+            } catch (Exception ignored) {}
+            pauseMilliSeconds(100);
+            try {
+                gameController.nextStep();
+            } catch (Exception ignored) {}
+            isDetailedDialog=dialogMode;
         });
         panelRight.add(button);
     }
     private void initAutoGoButton(){
-        JButton button = initButton("AutoGo");
+        JButton button = initButton("Auto:OFF");
         button.addActionListener(e -> {
             boolean isAutoMode = !getGameController().isAutoMode();
-            button.setText(isAutoMode?"FullAuto":"AutoGo");
+            button.setText("Auto:"+(isAutoMode?"ON":"OFF"));
             getGameController().setAutoMode(isAutoMode);
         });
         panelLeft.add(button);

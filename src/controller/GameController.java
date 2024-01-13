@@ -16,8 +16,7 @@ import java.util.concurrent.TimeUnit;
 import static model.Chessboard.calculateDistance;
 import static model.Constant.DEFAULT_CHESSBOARD_COL_SIZE;
 import static model.Constant.DEFAULT_CHESSBOARD_ROW_SIZE;
-import static player.MusicPlayer.isFileExtensionName;
-import static player.MusicPlayer.playClick;
+import static player.MusicPlayer.*;
 import static view.ChessComponent.chessTypes;
 import static view.ChessGameFrame.isOnlinePlay;
 import static view.MenuFrame.difficulty;
@@ -36,6 +35,7 @@ public class GameController implements GameListener{
     private final ChessboardComponent view;
     private final NetGame net;
     public boolean isAutoConfirm=false;
+    public static boolean isAutoRestart=true;
     public static boolean isNewGameInitialized=false;
     private ChessGameFrame chessGameFrame;
 
@@ -66,7 +66,6 @@ public class GameController implements GameListener{
         timeLeft=difficulty.getTimeLimit();
         updateTimerLabel();
         System.out.println("Timer Start: "+difficulty.getTimeLimit()+"s");
-        for (;;) {
             if (difficulty.getTimeLimit()!=-1){
                 for (int i = difficulty.getTimeLimit(); i >=0 ; i--) {
                     if (!isAlive) break;
@@ -81,7 +80,6 @@ public class GameController implements GameListener{
                 }
             }
             System.out.print("");
-        }
     });
     public GameController(ChessboardComponent view, Chessboard model, NetGame net) {
         initDifficultyPresets();
@@ -158,6 +156,7 @@ public class GameController implements GameListener{
     // click an empty cell
     @Override
     public void onPlayerClickCell(ChessboardPoint point, CellComponent component) {
+        playWarning();
     }
 
     /*
@@ -173,29 +172,31 @@ public class GameController implements GameListener{
             System.out.println("Dead end: shuffled");
             if (isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame,"Auto Shuffled: Dead end");
             onPlayerShuffle();
+            return;
+        }
+        if (checkChessBoardHasEmpty()){
+            if (isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame,"Swap Fail: chessboard has empty");
+            System.out.println("Swap Fail: has empty");
+            return;
         }
         checkVictory();
-        playClick();
+        playEffect("swap");
         try {
             // Swap, then check if they are matchable
             model.swapChessPiece(selectedPoint, selectedPoint2);
             ChessComponent tmp = view.removeChessComponentAtGrid(selectedPoint);
             view.setChessComponentAtGrid(selectedPoint, view.removeChessComponentAtGrid(selectedPoint2));
             view.setChessComponentAtGrid(selectedPoint2, tmp);
-            var point1 = (ChessComponent) view.getGridComponentAt(selectedPoint).getComponent(0);
-            var point2 = (ChessComponent) view.getGridComponentAt(selectedPoint2).getComponent(0);
-            point1.repaint();
-            point2.repaint();
-            Thread.sleep(500);
+            view.repaint();
 
             if (isMatchable()) {
                 doChessEliminate();
             } else {
                 // Recover if there is nothing matchable
+                playWarning();
                 model.swapChessPiece(selectedPoint, selectedPoint2);
-                tmp = view.removeChessComponentAtGrid(selectedPoint);
-                view.setChessComponentAtGrid(selectedPoint, view.removeChessComponentAtGrid(selectedPoint2));
-                view.setChessComponentAtGrid(selectedPoint2, tmp);
+                view.setChessComponentAtGrid(selectedPoint2, view.removeChessComponentAtGrid(selectedPoint));
+                view.setChessComponentAtGrid(selectedPoint, tmp);
                 if (isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame,"Swap Fail! Nothing can be match");
                 System.out.println("Swap Fail: Nothing can be match");
             }
@@ -312,6 +313,7 @@ public class GameController implements GameListener{
         if (score >= difficulty.getGoal()) {
             JOptionPane.showMessageDialog(chessGameFrame,"Congratulations! You win.");
             System.out.println("Victory: Reach the goal");
+            playEffect("victory");
             victoryMode=1;
             chessGameFrame.returnToTitle();
             this.terminate();
@@ -331,22 +333,25 @@ public class GameController implements GameListener{
             this.terminate();
         }
     }
+    public void onPlayerNextStep(){
+        new Thread(this::nextStep).start();
+    }
 
-    @Override
-    public void onPlayerNextStep() {
-
+    public void nextStep() {
         if (!checkChessBoardHasEmpty()) {
             if (isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame,"NextStep failed: no empty");
             System.out.println("NextStep Fail: no empty cells");
+            playWarning();
             return;
         }
 
         doFallDown();
         do {
             // Fall done has done, if there is any match-3, eliminate them
-            if (isDetailedDialog)
+            if (isDetailedDialog) {
                 JOptionPane.showMessageDialog(chessGameFrame, "Bonus! Match occurs after falling down.");
-            System.out.println("Bonus! Match occurs after falling down.");
+                System.out.println("Bonus! Match occurs after falling down.");
+            }
             view.repaint();
             doFallDown();
         } while (doChessEliminate());
@@ -363,7 +368,8 @@ public class GameController implements GameListener{
             hasEmptyCell = false;
             doGenerateRandomPiecesOnTop();
             for (int col = 0; col < DEFAULT_CHESSBOARD_COL_SIZE.getNum(); col++) {
-                for (int row = DEFAULT_CHESSBOARD_ROW_SIZE.getNum() - 1; row > 0; row--) {
+                int row = DEFAULT_CHESSBOARD_ROW_SIZE.getNum() - 1;
+                while (row > 0) {
                     if ( this.model.getGrid()[row][col].getPiece() == null && ! (this.model.getGrid()[row - 1][col].getPiece() == null)) {
                         // should do swap for model and view
 
@@ -373,9 +379,11 @@ public class GameController implements GameListener{
                         model.swapChessPiece(upperCell, lowerCell);
                         view.setChessComponentAtGrid(lowerCell, view.removeChessComponentAtGrid(upperCell));
                         view.repaint();
-                        pauseMilliSeconds(200);
+                        pauseMilliSeconds(100);
                         hasEmptyCell = true;
+                        row = DEFAULT_CHESSBOARD_ROW_SIZE.getNum() - 1;
                     }
+                    row--;
                 }
             }
         }
@@ -576,6 +584,7 @@ public class GameController implements GameListener{
     // click a cell with a chess
     @Override
     public void onPlayerClickChessPiece(ChessboardPoint point, ChessComponent component) {
+        playEffect("chess_click");
         if (selectedPoint2 != null) {
             var distance2point1 = calculateDistance(point,selectedPoint);
             var distance2point2 = calculateDistance(point,selectedPoint2);
@@ -709,9 +718,10 @@ public class GameController implements GameListener{
         return false;
     }
     public void hint(){
+        if (checkChessBoardHasEmpty()) return;
         if (!isContinuable()) {
-            if (isDetailedDialog) System.out.println("Dead end: shuffled");
-            JOptionPane.showMessageDialog(chessGameFrame,"Auto Shuffled: Dead end");
+            System.out.println("Dead end: shuffled");
+            if (isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame,"Auto Shuffled: Dead end");
             onPlayerShuffle();
             return;
         }
@@ -781,7 +791,7 @@ public class GameController implements GameListener{
             while (score <= difficulty.getGoal() && isAutoMode && isAlive) {
                 hint();
                 onPlayerSwapChess();
-                onPlayerNextStep();
+                nextStep();
             }
         }).start();
     }
@@ -793,7 +803,7 @@ public class GameController implements GameListener{
             while (isAutoConfirm && isAlive) {
                 if (selectedPoint!=null && selectedPoint2!=null){
                     onPlayerSwapChess();
-                    onPlayerNextStep();
+                    nextStep();
                 }
             }
         }).start();
@@ -809,7 +819,7 @@ public class GameController implements GameListener{
 
     // For auto mode, to avoid it ends immediately
     // a workaround
-    private void pauseMilliSeconds(int ms){
+    public static void pauseMilliSeconds(int ms){
         try {
             TimeUnit.MILLISECONDS.sleep(ms);
         }
@@ -818,7 +828,7 @@ public class GameController implements GameListener{
     @Override
     public void terminate() {
         if (isOnlinePlay()) NetGame.t.interrupt();
-        else if (isAlive){
+        else if (isAlive && isAutoRestart){
             DifficultySelectFrame difficultySelectFrame = new DifficultySelectFrame(chessGameFrame.menuFrame);
             SwingUtilities.invokeLater(()->difficultySelectFrame.setVisible(true));
         }

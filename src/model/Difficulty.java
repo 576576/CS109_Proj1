@@ -4,12 +4,16 @@ import java.util.Objects;
 
 public class Difficulty {
     private final int goal,stepLimit,timeLimit;
-    private final String name;
+    private String name;
     public Difficulty(int goal, int stepLimit, int timeLimit, String name){
         this.goal=goal;
         this.stepLimit=stepLimit;
         this.timeLimit=timeLimit;
-        this.name=name;
+        if (this.equals(DifficultyPreset.EASY)) this.name = DifficultyPreset.EASY.name();
+        else if (this.equals(DifficultyPreset.NORMAL)) this.name = DifficultyPreset.NORMAL.name();
+        else if (this.equals(DifficultyPreset.HARD)) this.name = DifficultyPreset.HARD.name();
+        else this.name=name;
+
     }
     public Difficulty(int goal, int stepLimit, int timeLimit){
         this(goal,stepLimit,timeLimit,"CUSTOM");
@@ -46,6 +50,9 @@ public class Difficulty {
         if (o == null || getClass() != o.getClass()) return false;
         Difficulty that = (Difficulty) o;
         return goal == that.goal && stepLimit == that.stepLimit && timeLimit == that.timeLimit;
+    }
+    public boolean equals(DifficultyPreset dPreset){
+        return this.equals(new Difficulty(dPreset));
     }
 
     @Override

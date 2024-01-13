@@ -8,10 +8,9 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import static view.ImageUtils.scaleImage;
-import static view.MenuFrame.isDarkMode;
 
 public abstract class MyFrame extends JFrame{
-    public static boolean isImageBackground=false;
+    public static boolean isImageBackground=false,isDarkMode=true;
     public static Image currentBackgroundImage = ImageUtils.readImage("resource/texture/background/default.png");
     public static ImageIcon currentBackground = new ImageIcon("resource/texture/background/default.png");
     static void addComponent(JFrame motherFrame, GridBagLayout gbl, Component comp,

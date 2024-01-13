@@ -122,7 +122,7 @@ public class ChessboardComponent extends JComponent {
     public void startNewGame(){gameController.initialize();}
 
     public void nextStep(){
-        gameController.onPlayerNextStep();
+        gameController.nextStep();
     }
 
     @Override

@@ -3,10 +3,11 @@ package view;
 import javax.swing.*;
 import java.awt.*;
 
+import static controller.GameController.isAutoRestart;
 import static view.MenuFrame.*;
 
 public class SettingFrame extends MyFrame{
-    private final JPanel formPanel = new JPanel(new GridLayout(2,1));
+    private final JPanel formPanel = new JPanel(new GridLayout(3,1));
     private final JButton submitButton;
     public SettingFrame(){
         setTitle("Settings");
@@ -15,23 +16,39 @@ public class SettingFrame extends MyFrame{
         setLayout(new BorderLayout());
         add(new Box(1),BorderLayout.NORTH);
 
+        submitButton = initButton("Confirm");
+        submitButton.addActionListener(e -> this.dispose());
+
+        formPanel.add(getMusicPanel());
+        formPanel.add(getThemePanel());
+        formPanel.add(getCustomPanel());
+        add(formPanel, BorderLayout.CENTER);
+        add(submitButton,BorderLayout.SOUTH);
+        setDarkMode();
+        setVisible(true);
+    }
+
+    private static JPanel getMusicPanel() {
         JLabel volumeLabel = new JLabel("Music:");
         JSlider soundSlider = new JSlider(0,100,20);
         soundSlider.addChangeListener(e -> setVolume(soundSlider.getValue()));
         JPanel volumePanel = new JPanel(new FlowLayout());
         volumePanel.add(volumeLabel);
         volumePanel.add(soundSlider);
+        return volumePanel;
+    }
 
-        submitButton = initButton("Confirm");
-        submitButton.addActionListener(e -> this.dispose());
-
-        formPanel.add(volumePanel);
-        JPanel themePanel = getThemePanel();
-        formPanel.add(themePanel);
-        add(formPanel, BorderLayout.CENTER);
-        add(submitButton,BorderLayout.SOUTH);
-        setDarkMode();
-        setVisible(true);
+    private JPanel getCustomPanel(){
+        JPanel customPanel = new JPanel(new FlowLayout());
+        JCheckBox detailDialogCheckBox = new JCheckBox("Show detailed dialog");
+        detailDialogCheckBox.setSelected(isDetailedDialog);
+        detailDialogCheckBox.addActionListener(e -> isDetailedDialog=detailDialogCheckBox.isSelected());
+        JCheckBox autoRestartCheckBox = new JCheckBox("Auto restart when game ends");
+        autoRestartCheckBox.setSelected(isAutoRestart);
+        autoRestartCheckBox.addActionListener(e -> isAutoRestart=autoRestartCheckBox.isSelected());
+        customPanel.add(detailDialogCheckBox);
+        customPanel.add(autoRestartCheckBox);
+        return customPanel;
     }
 
     private JPanel getThemePanel() {
@@ -54,22 +71,14 @@ public class SettingFrame extends MyFrame{
             isImageBackground=pictureCheckBox.isSelected();
             switchTheme();
         });
-//        JRadioButton themeSystemRadioButton = new JRadioButton("System");
-//        themeSystemRadioButton.addActionListener(e -> {
-//            //todo:fix the bug here
-//            isDarkMode=Integer.parseInt(Preferences.userRoot().get("HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Themes\\Personalize\\AppsUseLightTheme","0"))==0;
-//            switchTheme();
-//        });
         ButtonGroup themeButtonGroup = new ButtonGroup();
         themeButtonGroup.add(lightRadioButton);
         themeButtonGroup.add(darkRadioButton);
-//        themeButtonGroup.add(themeSystemRadioButton);
         JPanel themePanel = new JPanel(new FlowLayout());
         themePanel.add(themeLabel);
         themePanel.add(lightRadioButton);
         themePanel.add(darkRadioButton);
         themePanel.add(pictureCheckBox);
-//        themePanel.add(themeSystemRadioButton);
         return themePanel;
     }
     public void setDarkMode(){

@@ -47,7 +47,7 @@ public class MusicPlayer {
                     player_mp3.close();
             } catch (Exception ignored) {}
         }
-        else System.out.println("Not supported music(mp3 flac)");
+        else System.out.println("Not supported music format(mp3 flac)");
     }
     public void close(){
         try {
@@ -59,12 +59,15 @@ public class MusicPlayer {
     public static boolean isFileExtensionName(File f,String extension) {
         return f.getName().lastIndexOf('.') > 0 && f.getName().substring(f.getName().lastIndexOf('.') + 1).equals(extension);
     }
-    public static void playClick(){
-        try {
-            BufferedInputStream stream = new BufferedInputStream(new FileInputStream("resource/effect/sound/click.mp3"));
-            new Player(stream).play();
-        } catch (Exception e) {
-            System.err.println("Error:click sound effect");
-        }
+    public static void playWarning(){
+        playEffect("warning");
+    }
+    public static void playEffect(String effectName){
+        new Thread(()->{
+            try {
+                BufferedInputStream stream = new BufferedInputStream(new FileInputStream("resource/effect/sound/"+effectName+".mp3"));
+                new Player(stream).play();
+            } catch (Exception ignored) {}
+        }).start();
     }
 }
