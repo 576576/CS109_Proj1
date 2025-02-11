@@ -137,7 +137,7 @@ class Handler extends Thread {
                         gameController.loadFromString(sb.toString());
                         writer.write("receiveInitializedGame");
                         writer.flush();
-                        break;
+                        break; 
                     }
                     System.out.print("");
                 }

@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="消消乐" type="Application" factoryName="Application">
+  <configuration default="false" name="消消乐" type="Application" factoryName="Application" singleton="false">
     <option name="MAIN_CLASS_NAME" value="Main" />
     <module name="CS109_Proj1" />
     <method v="2">
