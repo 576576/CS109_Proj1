@@ -10,64 +10,181 @@ import java.io.FileInputStream;
 import static view.MenuFrame.musicThread;
 
 public class MusicPlayer {
-    SourceDataLine sourceDataLine;
-    public static Player player_mp3;
+    private SourceDataLine sourceDataLine;
+
+    /**
+     * 播放指定的音频文件。
+     *
+     * @param f 音频文件
+     */
     public void play(File f) {
-        System.out.println("Current Music: "+f.getName());
-        if (isFileExtensionName(f,"flac")) {
-            try {
-                AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(f);
-                AudioFormat audioFormat = audioInputStream.getFormat();
-                if (audioFormat.getEncoding() != AudioFormat.Encoding.PCM_SIGNED) {
-                    audioFormat = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, audioFormat.getSampleRate(), 16, audioFormat.getChannels(), audioFormat.getChannels() * 2, audioFormat.getSampleRate(), false);
-                    audioInputStream = AudioSystem.getAudioInputStream(audioFormat, audioInputStream);
-                }
-
-                DataLine.Info dataLineInfo = new DataLine.Info(SourceDataLine.class, audioFormat, AudioSystem.NOT_SPECIFIED);
-                sourceDataLine = (SourceDataLine) AudioSystem.getLine(dataLineInfo);
-                sourceDataLine.open(audioFormat);
-                sourceDataLine.start();
-
-                int bytesPerFrame = audioInputStream.getFormat().getFrameSize();
-                int numBytes = 1024 * bytesPerFrame;
-                byte[] audioBytes = new byte[numBytes];
-                while (audioInputStream.read(audioBytes) != -1) {
-                    sourceDataLine.write(audioBytes, 0, audioBytes.length);
-                }
-                sourceDataLine.drain();
-                sourceDataLine.stop();
-                sourceDataLine.close();
-            } catch (Exception ignored) {}
+        if (!isValidFile(f)) {
+            System.out.println("Invalid file input.");
+            return;
         }
-        else if (isFileExtensionName(f,"mp3")){
-            try {
-                BufferedInputStream stream = new BufferedInputStream(new FileInputStream(f));
-                    player_mp3 = new javazoom.jl.player.Player(stream);
-                    player_mp3.play();
-                    player_mp3.close();
-            } catch (Exception ignored) {}
-        }
-        else System.out.println("Not supported music format(mp3 flac)");
-    }
-    public void close(){
+
+        System.out.println("Current Music: " + f.getName());
+
         try {
-            musicThread.interrupt();
-            sourceDataLine.close();
-            player_mp3.close();
-        } catch (Exception ignored) {}
+            String fileName = f.getName().toLowerCase();
+            switch (fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase()) {
+                case "flac" -> playFlac(f);
+                case "mp3" -> playMp3(f);
+                case "wav" -> playWav(f);
+                default -> System.out.println("Unsupported music format (mp3, flac, wav)");
+            }
+        } catch (Exception e) {
+            System.out.println("Error playing file: " + e.getMessage());
+        }
     }
-    public static boolean isFileExtensionName(File f,String extension) {
-        return f.getName().lastIndexOf('.') > 0 && f.getName().substring(f.getName().lastIndexOf('.') + 1).equals(extension);
+
+    /**
+     * 播放FLAC格式的音频文件。
+     *
+     * @param f FLAC音频文件
+     * @throws Exception 如果播放过程中出现错误
+     */
+    private void playFlac(File f) throws Exception {
+        try (AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(f)) {
+            AudioFormat audioFormat = getPCMFormat(audioInputStream.getFormat());
+            playAudioStream(audioInputStream, audioFormat);
+        }
     }
-    public static void playWarning(){
+
+    /**
+     * 播放MP3格式的音频文件。
+     *
+     * @param f MP3音频文件
+     * @throws Exception 如果播放过程中出现错误
+     */
+    private void playMp3(File f) throws Exception {
+        try (BufferedInputStream stream = new BufferedInputStream(new FileInputStream(f))) {
+            Player mp3Player = createMp3Player(stream);
+            mp3Player.play();
+        }
+    }
+
+    /**
+     * 创建并返回一个MP3播放器实例。
+     *
+     * @param stream MP3文件的输入流
+     * @return MP3播放器实例
+     * @throws Exception 如果创建播放器时出错
+     */
+    private Player createMp3Player(BufferedInputStream stream) throws Exception {
+        return new Player(stream);
+    }
+
+    /**
+     * 播放WAV格式的音频文件。
+     *
+     * @param f WAV音频文件
+     * @throws Exception 如果播放过程中出现错误
+     */
+    private void playWav(File f) throws Exception {
+        try (AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(f)) {
+            playAudioStream(audioInputStream, audioInputStream.getFormat());
+        }
+    }
+
+    /**
+     * 播放音频流。
+     *
+     * @param audioInputStream 音频输入流
+     * @param audioFormat      音频格式
+     * @throws Exception 如果播放过程中出现错误
+     */
+    private void playAudioStream(AudioInputStream audioInputStream, AudioFormat audioFormat) throws Exception {
+        DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
+        sourceDataLine = (SourceDataLine) AudioSystem.getLine(info);
+        sourceDataLine.open(audioFormat);
+        sourceDataLine.start();
+
+        byte[] buffer = new byte[4096];
+        int bytesRead;
+        while ((bytesRead = audioInputStream.read(buffer)) != -1) {
+            sourceDataLine.write(buffer, 0, bytesRead);
+        }
+
+        sourceDataLine.drain();
+        sourceDataLine.stop();
+        sourceDataLine.close();
+    }
+
+    /**
+     * 获取PCM格式的音频格式。
+     *
+     * @param format 原始音频格式
+     * @return PCM格式的音频格式
+     */
+    private AudioFormat getPCMFormat(AudioFormat format) {
+        if (format.getEncoding() != AudioFormat.Encoding.PCM_SIGNED) {
+            return new AudioFormat(
+                    AudioFormat.Encoding.PCM_SIGNED,
+                    format.getSampleRate(),
+                    16,
+                    format.getChannels(),
+                    format.getChannels() * 2,
+                    format.getSampleRate(),
+                    false
+            );
+        }
+        return format;
+    }
+
+    /**
+     * 关闭所有正在播放的音频。
+     */
+    public void close() {
+        try {
+            if (musicThread != null) {
+                musicThread.interrupt();
+            }
+            if (sourceDataLine != null && sourceDataLine.isOpen()) {
+                sourceDataLine.close();
+            }
+        } catch (Exception e) {
+            System.out.println("Error closing resources: " + e.getMessage());
+        }
+    }
+
+    /**
+     * 检查文件是否有效。
+     *
+     * @param f 文件
+     * @return 如果文件有效，则返回true；否则返回false
+     */
+    private boolean isValidFile(File f) {
+        return f != null && f.exists() && f.isFile();
+    }
+
+    /**
+     * 播放警告音效。
+     */
+    public static void playWarning() {
         playEffect("warning");
     }
-    public static void playEffect(String effectName){
-        new Thread(()->{
+
+    /**
+     * 播放指定名称的音效。
+     *
+     * @param effectName 音效名称
+     */
+    public static void playEffect(String effectName) {
+        new Thread(() -> {
             try {
-                BufferedInputStream stream = new BufferedInputStream(new FileInputStream("resource/effect/sound/"+effectName+".mp3"));
-                new Player(stream).play();
-            } catch (Exception ignored) {}
+                File effectFile = new File("resource/effect/sound/" + effectName + ".mp3");
+                if (effectFile.exists() && effectFile.isFile()) {
+                    try (BufferedInputStream stream = new BufferedInputStream(new FileInputStream(effectFile))) {
+                        Player mp3Player = new Player(stream);
+                        mp3Player.play();
+                    }
+                } else {
+                    System.out.println("Effect file not found: " + effectFile.getAbsolutePath());
+                }
+            } catch (Exception e) {
+                System.out.println("Error playing effect: " + e.getMessage());
+            }
         }).start();
     }
 }
