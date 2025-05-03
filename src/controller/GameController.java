@@ -16,6 +16,7 @@ import java.util.concurrent.TimeUnit;
 import static model.Chessboard.calculateDistance;
 import static model.Constant.DEFAULT_CHESSBOARD_COL_SIZE;
 import static model.Constant.DEFAULT_CHESSBOARD_ROW_SIZE;
+import static model.Util.getFileExtension;
 import static player.MusicPlayer.*;
 import static view.ChessComponent.chessTypes;
 import static view.ChessGameFrame.isOnlinePlay;
@@ -440,7 +441,7 @@ public class GameController implements GameListener {
             JOptionPane.showMessageDialog(chessGameFrame, "Can't Access the file!");
             return;
         }
-        if (!isFileExtensionName(file, "txt")) {
+        if (!getFileExtension(file.getName()).equals("txt")) {
             JOptionPane.showMessageDialog(chessGameFrame, "File format error:101");
             return;
         }
