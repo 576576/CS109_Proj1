@@ -2,6 +2,9 @@ package smoke;
 
 import model.Board;
 import model.BoardPoint;
+import model.DifficultyPreset;
+import model.GameState;
+import model.GameStateCodec;
 import model.PieceBag;
 import model.PieceType;
 import model.Swap;
@@ -20,6 +23,8 @@ public final class SmokeTest {
         checkListMatchesFindsRowAndColumn();
         checkBoardSettlesIntoNoHoles();
         checkHintLeadsToAMatch();
+        checkSaveRoundTrip();
+        checkLegacySaveStillLoads();
         checkSnapshotIsImmutable();
         checkPointDistance();
 
@@ -101,6 +106,39 @@ public final class SmokeTest {
             expect(!board.listMatches().isEmpty(), "the hinted swap should match, seed=" + seed);
             board.swapPieces(swap.first(), swap.second());
         }
+    }
+
+    private static void checkSaveRoundTrip() {
+        var board = new Board(new PieceBag(new Random(3)));
+        board.initPieces();
+        var state = new GameState(12, 90, 7, DifficultyPreset.NORMAL.difficulty(), board.snapshot());
+        Optional<GameState> back = GameStateCodec.fromText(
+                GameStateCodec.toText(state), board.rows(), board.cols());
+        expect(back.isPresent(), "a written save should parse back");
+        expect(back.isPresent() && back.get().equals(state), "save round trip should be lossless");
+    }
+
+    private static void checkLegacySaveStillLoads() {
+        String legacy = """
+                0 173 46 180 180 46
+                0 1 2 3 4 5 0 1
+                1 2 3 4 5 0 1 2
+                """;
+        Optional<GameState> state = GameStateCodec.fromText(legacy, Board.DEFAULT_SIZE, Board.DEFAULT_SIZE);
+        if (state.isEmpty()) {
+            expect(false, "a legacy save should still parse");
+            return;
+        }
+        GameState loaded = state.get();
+        expect(loaded.score() == 0 && loaded.timeLeft() == 173 && loaded.stepLeft() == 46, "legacy counters should match");
+        expect(loaded.difficulty().goal() == 180
+                        && loaded.difficulty().stepLimit() == 46
+                        && loaded.difficulty().timeLimit() == 180,
+                "legacy difficulty fields should match");
+        expect(loaded.board().typeAt(new BoardPoint(0, 0)) == PieceType.ofIndex(0)
+                        && loaded.board().typeAt(new BoardPoint(0, 6)) == PieceType.ofIndex(0)
+                        && loaded.board().typeAt(new BoardPoint(0, 7)) == PieceType.ofIndex(1),
+                "legacy board should be read row by row");
     }
 
     private static void checkPointDistance() {

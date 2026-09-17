@@ -13,7 +13,7 @@ public class DifficultyCreateFrame extends MyFrame{
     private final JPanel formPanel = new JPanel(new GridLayout(3,1));
     private final JButton submitButton;
     private JTextField goalInputField,stepInputField,timeInputField;
-    private String goal=DifficultyPreset.EASY.goal+"",timeLimit=DifficultyPreset.EASY.timeLimit+"",stepLimit=DifficultyPreset.EASY.stepLimit+"";
+    private String goal=DifficultyPreset.EASY.difficulty().goal()+"",timeLimit=DifficultyPreset.EASY.difficulty().timeLimit()+"",stepLimit=DifficultyPreset.EASY.difficulty().stepLimit()+"";
     public DifficultyCreateFrame(){
         setTitle("Create a difficulty");
         setSize(500, 300);
@@ -28,7 +28,7 @@ public class DifficultyCreateFrame extends MyFrame{
             timeLimit=timeInputField.getText();
             if (isLegalInput(goal,1)&&isLegalInput(stepLimit,-1)&&isLegalInput(timeLimit,-1)){
                 difficulty=new Difficulty(Integer.parseInt(goal),Integer.parseInt(stepLimit),Integer.parseInt(timeLimit));
-                System.out.println("Difficulty Selected: "+difficulty.getName());
+                System.out.println("Difficulty Selected: "+difficulty.name());
                 dispose();
                 return;
             }

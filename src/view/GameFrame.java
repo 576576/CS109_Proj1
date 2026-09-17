@@ -198,10 +198,10 @@ public class GameFrame extends MyFrame{
      * 在游戏面板中添加标签面板
      */
     private void initStatusLabels() {
-        statusLabels[0] = initLabel("Difficulty:"+difficulty.getName());
-        statusLabels[1] = initLabel("Score:0/"+difficulty.getGoal());
-        statusLabels[2] = initLabel("StepLeft:"+(difficulty.getStepLimit()!=-1?difficulty.getStepLimit():"∞"));
-        statusLabels[3] = initLabel("TimeLimit:"+(difficulty.getTimeLimit()!=-1?difficulty.getTimeLimit():"∞"));
+        statusLabels[0] = initLabel("Difficulty:"+difficulty.name());
+        statusLabels[1] = initLabel("Score:0/"+difficulty.goal());
+        statusLabels[2] = initLabel("StepLeft:"+(difficulty.stepLimit()!=-1?difficulty.stepLimit():"∞"));
+        statusLabels[3] = initLabel("TimeLimit:"+(difficulty.timeLimit()!=-1?difficulty.timeLimit():"∞"));
         for (JLabel statusLabel : statusLabels) statusLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         for (var i:statusLabels) panelLeft.add(i);
     }

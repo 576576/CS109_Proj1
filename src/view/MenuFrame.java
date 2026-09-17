@@ -27,7 +27,7 @@ public class MenuFrame extends MyFrame{
     public static boolean isDetailedDialog=false;
     public static int musicVolume;
     public static int startPlayMode=0;// 0=not to start 1=play new game locally 2=play locally load from file 3=host game 4=join game
-    public static Difficulty difficulty=new Difficulty(DifficultyPreset.EASY);
+    public static Difficulty difficulty=DifficultyPreset.EASY.difficulty();
     private final int ONE_CHESS_SIZE;
 
     private final JPanel controlPanel = new JPanel(new GridLayout(5,1,4,8));
@@ -117,7 +117,7 @@ public class MenuFrame extends MyFrame{
             mainFrame.setMenuFrame(this);
             gameController.setGameFrame(mainFrame);
             System.out.println("GameFrame: Initialize done");
-            System.out.println("Difficulty: "+difficulty.getName());
+            System.out.println("Difficulty: "+difficulty.name());
             mainFrame.setVisible(true);
             this.setState(Frame.ICONIFIED);
             isGameFrameInitDone =true;

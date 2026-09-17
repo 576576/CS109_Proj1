@@ -6,14 +6,13 @@ import net.NetGame;
 import view.*;
 
 import javax.swing.*;
-import java.io.*;
-import java.util.ArrayList;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
 import java.util.List;
 import java.util.Optional;
-import java.util.Scanner;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-import java.util.random.RandomGenerator;
 
 import static player.MusicPlayer.*;
 import static view.GameFrame.isOnlinePlay;
@@ -30,12 +29,10 @@ import static view.MenuFrame.isDetailedDialog;
 public class GameController implements GameListener {
 
     public static boolean isAutoRestart = true;
-    private static final RandomGenerator RANDOM = RandomGenerator.getDefault();
     private final CountDownLatch boardReady = new CountDownLatch(1);
     private final Board model;
     private final BoardView view;
     private final NetGame net;
-    private final ArrayList<DifficultyPreset> difficultyPresets = new ArrayList<>();
     public boolean isAutoConfirm = false;
     public int timeLeft;
     private GameFrame chessGameFrame;
@@ -48,11 +45,11 @@ public class GameController implements GameListener {
     private int victoryMode = 0; // 1=win 2=loss
     private JLabel[] statusLabels = new JLabel[4];
     public Thread timerThread = new Thread(() -> {
-        timeLeft = difficulty.getTimeLimit();
+        timeLeft = difficulty.timeLimit();
         updateTimerLabel();
-        System.out.println("Timer Start: " + difficulty.getTimeLimit() + "s");
-        if (difficulty.getTimeLimit() != -1) {
-            for (int i = difficulty.getTimeLimit(); i >= 0; i--) {
+        System.out.println("Timer Start: " + difficulty.timeLimit() + "s");
+        if (difficulty.timeLimit() != -1) {
+            for (int i = difficulty.timeLimit(); i >= 0; i--) {
                 if (!isAlive) break;
                 pauseMilliSeconds(998);
                 timeLeft--;
@@ -66,7 +63,7 @@ public class GameController implements GameListener {
     });
 
     public GameController(BoardView view, Board model, NetGame net) {
-        initDifficultyPresets();
+        resetCounters();
         this.view = view;
         this.model = model;
         this.net = net;
@@ -97,7 +94,7 @@ public class GameController implements GameListener {
     }
 
     public void resetTimeLeft() {
-        timeLeft = difficulty.getTimeLimit();
+        timeLeft = difficulty.timeLimit();
     }
 
     public void setTimeLeft(int timeLeft) {
@@ -108,18 +105,15 @@ public class GameController implements GameListener {
         this.statusLabels = statusLabels;
     }
 
-    private void initDifficultyPresets() {
-        difficultyPresets.add(DifficultyPreset.EASY);
-        difficultyPresets.add(DifficultyPreset.NORMAL);
-        difficultyPresets.add(DifficultyPreset.HARD);
-        timeLeft = difficulty.getTimeLimit();
-        stepLeft = difficulty.getStepLimit();
+    private void resetCounters() {
+        timeLeft = difficulty.timeLimit();
+        stepLeft = difficulty.stepLimit();
     }
 
     // When initialize from the gaming interface, this was used
     public void initialize() {
         score = 0;
-        timeLeft = difficulty.getTimeLimit();
+        timeLeft = difficulty.timeLimit();
         victoryMode = 0;
         isAlive = true;
         do {
@@ -253,7 +247,7 @@ public class GameController implements GameListener {
 
     private void checkVictory() {
         if (!isAlive) return;
-        if (score >= difficulty.getGoal()) {
+        if (score >= difficulty.goal()) {
             JOptionPane.showMessageDialog(chessGameFrame, "Congratulations! You win.");
             System.out.println("Victory: Reach the goal");
             playEffect("victory");
@@ -261,12 +255,12 @@ public class GameController implements GameListener {
             chessGameFrame.returnToTitle();
             this.terminate();
         }
-        if (score < difficulty.getGoal() && stepLeft == 0 || timeLeft <= 0 && difficulty.getTimeLimit() > 0) {
+        if (score < difficulty.goal() && stepLeft == 0 || timeLeft <= 0 && difficulty.timeLimit() > 0) {
             if (!isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame, "Oh no,you loss.");
             else if (stepLeft == 0) {
                 JOptionPane.showMessageDialog(chessGameFrame, "Oh no, no more steps!");
                 System.out.println("Loss: Step limit exceeded");
-            } else if (timeLeft <= 0 && difficulty.getTimeLimit() > 0) {
+            } else if (timeLeft <= 0 && difficulty.timeLimit() > 0) {
                 JOptionPane.showMessageDialog(chessGameFrame, "Oh no, you DON'T have time!");
                 System.out.println("Loss: Time limit exceeded");
             }
@@ -323,17 +317,17 @@ public class GameController implements GameListener {
 
     public void updateScoreAndStepLabel() {
         if (statusLabels[0] == null) setStatusLabels(chessGameFrame.getStatusLabels());
-        statusLabels[1].setText("Score:" + score + "/" + difficulty.getGoal());
-        statusLabels[2].setText("StepLeft:" + ((difficulty.getStepLimit() > 0) ? (stepLeft + "/" + difficulty.getStepLimit()) : ('∞')));
+        statusLabels[1].setText("Score:" + score + "/" + difficulty.goal());
+        statusLabels[2].setText("StepLeft:" + ((difficulty.stepLimit() > 0) ? (stepLeft + "/" + difficulty.stepLimit()) : ('∞')));
     }
 
     public void updateDifficultyLabel() {
         if (statusLabels[0] == null) setStatusLabels(chessGameFrame.getStatusLabels());
-        statusLabels[0].setText("Difficulty:" + difficulty.getName());
+        statusLabels[0].setText("Difficulty:" + difficulty.name());
     }
 
     public void updateTimerLabel() {
-        if (difficulty.getTimeLimit() == -1) statusLabels[3].setText("TimeLimit:∞");
+        if (difficulty.timeLimit() == -1) statusLabels[3].setText("TimeLimit:∞");
         else statusLabels[3].setText("TimeLimit:" + timeLeft);
     }
 
@@ -342,102 +336,69 @@ public class GameController implements GameListener {
             JOptionPane.showMessageDialog(chessGameFrame, "Can't Access the file!");
             return;
         }
-        Scanner sc;
+        String text;
         try {
-            sc = new Scanner(file);
-        } catch (FileNotFoundException e) {
+            text = Files.readString(file.toPath());
+        } catch (IOException e) {
             JOptionPane.showMessageDialog(chessGameFrame, "Can't Access the file!");
             return;
         }
-        int[][] gridIndices = readSaveHead(sc);
-        sc.close();
-        System.out.println("Difficulty:" + difficulty.getName() + "\nLoaded from File:");
-        applyGridIndices(gridIndices);
-        updateDifficultyLabel();
-        updateScoreAndStepLabel();
-        view.repaint();
-        checkVictory();
+        loadFromState(text, false);
     }
 
     public void loadFromString(String string) {
         initialize();
-        Scanner sc;
-        try {
-            sc = new Scanner(string);
-        } catch (NullPointerException e) {
-            throw new RuntimeException(e);
+        loadFromState(string, true);
+    }
+
+    /** 读档：旧档与新档都交给 GameStateCodec 解析。 */
+    private void loadFromState(String text, boolean restartTimer) {
+        Optional<GameState> loaded = GameStateCodec.fromText(text, model.rows(), model.cols());
+        if (loaded.isEmpty()) {
+            JOptionPane.showMessageDialog(chessGameFrame, "File format error:101");
+            return;
         }
-        int[][] gridIndices = readSaveHead(sc);
-        System.out.println("Difficulty:" + difficulty.getName() + "\nLoaded from String:");
-        applyGridIndices(gridIndices);
+        applyState(loaded.get());
+        System.out.println("Difficulty:" + difficulty.name() + "\nLoaded.");
         updateDifficultyLabel();
         updateScoreAndStepLabel();
-        updateTimerLabel();
-        startTimer();
+        if (restartTimer) {
+            updateTimerLabel();
+            startTimer();
+        }
         view.repaint();
         checkVictory();
     }
 
-    /** 读取存档头部（分数/计时/步数与难度），再读满一整份棋盘的类目编号。 */
-    private int[][] readSaveHead(Scanner sc) {
-        int[][] gridIndices = new int[model.rows()][model.cols()];
-        score = sc.nextInt();
-        timeLeft = sc.nextInt();
-        stepLeft = sc.nextInt();
-        int goal = sc.nextInt(), timeLimit = sc.nextInt(), stepLimit = sc.nextInt();
-        difficulty = new Difficulty(goal, stepLimit, timeLimit);
-        for (var dp : difficultyPresets) {
-            if (difficulty.equals(new Difficulty(dp))) {
-                difficulty = new Difficulty(dp);
-                break;
-            }
+    private void applyState(GameState state) {
+        score = state.score();
+        timeLeft = state.timeLeft();
+        stepLeft = state.stepLeft();
+        difficulty = state.difficulty();
+        view.removeAllTiles();
+        for (BoardPoint point : model.points()) {
+            PieceType type = state.board().typeAt(point);
+            model.setPieceAt(point, type);
+            if (type != null) view.setTileAt(point, new TileView(view.getCHESS_SIZE(), type));
         }
-        for (int i = 0; i < model.rows(); i++) {
-            for (int j = 0; j < model.cols(); j++) {
-                gridIndices[i][j] = sc.hasNextInt() ? sc.nextInt() : RANDOM.nextInt(PieceType.values().length);
-            }
-        }
-        System.out.println(score + " " + timeLeft + " " + stepLeft + " " + goal + " " + timeLimit + " " + stepLimit);
-        return gridIndices;
     }
 
-    private void applyGridIndices(int[][] gridIndices) {
-        view.removeAllTiles();
-        for (int i = 0; i < model.rows(); i++) {
-            for (int j = 0; j < model.cols(); j++) {
-                PieceType type = PieceType.ofIndex(Math.clamp(gridIndices[j][i], 0, PieceType.values().length - 1));
-                BoardPoint point = new BoardPoint(j, i);
-                view.setTileAt(point, new TileView(view.getCHESS_SIZE(), type));
-                model.setPieceAt(point, type);
-            }
-        }
+    public GameState gameState() {
+        return new GameState(score, timeLeft, stepLeft, difficulty, model.snapshot());
+    }
+
+    public String gameStateText() {
+        return GameStateCodec.toText(gameState());
     }
 
     @Override
     public void saveToFile(File file) {
-        String text = ConvertToString();
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
-            writer.write(text);
+        try {
+            Files.writeString(file.toPath(), gameStateText());
             System.out.println("Game Saved at " + file.getAbsolutePath());
         } catch (IOException e) {
             System.err.println("Save Fail: IOException");
         }
-    }
-
-    public String ConvertToString() {
-        StringBuilder sb = new StringBuilder();
-        sb.append(score).append(" ").append(timeLeft).append(" ").append(stepLeft).append(" ").append(difficulty.getGoal())
-                .append(" ").append(difficulty.getTimeLimit()).append(" ").append(difficulty.getStepLimit()).append(" \n");
-        for (int i = 0; i < model.rows(); i++) {
-            for (int j = 0; j < model.cols(); j++) {
-                sb.append(model.pieceAt(new BoardPoint(i, j)).textureIndex());
-                sb.append(" ");
-            }
-            sb.append("\n");
-        }
-        System.out.println("Converted to String:");
-        System.out.println(sb);
-        return sb.toString();
     }
 
     // click a cell with a chess
@@ -578,7 +539,7 @@ public class GameController implements GameListener {
     private void doAutoMode() {
         // Create a new thread to run the auto mode logic.
         new Thread(() -> {
-            while (score <= difficulty.getGoal() && isAutoMode && isAlive) {
+            while (score <= difficulty.goal() && isAutoMode && isAlive) {
                 hint();
                 onPlayerSwapChess();
                 nextStep();
@@ -637,7 +598,7 @@ public class GameController implements GameListener {
     }
 
     public void startTimer() {
-        timeLeft = difficulty.getTimeLimit();
+        timeLeft = difficulty.timeLimit();
         try {
             timerThread.start();
         } catch (Exception ignored) {

@@ -1,62 +1,24 @@
 package model;
 
-import java.util.Objects;
+/**
+ * 一局游戏的过关条件。步数或时间为 {@link #UNLIMITED} 时表示不作限制。
+ */
+public record Difficulty(String name, int goal, int stepLimit, int timeLimit) {
+    public static final int UNLIMITED = -1;
 
-public class Difficulty {
-    private final int goal,stepLimit,timeLimit;
-    private String name;
-    public Difficulty(int goal, int stepLimit, int timeLimit, String name){
-        this.goal=goal;
-        this.stepLimit=stepLimit;
-        this.timeLimit=timeLimit;
-        if (this.equals(DifficultyPreset.EASY)) this.name = DifficultyPreset.EASY.name();
-        else if (this.equals(DifficultyPreset.NORMAL)) this.name = DifficultyPreset.NORMAL.name();
-        else if (this.equals(DifficultyPreset.HARD)) this.name = DifficultyPreset.HARD.name();
-        else this.name=name;
-
-    }
-    public Difficulty(int goal, int stepLimit, int timeLimit){
-        this(goal,stepLimit,timeLimit,"CUSTOM");
-    }
-    public Difficulty(DifficultyPreset dPreset){
-        this.goal=dPreset.goal;
-        this.stepLimit=dPreset.stepLimit;
-        this.timeLimit=dPreset.timeLimit;
-        name=dPreset.name();
-    }
-    public int getGoal() {
-        return goal;
+    public Difficulty(int goal, int stepLimit, int timeLimit) {
+        this("CUSTOM", goal, stepLimit, timeLimit);
     }
 
-    public int getStepLimit() {
-        return stepLimit;
+    public Difficulty {
+        if (name == null || name.isBlank()) name = "CUSTOM";
     }
 
-    public int getTimeLimit() {
-        return timeLimit;
+    public boolean hasStepLimit() {
+        return stepLimit > UNLIMITED;
     }
 
-    public String getName() {
-        return name;
-    }
-
-    public String getDifficultyInfo(){
-        return String.format("%d %d %d",goal,stepLimit,timeLimit);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Difficulty that = (Difficulty) o;
-        return goal == that.goal && stepLimit == that.stepLimit && timeLimit == that.timeLimit;
-    }
-    public boolean equals(DifficultyPreset dPreset){
-        return this.equals(new Difficulty(dPreset));
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(goal, stepLimit, timeLimit);
+    public boolean hasTimeLimit() {
+        return timeLimit > UNLIMITED;
     }
 }

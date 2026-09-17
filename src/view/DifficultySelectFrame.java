@@ -76,16 +76,16 @@ public class DifficultySelectFrame extends MyFrame{
 
         var difficultyButtons = initSelectButtons("Easy","Normal","Hard","Custom");
         difficultyButtons.get(0).addActionListener(e -> {
-            difficulty=new Difficulty(DifficultyPreset.EASY);
-            System.out.println("Difficulty Selected: "+difficulty.getName());
+            difficulty=DifficultyPreset.EASY.difficulty();
+            System.out.println("Difficulty Selected: "+difficulty.name());
         });
         difficultyButtons.get(1).addActionListener(e -> {
-            difficulty=new Difficulty(DifficultyPreset.NORMAL);
-            System.out.println("Difficulty Selected: "+difficulty.getName());
+            difficulty=DifficultyPreset.NORMAL.difficulty();
+            System.out.println("Difficulty Selected: "+difficulty.name());
         });
         difficultyButtons.get(2).addActionListener(e -> {
-            difficulty=new Difficulty(DifficultyPreset.HARD);
-            System.out.println("Difficulty Selected: "+difficulty.getName());
+            difficulty=DifficultyPreset.HARD.difficulty();
+            System.out.println("Difficulty Selected: "+difficulty.name());
         });
         difficultyButtons.get(3).addActionListener(e -> {
 //            try {
@@ -106,9 +106,9 @@ public class DifficultySelectFrame extends MyFrame{
 //            } catch (Exception ex) {
 //                JOptionPane.showMessageDialog(null,"Custom Difficulty Stop,set difficulty to Easy.","Error",JOptionPane.WARNING_MESSAGE);
 //                difficultyButtons.getFirst().setSelected(true);
-//                difficulty=new Difficulty(DifficultyPreset.EASY);
+//                difficulty=DifficultyPreset.EASY.difficulty();
 //            } finally {
-//                System.out.println("Difficulty Selected: "+difficulty.getName());
+//                System.out.println("Difficulty Selected: "+difficulty.name());
 //            }
         });
         difficultyButtons.get(3).addActionListener(e -> {

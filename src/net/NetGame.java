@@ -143,7 +143,8 @@ class Handler extends Thread {
             do {
                 writer.write("InitializeGame\n");
                 writer.flush();
-                writer.write(gameController.ConvertToString());
+                writer.write(gameController.gameStateText());
+                writer.write("endOfGame\n");
                 writer.flush();
             } while (!"receiveInitializedGame".equals(reader.readLine()));
             System.out.println("Host Initialized.");
@@ -155,8 +156,9 @@ class Handler extends Thread {
         while ((s = reader.readLine()) != null && !"InitializeGame".equals(s)) ;
 
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 9; i++) {
-            sb.append(reader.readLine());
+        String line;
+        while ((line = reader.readLine()) != null && !"endOfGame".equals(line)) {
+            sb.append(line).append('\n');
         }
         gameController.loadFromString(sb.toString());
         writer.write("receiveInitializedGame");
