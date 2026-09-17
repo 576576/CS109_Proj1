@@ -122,18 +122,17 @@ public class GameController implements GameListener {
         timeLeft = difficulty.getTimeLimit();
         victoryMode = 0;
         isAlive = true;
-        view.removeAllTiles();
-
-        // call method to refresh a board with new random pieces
-        this.model.initPieces();
-        paintTilesFromModel();
+        do {
+            view.removeAllTiles();
+            this.model.initPieces();
+            paintTilesFromModel();
+        } while (isNotContinuable());
 
         updateDifficultyLabel();
         updateScoreAndStepLabel();
         view.repaint();
         System.out.println("New game initialized");
         boardReady.countDown();
-        if (isNotContinuable()) initialize();
 
         //complete it when restart game (auto-mode)
         if (isAutoMode) doAutoMode();
@@ -591,11 +590,9 @@ public class GameController implements GameListener {
     private void doAutoConfirm() {
         // Create a new thread to run the auto confirm logic.
         new Thread(() -> {
-            while (isAutoConfirm && isAlive) {
-                if (selectedPoint != null && selectedPoint2 != null) {
-                    onPlayerSwapChess();
-                    nextStep();
-                }
+            if (selectedPoint != null && selectedPoint2 != null) {
+                onPlayerSwapChess();
+                nextStep();
             }
         }).start();
     }

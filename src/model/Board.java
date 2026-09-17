@@ -92,11 +92,13 @@ public final class Board {
         return new BoardSnapshot(rows, cols, types);
     }
 
-    /** 重新铺满棋盘，直到开局没有现成的三连。菜单开局与洗牌按钮共用。 */
+    /** 重新铺满棋盘。逐格拒绝会立刻凑成三连的类目，因此开局不含现成的三连。 */
     public void initPieces() {
-        do {
-            for (BoardPoint point : points()) setPieceAt(point, bag.pick());
-        } while (!listMatches().isEmpty());
+        for (BoardPoint point : points()) {
+            do {
+                setPieceAt(point, bag.pick());
+            } while (listMatches().contains(point));
+        }
     }
 
     /** 在顶部空位补上一颗随机棋子。返回本次新补进来的棋子。 */
