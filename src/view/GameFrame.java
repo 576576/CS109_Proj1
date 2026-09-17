@@ -249,11 +249,11 @@ public class GameFrame extends MyFrame{
             isDetailedDialog = false;
             try {
                 gameController.onPlayerSwapChess();
-            } catch (Exception ignored) {}
+            } catch (Exception _) {}
             pauseMilliSeconds(100);
             try {
                 gameController.nextStep();
-            } catch (Exception ignored) {}
+            } catch (Exception _) {}
             isDetailedDialog=dialogMode;
         });
         panelRight.add(button);

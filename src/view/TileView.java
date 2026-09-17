@@ -53,7 +53,7 @@ public class TileView extends JComponent {
             BufferedImage chessImage = ImageUtils.readImage(type.texturePath());
             g.drawImage(scaleImage(chessImage, 68, 68), 0, 0, null);
             return true;
-        } catch (Exception e) {
+        } catch (Exception _) {
             return false;
         }
     }
@@ -74,7 +74,7 @@ public class TileView extends JComponent {
             g.drawImage(scaleImage(pointerImage, 16, 16), 0, 52, null);
             g.drawImage(scaleImage(pointerImage, 16, 16), 52, 0, null);
             g.drawImage(scaleImage(pointerImage, 16, 16), 52, 52, null);
-        } catch (Exception e) {
+        } catch (Exception _) {
             g.setColor(Color.gray);
             g.drawOval(3, 3, getWidth() - 4, getHeight() - 4);
             g.drawOval(2, 2, getWidth() - 6, getHeight() - 6);

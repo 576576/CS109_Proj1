@@ -13,7 +13,6 @@ import static view.MenuFrame.difficulty;
 import static view.MenuFrame.startPlayMode;
 
 public class DifficultySelectFrame extends MyFrame{
-//    private int goal=0,timeLimit=0,stepLimit=0;
     public static File selectedFile;
     private final JFileChooser jf = new JFileChooser(".\\");
 
@@ -74,44 +73,16 @@ public class DifficultySelectFrame extends MyFrame{
             selectPanel.add(panel);
         }
 
-        var difficultyButtons = initSelectButtons("Easy","Normal","Hard","Custom");
-        difficultyButtons.get(0).addActionListener(e -> {
-            difficulty=DifficultyPreset.EASY.difficulty();
-            System.out.println("Difficulty Selected: "+difficulty.name());
-        });
-        difficultyButtons.get(1).addActionListener(e -> {
-            difficulty=DifficultyPreset.NORMAL.difficulty();
-            System.out.println("Difficulty Selected: "+difficulty.name());
-        });
-        difficultyButtons.get(2).addActionListener(e -> {
-            difficulty=DifficultyPreset.HARD.difficulty();
-            System.out.println("Difficulty Selected: "+difficulty.name());
-        });
-        difficultyButtons.get(3).addActionListener(e -> {
-//            try {
-//                String input;
-//                do {
-//                    input = JOptionPane.showInputDialog(null,"Input goal","Creating Difficulty",JOptionPane.PLAIN_MESSAGE);
-//                }while (isNotNumeric(input));
-//                goal=Integer.parseInt(input);
-//                do {
-//                    input = JOptionPane.showInputDialog(null,"Input Step Limit","Creating Difficulty",JOptionPane.PLAIN_MESSAGE);
-//                }while (isNotNumeric(input) ||input.isEmpty());
-//                stepLimit=Integer.parseInt(input)==0?-1:Integer.parseInt(input);
-//                do {
-//                    input = JOptionPane.showInputDialog(null,"Input Time Limit","Creating Difficulty",JOptionPane.PLAIN_MESSAGE);
-//                }while (isNotNumeric(input) ||input.isEmpty());
-//                timeLimit=Integer.parseInt(input)==0?-1:Integer.parseInt(input);
-//                difficulty=new Difficulty(goal,stepLimit,timeLimit);
-//            } catch (Exception ex) {
-//                JOptionPane.showMessageDialog(null,"Custom Difficulty Stop,set difficulty to Easy.","Error",JOptionPane.WARNING_MESSAGE);
-//                difficultyButtons.getFirst().setSelected(true);
-//                difficulty=DifficultyPreset.EASY.difficulty();
-//            } finally {
-//                System.out.println("Difficulty Selected: "+difficulty.name());
-//            }
-        });
-        difficultyButtons.get(3).addActionListener(e -> {
+        var difficultyButtons = initSelectButtons("Easy", "Normal", "Hard", "Custom");
+        DifficultyPreset[] presets = DifficultyPreset.values();
+        for (int i = 0; i < presets.length; i++) {
+            Difficulty preset = presets[i].difficulty();
+            difficultyButtons.get(i).addActionListener(e -> {
+                difficulty = preset;
+                System.out.println("Difficulty Selected: " + preset.name());
+            });
+        }
+        difficultyButtons.getLast().addActionListener(e -> {
             var difficultyCreateFrame = new DifficultyCreateFrame();
             difficultyCreateFrame.setVisible(true);
         });
@@ -122,14 +93,6 @@ public class DifficultySelectFrame extends MyFrame{
         add(selectPanel);
     }
 
-//    private boolean isNotNumeric(String str) {
-//        for (int i = str.length(); --i >= 0; ) {
-//            if (!Character.isDigit(str.charAt(i))) {
-//                return true;
-//            }
-//        }
-//        return false;
-//    }
     public void setDarkMode() {
 
     }

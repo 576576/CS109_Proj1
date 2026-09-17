@@ -114,19 +114,23 @@ public class BoardView extends JComponent {
     @Override
     protected void paintComponent(Graphics g) {
         super.paintComponent(g);
-        ((Graphics2D) g).setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        if (g instanceof Graphics2D g2) {
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        }
     }
 
     @Override
     protected void processMouseEvent(MouseEvent e) {
-        if (e.getID() == MouseEvent.MOUSE_PRESSED) {
-            JComponent clickedComponent = (JComponent) getComponentAt(e.getX(), e.getY());
-            if (clickedComponent.getComponentCount() == 0) {
-                System.out.print("None chess here and ");
-                gameController.onPlayerClickCell(getBoardPoint(e.getPoint()), (CellComponent) clickedComponent);
-            } else {
-                System.out.print("One chess here and ");
-                gameController.onPlayerClickPiece(getBoardPoint(e.getPoint()), (TileView) clickedComponent.getComponents()[0]);
+        if (e.getID() != MouseEvent.MOUSE_PRESSED) return;
+        if (!(getComponentAt(e.getX(), e.getY()) instanceof JComponent clickedComponent)) return;
+        BoardPoint point = getBoardPoint(e.getPoint());
+        if (clickedComponent.getComponentCount() == 0) {
+            System.out.print("None chess here and ");
+            if (clickedComponent instanceof CellComponent cell) gameController.onPlayerClickCell(point, cell);
+        } else {
+            System.out.print("One chess here and ");
+            if (clickedComponent.getComponents()[0] instanceof TileView tile) {
+                gameController.onPlayerClickPiece(point, tile);
             }
         }
     }

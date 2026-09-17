@@ -63,7 +63,6 @@ public class MenuFrame extends MyFrame{
         setDarkMode();
     }
     private void initBoard() {
-        //TODO:planning to add autoplaying chessboard
         BoardView chessboardComponent = new BoardView(ONE_CHESS_SIZE, Board.DEFAULT_SIZE, Board.DEFAULT_SIZE);
         chessPanel.add(chessboardComponent,BorderLayout.CENTER);
         addComponent(this,gbl,chessPanel,0,0,560,560,0,0);
@@ -141,7 +140,7 @@ public class MenuFrame extends MyFrame{
                 FloatControl volumeControl = (FloatControl) sourceDataLine.getControl(volumeControlType); // 获取音量控制对象
                 float dB = (float) (Math.log(musicVolume) / Math.log(10.0) * 20.0);
                 volumeControl.setValue(dB);
-            } catch (Exception ignored) {}
+            } catch (Exception _) {}
         }
     }
 }

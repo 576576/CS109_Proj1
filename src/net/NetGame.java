@@ -31,7 +31,7 @@ public class NetGame {
             waitFrame.setTitle("Waiting for player: " + getPublicIP());
             sock = ss.accept();
             System.out.println("Connected from " + sock.getRemoteSocketAddress());
-        } catch (IOException e) {
+        } catch (IOException _) {
             JOptionPane.showMessageDialog(gameController.getGameFrame(), "Failed to establish connection.");
             gameController.getGameFrame().returnToTitle();
             return;
@@ -53,7 +53,7 @@ public class NetGame {
             sock = new Socket(host, port);
             t = new Handler(sock,gameController);
             t.start();
-        }catch (IOException ioe){
+        } catch (IOException _) {
             JOptionPane.showMessageDialog(gameController.getGameFrame(),"Unable to connect to the server.\nPlease ensure the host is online.");
             gameController.getGameFrame().returnToTitle();
         }
@@ -69,7 +69,7 @@ public class NetGame {
             ip = inetAddress.getHostAddress();
             System.out.println("Local IP: " + ip);
             socket.close();
-        } catch (Exception e) {
+        } catch (Exception _) {
             Logger.getLogger("Exception occurred on get local IP");
         }
         return ip;

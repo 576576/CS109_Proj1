@@ -22,7 +22,7 @@ public class CellComponent extends JPanel {
     protected void paintComponent(Graphics g) {
         try {
             super.paintComponents(g);
-        } catch (Exception ignored) {}
+        } catch (Exception _) {}
         g.setColor(background);
         g.fillRect(1, 1, this.getWidth()-2, this.getHeight()-2);
     }

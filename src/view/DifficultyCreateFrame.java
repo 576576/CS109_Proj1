@@ -79,7 +79,7 @@ public class DifficultyCreateFrame extends MyFrame{
     private boolean isLegalInput(String str, int floor){
         try {
             return Pattern.compile("^[-+]?\\d*$").matcher(str).matches() && Integer.parseInt(str) >= floor;
-        } catch (NumberFormatException e) {
+        } catch (NumberFormatException _) {
             return false;
         }
     }

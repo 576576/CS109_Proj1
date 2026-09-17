@@ -65,7 +65,7 @@ public abstract class MyFrame extends JFrame{
     }
     void setDarkMode(){
         setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
-        setDarkMode((JPanel)getContentPane());
+        if (getContentPane() instanceof JPanel panel) setDarkMode(panel);
     }
     static BufferedImage pickBackgroundImage(){
         var files = readFiles("resource/texture/background/"+(isDarkMode?"dark/":"light/"));
@@ -75,7 +75,7 @@ public abstract class MyFrame extends JFrame{
                 System.out.println("CurrentBackground: "+imageInput.getName());
                 return ImageUtils.readImage(imageInput);
             }
-        } catch (Exception ignored){}
+        } catch (Exception _){}
         System.err.println("CurrentBackground: unable to pick one, switch to default");
         return ImageUtils.readImage("resource/texture/background/default.png");
     }
@@ -102,29 +102,27 @@ public abstract class MyFrame extends JFrame{
         currentBackground = new ImageIcon(scaleImage(currentBackgroundImage,dimension.width,dimension.height));
     }
     public static void switchTheme(){
-        try {
-            for (var i:getFrames()) {
-                MyFrame myFrame = (MyFrame) i;
-                myFrame.setDarkMode();
-            }
-        } catch (Exception ignored) {}
+        for (var frame : getFrames()) {
+            if (frame instanceof MyFrame myFrame) myFrame.setDarkMode();
+        }
     }
     static <T extends JComponent> void setDarkMode(T component){
         component.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
-        for (var i:component.getComponents()){
-            if (!(i instanceof JComponent)) continue;
-            if (i instanceof JPanel){
-                i.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
-                setDarkMode((JPanel) i);
-            }
-            if (i instanceof JButton){
-                i.setBackground(isDarkMode ? Color.DARK_GRAY : Color.LIGHT_GRAY);
-                i.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
-            }
-            else {
-                i.setBackground(isDarkMode ? Color.BLACK : Color.WHITE);
-                i.setForeground(!isDarkMode ? Color.BLACK : Color.WHITE);
+        for (var child : component.getComponents()) {
+            switch (child) {
+                case JPanel panel -> {
+                    applyTheme(panel, isDarkMode ? Color.BLACK : Color.WHITE);
+                    setDarkMode(panel);
+                }
+                case JButton button -> applyTheme(button, isDarkMode ? Color.DARK_GRAY : Color.LIGHT_GRAY);
+                case JComponent other -> applyTheme(other, isDarkMode ? Color.BLACK : Color.WHITE);
+                default -> { }
             }
         }
+    }
+
+    private static void applyTheme(JComponent component, Color background) {
+        component.setBackground(background);
+        component.setForeground(isDarkMode ? Color.WHITE : Color.BLACK);
     }
 }

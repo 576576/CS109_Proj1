@@ -79,7 +79,7 @@ public class GameController implements GameListener {
     public void awaitBoardReady() {
         try {
             boardReady.await();
-        } catch (InterruptedException e) {
+        } catch (InterruptedException _) {
             Thread.currentThread().interrupt();
         }
     }
@@ -89,7 +89,8 @@ public class GameController implements GameListener {
     public static void pauseMilliSeconds(int ms) {
         try {
             TimeUnit.MILLISECONDS.sleep(ms);
-        } catch (Exception ignored) {
+        } catch (InterruptedException _) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -201,7 +202,7 @@ public class GameController implements GameListener {
                 if (isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame, "Swap Fail! Nothing can be match");
                 System.out.println("Swap Fail: Nothing can be match");
             }
-        } catch (Exception e) {
+        } catch (RuntimeException _) {
             System.out.println("Swap Failed!");
         } finally {
             clearSelection(selectedPoint);
@@ -213,14 +214,17 @@ public class GameController implements GameListener {
         }
     }
 
+    /** 取格子上的棋子视图；格子空着或还没摆上棋子时返回 null。 */
+    private TileView tileAt(BoardPoint point) {
+        if (point == null) return null;
+        return view.getGridComponentAt(point).getComponent(0) instanceof TileView tile ? tile : null;
+    }
+
     private void clearSelection(BoardPoint point) {
-        if (point == null) return;
-        try {
-            var tile = (TileView) view.getGridComponentAt(point).getComponent(0);
-            tile.setSelected(false);
-            tile.repaint();
-        } catch (Exception ignored) {
-        }
+        TileView tile = tileAt(point);
+        if (tile == null) return;
+        tile.setSelected(false);
+        tile.repaint();
     }
 
     //to check the model to see if sth.'s matchable (3-match only, larger than 3 will be ignored).
@@ -339,7 +343,7 @@ public class GameController implements GameListener {
         String text;
         try {
             text = Files.readString(file.toPath());
-        } catch (IOException e) {
+        } catch (IOException _) {
             JOptionPane.showMessageDialog(chessGameFrame, "Can't Access the file!");
             return;
         }
@@ -396,7 +400,7 @@ public class GameController implements GameListener {
         try {
             Files.writeString(file.toPath(), gameStateText());
             System.out.println("Game Saved at " + file.getAbsolutePath());
-        } catch (IOException e) {
+        } catch (IOException _) {
             System.err.println("Save Fail: IOException");
         }
     }
@@ -408,8 +412,8 @@ public class GameController implements GameListener {
         if (selectedPoint2 != null) {
             var distance2point1 = point.distanceTo(selectedPoint);
             var distance2point2 = point.distanceTo(selectedPoint2);
-            var point1 = (TileView) view.getGridComponentAt(selectedPoint).getComponent(0);
-            var point2 = (TileView) view.getGridComponentAt(selectedPoint2).getComponent(0);
+            var point1 = tileAt(selectedPoint);
+            var point2 = tileAt(selectedPoint2);
             if (distance2point1 == 0 && point1 != null) {
                 point1.setSelected(false);
                 point1.repaint();
@@ -601,7 +605,7 @@ public class GameController implements GameListener {
         timeLeft = difficulty.timeLimit();
         try {
             timerThread.start();
-        } catch (Exception ignored) {
+        } catch (IllegalThreadStateException _) {
         }
     }
 }

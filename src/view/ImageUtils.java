@@ -9,17 +9,15 @@ import java.io.InputStream;
 public class ImageUtils {
     public static <T> BufferedImage readImage(T imageInput){
         try {
-            if (imageInput instanceof File){
-                return ImageIO.read((File) imageInput);
-            }
-            if (imageInput instanceof InputStream){
-                return ImageIO.read((InputStream) imageInput);
-            }
-            if (imageInput instanceof String){
-                return ImageIO.read(new File((String) imageInput));
-            }
-        } catch (Exception ignored) {}
-        return null;
+            return switch (imageInput) {
+                case File file -> ImageIO.read(file);
+                case InputStream stream -> ImageIO.read(stream);
+                case String path -> ImageIO.read(new File(path));
+                case null, default -> null;
+            };
+        } catch (Exception _) {
+            return null;
+        }
     }
     public static BufferedImage createScaledImage(int width, int height) {
         return new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);

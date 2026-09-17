@@ -78,7 +78,7 @@ public final class SmokeTest {
         try {
             board.snapshot().types().set(0, PieceType.EYE);
             expect(false, "snapshot should reject mutation");
-        } catch (UnsupportedOperationException expected) {
+        } catch (UnsupportedOperationException _) {
             expect(true, "snapshot rejects mutation");
         }
     }
