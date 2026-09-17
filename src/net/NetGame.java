@@ -11,7 +11,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.logging.Logger;
 
-import static controller.GameController.isNewGameInitialized;
 import static view.MenuFrame.startPlayMode;
 
 public class NetGame {
@@ -140,13 +139,7 @@ class Handler extends Thread {
 
     private void initializeGameAsHost(BufferedWriter writer, BufferedReader reader) throws IOException {
         synchronized (gameController) {
-            while (!isNewGameInitialized) {
-                try {
-                    gameController.wait(100);
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                }
-            }
+            gameController.awaitBoardReady();
             do {
                 writer.write("InitializeGame\n");
                 writer.flush();

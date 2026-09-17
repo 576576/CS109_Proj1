@@ -2,6 +2,7 @@ package model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * 存放棋局真实状态的棋盘。格子里存放 {@link PieceType}，{@code null} 表示空位。
@@ -96,6 +97,74 @@ public final class Board {
         do {
             for (BoardPoint point : points()) setPieceAt(point, bag.pick());
         } while (!listMatches().isEmpty());
+    }
+
+    /** 在顶部空位补上一颗随机棋子。返回本次新补进来的棋子。 */
+    public List<Spawn> refill() {
+        List<Spawn> spawned = new ArrayList<>();
+        for (int col = 0; col < cols; col++) {
+            BoardPoint top = new BoardPoint(0, col);
+            if (pieceAt(top) == null) {
+                PieceType type = bag.pick();
+                setPieceAt(top, type);
+                spawned.add(new Spawn(top, type));
+            }
+        }
+        return List.copyOf(spawned);
+    }
+
+    /** 让每颗棋子落到各自列的最底部。返回所有位移，视图据此逐格播放下落动画。 */
+    public List<Move> collapse() {
+        List<Move> moves = new ArrayList<>();
+        for (int col = 0; col < cols; col++) {
+            int landingRow = rows - 1;
+            for (int row = rows - 1; row >= 0; row--) {
+                BoardPoint point = new BoardPoint(row, col);
+                PieceType type = pieceAt(point);
+                if (type == null) continue;
+                if (row != landingRow) {
+                    BoardPoint landing = new BoardPoint(landingRow, col);
+                    setPieceAt(landing, type);
+                    setPieceAt(point, null);
+                    moves.add(new Move(point, landing));
+                }
+                landingRow--;
+            }
+        }
+        return List.copyOf(moves);
+    }
+
+    /** 试出一组能三连的相邻交换；找不到则棋盘已经死局。 */
+    public Optional<Swap> findHint() {
+        for (int row = 0; row < rows; row++) {
+            for (int col = 0; col < cols; col++) {
+                BoardPoint point = new BoardPoint(row, col);
+                for (BoardPoint neighbour : rightAndDownOf(point)) {
+                    if (swapWouldMatch(point, neighbour)) return Optional.of(new Swap(point, neighbour));
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    public boolean hasValidSwap() {
+        return findHint().isPresent();
+    }
+
+    private boolean swapWouldMatch(BoardPoint first, BoardPoint second) {
+        swapPieces(first, second);
+        boolean matched = !listMatches().isEmpty();
+        swapPieces(first, second);
+        return matched;
+    }
+
+    private List<BoardPoint> rightAndDownOf(BoardPoint point) {
+        List<BoardPoint> neighbours = new ArrayList<>(2);
+        BoardPoint right = new BoardPoint(point.row(), point.col() + 1);
+        BoardPoint down = new BoardPoint(point.row() + 1, point.col());
+        if (contains(right)) neighbours.add(right);
+        if (contains(down)) neighbours.add(down);
+        return neighbours;
     }
 
     private void collectStraightRuns(List<BoardPoint> matched, boolean scanRows) {

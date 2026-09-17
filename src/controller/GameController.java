@@ -8,7 +8,10 @@ import view.*;
 import javax.swing.*;
 import java.io.*;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.random.RandomGenerator;
 
@@ -27,8 +30,8 @@ import static view.MenuFrame.isDetailedDialog;
 public class GameController implements GameListener {
 
     public static boolean isAutoRestart = true;
-    public static boolean isNewGameInitialized = false;
     private static final RandomGenerator RANDOM = RandomGenerator.getDefault();
+    private final CountDownLatch boardReady = new CountDownLatch(1);
     private final Board model;
     private final BoardView view;
     private final NetGame net;
@@ -69,8 +72,19 @@ public class GameController implements GameListener {
         this.net = net;
         net.registerController(this);
         view.registerController(this);
+        this.model.initPieces();
         view.initiateTileViews(model);
         view.repaint();
+        boardReady.countDown();
+    }
+
+    /** 等到第一副棋盘摆好为止。建房的一方要先有棋盘才能同步给对手。 */
+    public void awaitBoardReady() {
+        try {
+            boardReady.await();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     // For auto mode, to avoid it ends immediately
@@ -104,7 +118,6 @@ public class GameController implements GameListener {
 
     // When initialize from the gaming interface, this was used
     public void initialize() {
-        isNewGameInitialized = false;
         score = 0;
         timeLeft = difficulty.getTimeLimit();
         victoryMode = 0;
@@ -119,7 +132,7 @@ public class GameController implements GameListener {
         updateScoreAndStepLabel();
         view.repaint();
         System.out.println("New game initialized");
-        isNewGameInitialized = true;
+        boardReady.countDown();
         if (isNotContinuable()) initialize();
 
         //complete it when restart game (auto-mode)
@@ -225,81 +238,18 @@ public class GameController implements GameListener {
     // do the elimination, only after board has been checked
     // notice that there may be multiple matched simultaneously
     private boolean doChessEliminate() {
-        int scoreBefore = score;
-        int rows = model.rows();
-        int cols = model.cols();
-        boolean[][] labeledChess = new boolean[rows][cols];
-
-        // Check for adjacency
-        for (int i = 0; i < rows; i++) {
-            int j = 0;
-            while (j < cols - 2) {
-                PieceType type = model.pieceAt(new BoardPoint(i, j));
-                if (type == null) {
-                    j++;
-                    continue;
-                }
-                int matchCount = 1;
-                int k = j + 1;
-                while (k < cols) {
-                    PieceType other = model.pieceAt(new BoardPoint(i, k));
-                    if (other == null || type != other) {
-                        break;
-                    }
-                    matchCount++;
-                    k++;
-                }
-                if (matchCount >= 3) {
-                    for (int m = j; m < j + matchCount; m++) {
-                        labeledChess[i][m] = true;
-                    }
-                }
-                j = k;
-            }
+        List<BoardPoint> matched = model.listMatches();
+        for (BoardPoint point : matched) {
+            model.removePieceAt(point);
+            view.removeTileAt(point);
+            score += 1;
         }
-        for (int j = 0; j < cols; j++) {
-            int i = 0;
-            while (i < rows - 2) {
-                PieceType type = model.pieceAt(new BoardPoint(i, j));
-                if (type == null) {
-                    i++;
-                    continue;
-                }
-                int matchCount = 1;
-                int k = i + 1;
-                while (k < rows) {
-                    PieceType other = model.pieceAt(new BoardPoint(k, j));
-                    if (other == null || type != other) {
-                        break;
-                    }
-                    matchCount++;
-                    k++;
-                }
-                if (matchCount >= 3) {
-                    for (int m = i; m < i + matchCount; m++) {
-                        labeledChess[m][j] = true;
-                    }
-                }
-                i = k;
-            }
-        }
-
-        // do elimination
-        for (int i = 0; i < rows; i++) {
-            for (int j = 0; j < cols; j++) {
-                if (labeledChess[i][j]) {
-                    BoardPoint point = new BoardPoint(i, j);
-                    model.removePieceAt(point);
-                    view.removeTileAt(point);
-                    score += 1;
-                }
-            }
-        }
+        if (matched.isEmpty()) return false;
 
         view.repaint();
         updateScoreAndStepLabel();
         checkVictory();
-        return score > scoreBefore;
+        return true;
     }
 
     private void checkVictory() {
@@ -355,40 +305,20 @@ public class GameController implements GameListener {
         checkVictory();
     }
 
+    /** 反复“顶部补棋 + 整列下落”，直到棋盘重新填满。 */
     private void doFallDown() {
-        // check every column for empty cells
-        boolean hasEmptyCell = true;
-        while (hasEmptyCell) {
-            hasEmptyCell = false;
-            doGenerateRandomPiecesOnTop();
-            for (int col = 0; col < model.cols(); col++) {
-                int row = model.rows() - 1;
-                while (row > 0) {
-                    BoardPoint lowerCell = new BoardPoint(row, col);
-                    BoardPoint upperCell = new BoardPoint(row - 1, col);
-                    if (model.pieceAt(lowerCell) == null && model.pieceAt(upperCell) != null) {
-                        // should do swap for model and view
-                        model.swapPieces(upperCell, lowerCell);
-                        view.setTileAt(lowerCell, view.removeTileAt(upperCell));
-                        view.repaint();
-                        pauseMilliSeconds(100);
-                        hasEmptyCell = true;
-                        row = model.rows() - 1;
-                    }
-                    row--;
-                }
+        for (;;) {
+            List<Spawn> spawned = model.refill();
+            for (Spawn spawn : spawned) {
+                view.setTileAt(spawn.point(), new TileView(view.getCHESS_SIZE(), spawn.type()));
             }
-        }
-    }
-
-    private void doGenerateRandomPiecesOnTop() {
-        for (int j = 0; j < model.cols(); j++) {
-            BoardPoint top = new BoardPoint(0, j);
-            if (model.pieceAt(top) == null) {
-                PieceType type = PieceType.random(RANDOM);
-                model.setPieceAt(top, type);
-                view.setTileAt(top, new TileView(view.getCHESS_SIZE(), type));
+            List<Move> moves = model.collapse();
+            for (Move move : moves) {
+                view.setTileAt(move.to(), view.removeTileAt(move.from()));
             }
+            if (spawned.isEmpty() && moves.isEmpty()) return;
+            view.repaint();
+            pauseMilliSeconds(100);
         }
     }
 
@@ -620,36 +550,13 @@ public class GameController implements GameListener {
     }
 
     public boolean isNotContinuable() {
-        for (int i = 0; i < model.rows(); i++) {
-            for (int j = 0; j < model.cols() - 1; j++) {
-                var p1 = new BoardPoint(i, j);
-                var p2 = new BoardPoint(i, j + 1);
-                model.swapPieces(p1, p2);
-                if (isMatchable()) {
-                    model.swapPieces(p1, p2);
-                    return false;
-                }
-                model.swapPieces(p1, p2);
-            }
-        }
-        for (int i = 0; i < model.rows() - 1; i++) {
-            for (int j = 0; j < model.cols(); j++) {
-                var p1 = new BoardPoint(i, j);
-                var p2 = new BoardPoint(i + 1, j);
-                model.swapPieces(p1, p2);
-                if (isMatchable()) {
-                    model.swapPieces(p1, p2);
-                    return false;
-                }
-                model.swapPieces(p1, p2);
-            }
-        }
-        return true;
+        return !model.hasValidSwap();
     }
 
     public void hint() {
         if (model.hasEmptyCells()) return;
-        if (isNotContinuable()) {
+        Optional<Swap> hint = model.findHint();
+        if (hint.isEmpty()) {
             System.out.println("Dead end: shuffled");
             if (isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame, "Auto Shuffled: Dead end");
             onPlayerShuffle();
@@ -657,48 +564,15 @@ public class GameController implements GameListener {
         }
         clearSelection(selectedPoint);
         clearSelection(selectedPoint2);
-        selectedPoint = null;
-        selectedPoint2 = null;
-        for (int i = 0; i < model.rows(); i++) {
-            for (int j = 0; j < model.cols() - 1; j++) {
-                selectedPoint = new BoardPoint(i, j);
-                selectedPoint2 = new BoardPoint(i, j + 1);
-                model.swapPieces(selectedPoint, selectedPoint2);
-                if (isMatchable()) {
-                    model.swapPieces(selectedPoint, selectedPoint2);
-                    var point1 = (TileView) view.getGridComponentAt(selectedPoint).getComponent(0);
-                    var point2 = (TileView) view.getGridComponentAt(selectedPoint2).getComponent(0);
-                    point1.setSelected(true);
-                    point2.setSelected(true);
-                    point1.repaint();
-                    point2.repaint();
-                    return;
-                }
-                model.swapPieces(selectedPoint, selectedPoint2);
-                selectedPoint = null;
-                selectedPoint2 = null;
-            }
-        }
-        for (int i = 0; i < model.rows() - 1; i++) {
-            for (int j = 0; j < model.cols(); j++) {
-                selectedPoint = new BoardPoint(i, j);
-                selectedPoint2 = new BoardPoint(i + 1, j);
-                model.swapPieces(selectedPoint, selectedPoint2);
-                if (isMatchable()) {
-                    model.swapPieces(selectedPoint, selectedPoint2);
-                    var point1 = (TileView) view.getGridComponentAt(selectedPoint).getComponent(0);
-                    var point2 = (TileView) view.getGridComponentAt(selectedPoint2).getComponent(0);
-                    point1.setSelected(true);
-                    point2.setSelected(true);
-                    point1.repaint();
-                    point2.repaint();
-                    return;
-                }
-                model.swapPieces(selectedPoint, selectedPoint2);
-            }
-        }
-        JDialog jd = new JDialog(chessGameFrame, "Nothing can be done, please start a new game");
-        jd.setVisible(true);
+        Swap swap = hint.get();
+        selectedPoint = swap.first();
+        selectedPoint2 = swap.second();
+        var tile1 = (TileView) view.getGridComponentAt(selectedPoint).getComponent(0);
+        var tile2 = (TileView) view.getGridComponentAt(selectedPoint2).getComponent(0);
+        tile1.setSelected(true);
+        tile2.setSelected(true);
+        tile1.repaint();
+        tile2.repaint();
     }
 
     // Implement auto-mode

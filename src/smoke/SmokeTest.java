@@ -4,8 +4,10 @@ import model.Board;
 import model.BoardPoint;
 import model.PieceBag;
 import model.PieceType;
+import model.Swap;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 
 /** 纯 main 方法的冒烟入口：{@code java -cp out smoke.SmokeTest}。 */
@@ -16,6 +18,8 @@ public final class SmokeTest {
         checkInitialBoardHasNoMatch();
         checkSameSeedReproducesBoard();
         checkListMatchesFindsRowAndColumn();
+        checkBoardSettlesIntoNoHoles();
+        checkHintLeadsToAMatch();
         checkSnapshotIsImmutable();
         checkPointDistance();
 
@@ -71,6 +75,31 @@ public final class SmokeTest {
             expect(false, "snapshot should reject mutation");
         } catch (UnsupportedOperationException expected) {
             expect(true, "snapshot rejects mutation");
+        }
+    }
+
+    private static void checkBoardSettlesIntoNoHoles() {
+        var board = new Board(new PieceBag(new Random(11)));
+        board.initPieces();
+        for (int round = 0; round < 200; round++) {
+            for (BoardPoint point : board.listMatches()) board.removePieceAt(point);
+            board.refill();
+            board.collapse();
+        }
+        expect(!board.hasEmptyCells(), "a settled board should carry no hole");
+        expect(board.collapse().isEmpty(), "a settled board has nothing left to fall");
+    }
+
+    private static void checkHintLeadsToAMatch() {
+        for (int seed = 0; seed < 50; seed++) {
+            var board = new Board(new PieceBag(new Random(seed)));
+            board.initPieces();
+            Optional<Swap> hint = board.findHint();
+            if (hint.isEmpty()) continue;
+            Swap swap = hint.get();
+            board.swapPieces(swap.first(), swap.second());
+            expect(!board.listMatches().isEmpty(), "the hinted swap should match, seed=" + seed);
+            board.swapPieces(swap.first(), swap.second());
         }
     }
 
