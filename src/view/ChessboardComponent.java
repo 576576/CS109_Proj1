@@ -109,7 +109,7 @@ public class ChessboardComponent extends JComponent {
     }
 
     private ChessboardPoint getChessboardPoint(Point point) {
-        System.out.println("[" + point.y/CHESS_SIZE +  ", " +point.x/CHESS_SIZE + "] Clicked");
+        IO.println("[" + point.y/CHESS_SIZE +  ", " +point.x/CHESS_SIZE + "] Clicked");
         return new ChessboardPoint(point.y/CHESS_SIZE, point.x/CHESS_SIZE);
     }
     private Point calculatePoint(int row, int col) {

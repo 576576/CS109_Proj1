@@ -475,12 +475,12 @@ public class GameController implements GameListener {
         for (int i = 0; i < Constant.DEFAULT_CHESSBOARD_ROW_SIZE.getNum(); i++) {
             String str = Arrays.toString(csb[i]);
             str = str.replaceAll("\\[", "");
-            str = str.replaceAll("]", "");
-            str = str.replaceAll(",", "");
+            str = str.replace("]", "");
+            str = str.replace(",", "");
             System.out.println(str);
 
             for (int j = 0; j < Constant.DEFAULT_CHESSBOARD_COL_SIZE.getNum(); j++) {
-                String pName = chessTypes[Math.min(Math.max(csb[j][i], 0), chessTypes.length)];
+                String pName = chessTypes[Math.clamp(csb[j][i], 0, chessTypes.length)];
                 view.setChessComponentAtGrid(new ChessboardPoint(j, i), new ChessComponent(view.getCHESS_SIZE(),
                         new ChessPiece(pName)));
                 model.setChessPiece(new ChessboardPoint(j, i), new ChessPiece(pName));
@@ -526,12 +526,12 @@ public class GameController implements GameListener {
         for (int i = 0; i < Constant.DEFAULT_CHESSBOARD_ROW_SIZE.getNum(); i++) {
             String str = Arrays.toString(csb[i]);
             str = str.replaceAll("\\[", "");
-            str = str.replaceAll("]", "");
-            str = str.replaceAll(",", "");
+            str = str.replace("]", "");
+            str = str.replace(",", "");
             System.out.println(str);
 
             for (int j = 0; j < Constant.DEFAULT_CHESSBOARD_COL_SIZE.getNum(); j++) {
-                String pName = chessTypes[Math.min(Math.max(csb[j][i], 0), chessTypes.length)];
+                String pName = chessTypes[Math.clamp(csb[j][i], 0, chessTypes.length)];
                 view.setChessComponentAtGrid(new ChessboardPoint(j, i), new ChessComponent(view.getCHESS_SIZE(),
                         new ChessPiece(pName)));
                 model.setChessPiece(new ChessboardPoint(j, i), new ChessPiece(pName));
