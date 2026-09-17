@@ -7,6 +7,7 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 
+import util.Log;
 import static view.MenuFrame.musicThread;
 
 public class MusicPlayer {
@@ -19,11 +20,11 @@ public class MusicPlayer {
      */
     public void play(File f) {
         if (!isValidFile(f)) {
-            System.out.println("Invalid file input.");
+            Log.info("Invalid file input.");
             return;
         }
 
-        System.out.println("Current Music: " + f.getName());
+        Log.info("Current Music: " + f.getName());
 
         try {
             String fileName = f.getName().toLowerCase();
@@ -31,10 +32,10 @@ public class MusicPlayer {
                 case "flac" -> playFlac(f);
                 case "mp3" -> playMp3(f);
                 case "wav" -> playWav(f);
-                default -> System.out.println("Unsupported music format (mp3, flac, wav)");
+                default -> Log.info("Unsupported music format (mp3, flac, wav)");
             }
         } catch (Exception e) {
-            System.out.println("Error playing file: " + e.getMessage());
+            Log.info("Error playing file: " + e.getMessage());
         }
     }
 
@@ -144,7 +145,7 @@ public class MusicPlayer {
                 sourceDataLine.close();
             }
         } catch (Exception e) {
-            System.out.println("Error closing resources: " + e.getMessage());
+            Log.info("Error closing resources: " + e.getMessage());
         }
     }
 
@@ -180,10 +181,10 @@ public class MusicPlayer {
                         mp3Player.play();
                     }
                 } else {
-                    System.out.println("Effect file not found: " + effectFile.getAbsolutePath());
+                    Log.info("Effect file not found: " + effectFile.getAbsolutePath());
                 }
             } catch (Exception e) {
-                System.out.println("Error playing effect: " + e.getMessage());
+                Log.info("Error playing effect: " + e.getMessage());
             }
         }).start();
     }

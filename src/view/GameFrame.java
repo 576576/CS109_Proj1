@@ -13,6 +13,7 @@ import java.awt.event.WindowEvent;
 import java.io.File;
 import java.util.Random;
 
+import util.Log;
 import static controller.GameController.pauseMilliSeconds;
 import static view.DifficultySelectFrame.selectedFile;
 import static view.MenuFrame.*;
@@ -61,7 +62,7 @@ public class GameFrame extends MyFrame{
         add(playPanel);
         add(backgroundPanel);
 
-        System.out.println("Play Start: "+startPlayMode);
+        Log.info("Play Start: "+startPlayMode);
 
         initBoard();
         initStatusLabels();
@@ -83,14 +84,14 @@ public class GameFrame extends MyFrame{
 
         SwingUtilities.invokeLater(()->{ //initialize game functions in order
             while (isOnlinePlay()) {
-                System.out.println("OnlineGame: start");
+                Log.info("OnlineGame: start");
                 if (isGameFrameInitDone) {
                     if (startPlayMode == 3) gameController.onPlayerHostGame();
                     if (startPlayMode == 4) gameController.onPlayerJoinGame();
                     uiInitialize();
                     break;
                 }
-                System.out.print("");
+                GameController.pauseMilliSeconds(100);
             }
             if (startPlayMode==2){
                 for (;;){

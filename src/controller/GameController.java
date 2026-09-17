@@ -14,6 +14,7 @@ import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import util.Log;
 import static player.MusicPlayer.*;
 import static view.GameFrame.isOnlinePlay;
 import static view.MenuFrame.difficulty;
@@ -47,7 +48,7 @@ public class GameController implements GameListener {
     public Thread timerThread = new Thread(() -> {
         timeLeft = difficulty.timeLimit();
         updateTimerLabel();
-        System.out.println("Timer Start: " + difficulty.timeLimit() + "s");
+        Log.info("Timer Start: " + difficulty.timeLimit() + "s");
         if (difficulty.timeLimit() != -1) {
             for (int i = difficulty.timeLimit(); i >= 0; i--) {
                 if (!isAlive) break;
@@ -56,7 +57,7 @@ public class GameController implements GameListener {
                 updateTimerLabel();
                 checkVictory();
                 if (timeLeft % 10 == 0 || timeLeft <= 5) {
-                    System.out.println("TimeLeft:" + timeLeft);
+                    Log.info("TimeLeft:" + timeLeft);
                 }
             }
         }
@@ -126,7 +127,7 @@ public class GameController implements GameListener {
         updateDifficultyLabel();
         updateScoreAndStepLabel();
         view.repaint();
-        System.out.println("New game initialized");
+        Log.info("New game initialized");
         boardReady.countDown();
 
         //complete it when restart game (auto-mode)
@@ -140,7 +141,7 @@ public class GameController implements GameListener {
         this.model.initPieces();
         paintTilesFromModel();
         view.repaint();
-        System.out.println("Board Shuffled");
+        Log.info("Board Shuffled");
 
         //complete it when restart game (auto-mode)
         if (isAutoMode) {
@@ -171,14 +172,14 @@ public class GameController implements GameListener {
     @Override
     public void onPlayerSwapChess() {
         if (isNotContinuable()) {
-            System.out.println("Dead end: shuffled");
+            Log.info("Dead end: shuffled");
             if (isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame, "Auto Shuffled: Dead end");
             onPlayerShuffle();
             return;
         }
         if (model.hasEmptyCells()) {
             if (isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame, "Swap Fail: board has empty");
-            System.out.println("Swap Fail: has empty");
+            Log.info("Swap Fail: has empty");
             return;
         }
         checkVictory();
@@ -200,10 +201,10 @@ public class GameController implements GameListener {
                 view.setTileAt(selectedPoint2, view.removeTileAt(selectedPoint));
                 view.setTileAt(selectedPoint, tmp);
                 if (isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame, "Swap Fail! Nothing can be match");
-                System.out.println("Swap Fail: Nothing can be match");
+                Log.info("Swap Fail: Nothing can be match");
             }
         } catch (RuntimeException _) {
-            System.out.println("Swap Failed!");
+            Log.info("Swap Failed!");
         } finally {
             clearSelection(selectedPoint);
             clearSelection(selectedPoint2);
@@ -253,7 +254,7 @@ public class GameController implements GameListener {
         if (!isAlive) return;
         if (score >= difficulty.goal()) {
             JOptionPane.showMessageDialog(chessGameFrame, "Congratulations! You win.");
-            System.out.println("Victory: Reach the goal");
+            Log.info("Victory: Reach the goal");
             playEffect("victory");
             victoryMode = 1;
             chessGameFrame.returnToTitle();
@@ -263,10 +264,10 @@ public class GameController implements GameListener {
             if (!isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame, "Oh no,you loss.");
             else if (stepLeft == 0) {
                 JOptionPane.showMessageDialog(chessGameFrame, "Oh no, no more steps!");
-                System.out.println("Loss: Step limit exceeded");
+                Log.info("Loss: Step limit exceeded");
             } else if (timeLeft <= 0 && difficulty.timeLimit() > 0) {
                 JOptionPane.showMessageDialog(chessGameFrame, "Oh no, you DON'T have time!");
-                System.out.println("Loss: Time limit exceeded");
+                Log.info("Loss: Time limit exceeded");
             }
             victoryMode = 2;
             chessGameFrame.returnToTitle();
@@ -281,7 +282,7 @@ public class GameController implements GameListener {
     public void nextStep() {
         if (!model.hasEmptyCells()) {
             if (isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame, "NextStep failed: no empty");
-            System.out.println("NextStep Fail: no empty cells");
+            Log.info("NextStep Fail: no empty cells");
             playWarning();
             return;
         }
@@ -291,7 +292,7 @@ public class GameController implements GameListener {
             // Fall done has done, if there is any match-3, eliminate them
             if (isDetailedDialog) {
                 JOptionPane.showMessageDialog(chessGameFrame, "Bonus! Match occurs after falling down.");
-                System.out.println("Bonus! Match occurs after falling down.");
+                Log.info("Bonus! Match occurs after falling down.");
             }
             view.repaint();
             doFallDown();
@@ -363,7 +364,7 @@ public class GameController implements GameListener {
             return;
         }
         applyState(loaded.get());
-        System.out.println("Difficulty:" + difficulty.name() + "\nLoaded.");
+        Log.info("Difficulty:" + difficulty.name() + "\nLoaded.");
         updateDifficultyLabel();
         updateScoreAndStepLabel();
         if (restartTimer) {
@@ -399,9 +400,9 @@ public class GameController implements GameListener {
     public void saveToFile(File file) {
         try {
             Files.writeString(file.toPath(), gameStateText());
-            System.out.println("Game Saved at " + file.getAbsolutePath());
+            Log.info("Game Saved at " + file.getAbsolutePath());
         } catch (IOException _) {
-            System.err.println("Save Fail: IOException");
+            Log.warn("Save Fail: IOException");
         }
     }
 
@@ -501,11 +502,11 @@ public class GameController implements GameListener {
     public void onlineGameTerminate(boolean isWinner) {
         if (isWinner) {
             JOptionPane.showMessageDialog(chessGameFrame, "Congratulations! You win.");
-            System.out.println("Victory: Your Competitor Loss");
+            Log.info("Victory: Your Competitor Loss");
             victoryMode = 1;
         } else {
             JOptionPane.showMessageDialog(chessGameFrame, "Oh no! Your competitor win.");
-            System.out.println("Loss: Your Competitor Win");
+            Log.info("Loss: Your Competitor Win");
             victoryMode = 2;
         }
         score = 0;
@@ -521,7 +522,7 @@ public class GameController implements GameListener {
         if (model.hasEmptyCells()) return;
         Optional<Swap> hint = model.findHint();
         if (hint.isEmpty()) {
-            System.out.println("Dead end: shuffled");
+            Log.info("Dead end: shuffled");
             if (isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame, "Auto Shuffled: Dead end");
             onPlayerShuffle();
             return;

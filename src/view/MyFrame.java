@@ -7,6 +7,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Random;
 
+import util.Log;
 import static view.ImageUtils.scaleImage;
 
 public abstract class MyFrame extends JFrame{
@@ -72,11 +73,11 @@ public abstract class MyFrame extends JFrame{
         try {
             if (files != null) {
                 File imageInput = files.get(new Random().nextInt(files.size()));
-                System.out.println("CurrentBackground: "+imageInput.getName());
+                Log.info("CurrentBackground: "+imageInput.getName());
                 return ImageUtils.readImage(imageInput);
             }
         } catch (Exception _){}
-        System.err.println("CurrentBackground: unable to pick one, switch to default");
+        Log.warn("CurrentBackground: unable to pick one, switch to default");
         return ImageUtils.readImage("resource/texture/background/default.png");
     }
     static ArrayList<File> readFiles(String filePath) {

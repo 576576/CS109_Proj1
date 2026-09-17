@@ -8,6 +8,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
 
+import util.Log;
 import static view.GameFrame.isOnlinePlay;
 import static view.MenuFrame.difficulty;
 import static view.MenuFrame.startPlayMode;
@@ -63,7 +64,7 @@ public class DifficultySelectFrame extends MyFrame{
                 }else {
                     localButtons.getFirst().setSelected(true);
                     startPlayMode=1;
-                    System.out.println("No file selected!");
+                    Log.info("No file selected!");
                     JOptionPane.showMessageDialog(this,"\"No file selected!\"");
                 }
             });
@@ -79,7 +80,7 @@ public class DifficultySelectFrame extends MyFrame{
             Difficulty preset = presets[i].difficulty();
             difficultyButtons.get(i).addActionListener(e -> {
                 difficulty = preset;
-                System.out.println("Difficulty Selected: " + preset.name());
+                Log.info("Difficulty Selected: " + preset.name());
             });
         }
         difficultyButtons.getLast().addActionListener(e -> {

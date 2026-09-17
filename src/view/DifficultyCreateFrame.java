@@ -7,6 +7,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.util.regex.Pattern;
 
+import util.Log;
 import static view.MenuFrame.difficulty;
 
 public class DifficultyCreateFrame extends MyFrame{
@@ -28,13 +29,13 @@ public class DifficultyCreateFrame extends MyFrame{
             timeLimit=timeInputField.getText();
             if (isLegalInput(goal,1)&&isLegalInput(stepLimit,-1)&&isLegalInput(timeLimit,-1)){
                 difficulty=new Difficulty(Integer.parseInt(goal),Integer.parseInt(stepLimit),Integer.parseInt(timeLimit));
-                System.out.println("Difficulty Selected: "+difficulty.name());
+                Log.info("Difficulty Selected: "+difficulty.name());
                 dispose();
                 return;
             }
-            if (!isLegalInput(goal,1)) System.out.println("goal illegal");
-            if (!isLegalInput(stepLimit,1)) System.out.println("step illegal");
-            if (!isLegalInput(timeLimit,1)) System.out.println("time illegal");
+            if (!isLegalInput(goal,1)) Log.info("goal illegal");
+            if (!isLegalInput(stepLimit,1)) Log.info("step illegal");
+            if (!isLegalInput(timeLimit,1)) Log.info("time illegal");
             JOptionPane.showMessageDialog(this,"Illegal difficulty,please check again!");
         });
 

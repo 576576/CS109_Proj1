@@ -9,8 +9,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.logging.Logger;
 
+import util.Log;
 import static view.MenuFrame.startPlayMode;
 
 public class NetGame {
@@ -25,12 +25,12 @@ public class NetGame {
         waitFrame.setSize(400, 100);
         waitFrame.setLocationRelativeTo(null);
         waitFrame.setVisible(true);
-        System.out.println("OnlineGame Host: Waiting for player.");
+        Log.info("OnlineGame Host: Waiting for player.");
 
         try (ServerSocket ss = new ServerSocket(port)) {
             waitFrame.setTitle("Waiting for player: " + getPublicIP());
             sock = ss.accept();
-            System.out.println("Connected from " + sock.getRemoteSocketAddress());
+            Log.info("Connected from " + sock.getRemoteSocketAddress());
         } catch (IOException _) {
             JOptionPane.showMessageDialog(gameController.getGameFrame(), "Failed to establish connection.");
             gameController.getGameFrame().returnToTitle();
@@ -67,10 +67,10 @@ public class NetGame {
             Socket socket = new Socket("www.baidu.com", 80);
             InetAddress inetAddress = socket.getLocalAddress();
             ip = inetAddress.getHostAddress();
-            System.out.println("Local IP: " + ip);
+            Log.info("Local IP: " + ip);
             socket.close();
         } catch (Exception _) {
-            Logger.getLogger("Exception occurred on get local IP");
+            Log.warn("Exception occurred on get local IP");
         }
         return ip;
     }
@@ -92,13 +92,13 @@ class Handler extends Thread {
 
             handleCommunication(writer, reader);
         } catch (Exception e) {
-            Logger.getLogger(Handler.class.getName()).severe("Connection lost: " + e.getMessage());
+            Log.error("Connection lost: " + e.getMessage());
             gameController.onlineGameTerminate(true);
         } finally {
             try {
                 sock.close();
             } catch (IOException ioe) {
-                Logger.getLogger(Handler.class.getName()).warning("Error closing socket: " + ioe.getMessage());
+                Log.warn("Error closing socket: " + ioe.getMessage());
             }
         }
     }
@@ -147,7 +147,7 @@ class Handler extends Thread {
                 writer.write("endOfGame\n");
                 writer.flush();
             } while (!"receiveInitializedGame".equals(reader.readLine()));
-            System.out.println("Host Initialized.");
+            Log.info("Host Initialized.");
         }
     }
 

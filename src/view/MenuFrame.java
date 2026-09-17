@@ -15,6 +15,7 @@ import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
 
+import util.Log;
 import static view.GameFrame.isGameFrameInitDone;
 
 /**
@@ -59,7 +60,7 @@ public class MenuFrame extends MyFrame{
         addComponent(this,gbl,controlPanel,1,1,5,5,0,0);
         musicFiles = readFiles("resource/music");
         if (musicFiles==null || musicFiles.isEmpty()) return;
-        System.out.println("Musics Loaded: "+musicFiles.size());
+        Log.info("Musics Loaded: "+musicFiles.size());
         setDarkMode();
     }
     private void initBoard() {
@@ -115,8 +116,8 @@ public class MenuFrame extends MyFrame{
             mainFrame.setGameController(gameController);
             mainFrame.setMenuFrame(this);
             gameController.setGameFrame(mainFrame);
-            System.out.println("GameFrame: Initialize done");
-            System.out.println("Difficulty: "+difficulty.name());
+            Log.info("GameFrame: Initialize done");
+            Log.info("Difficulty: "+difficulty.name());
             mainFrame.setVisible(true);
             this.setState(Frame.ICONIFIED);
             isGameFrameInitDone =true;
@@ -134,7 +135,7 @@ public class MenuFrame extends MyFrame{
                 SourceDataLine sourceDataLine = (SourceDataLine) mixer.getLine(mixer.getSourceLineInfo()[0]); // 选择第n个音频设备
                 FloatControl.Type volumeControlType = FloatControl.Type.MASTER_GAIN; // 主音量控制
                 if (!sourceDataLine.isControlSupported(volumeControlType)) {
-                    System.out.println("不支持音量控制");
+                    Log.info("不支持音量控制");
                     return;
                 }
                 FloatControl volumeControl = (FloatControl) sourceDataLine.getControl(volumeControlType); // 获取音量控制对象

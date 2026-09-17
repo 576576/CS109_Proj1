@@ -9,6 +9,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.MouseEvent;
 
+import util.Log;
+
 import static view.MenuFrame.isDarkMode;
 
 /**
@@ -30,7 +32,7 @@ public class BoardView extends JComponent {
         enableEvents(AWTEvent.MOUSE_EVENT_MASK);// Allow mouse events to occur
         setLayout(null); // Use absolute layout.
         setSize(chessSize * cols, chessSize * rows);
-        System.out.printf("Board: size=(%d,%d), chess size=%d%n", getWidth(), getHeight(), chessSize);
+        Log.info("Board: size=(%d,%d), chess size=%d".formatted(getWidth(), getHeight(), chessSize));
 
         initiateGridComponents();
     }
@@ -91,7 +93,7 @@ public class BoardView extends JComponent {
     }
 
     private BoardPoint getBoardPoint(Point point) {
-        System.out.println("[" + point.y / chessSize + ", " + point.x / chessSize + "] Clicked");
+        Log.info("[" + point.y / chessSize + ", " + point.x / chessSize + "] Clicked");
         return new BoardPoint(point.y / chessSize, point.x / chessSize);
     }
 
@@ -125,10 +127,8 @@ public class BoardView extends JComponent {
         if (!(getComponentAt(e.getX(), e.getY()) instanceof JComponent clickedComponent)) return;
         BoardPoint point = getBoardPoint(e.getPoint());
         if (clickedComponent.getComponentCount() == 0) {
-            System.out.print("None chess here and ");
             if (clickedComponent instanceof CellComponent cell) gameController.onPlayerClickCell(point, cell);
         } else {
-            System.out.print("One chess here and ");
             if (clickedComponent.getComponents()[0] instanceof TileView tile) {
                 gameController.onPlayerClickPiece(point, tile);
             }
