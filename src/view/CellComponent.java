@@ -4,8 +4,8 @@ import javax.swing.*;
 import java.awt.*;
 
 /**
- * This is the equivalent of the Cell class,
- * but this class only cares how to draw Cells on ChessboardComponent
+ * This is the equivalent of a board cell,
+ * but this class only cares how to draw it on BoardView.
  */
 
 public class CellComponent extends JPanel {

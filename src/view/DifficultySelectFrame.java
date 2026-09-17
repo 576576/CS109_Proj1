@@ -8,7 +8,7 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import java.awt.*;
 import java.io.File;
 
-import static view.ChessGameFrame.isOnlinePlay;
+import static view.GameFrame.isOnlinePlay;
 import static view.MenuFrame.difficulty;
 import static view.MenuFrame.startPlayMode;
 

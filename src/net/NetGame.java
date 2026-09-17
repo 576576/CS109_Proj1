@@ -33,8 +33,8 @@ public class NetGame {
             sock = ss.accept();
             System.out.println("Connected from " + sock.getRemoteSocketAddress());
         } catch (IOException e) {
-            JOptionPane.showMessageDialog(gameController.getChessGameFrame(), "Failed to establish connection.");
-            gameController.getChessGameFrame().returnToTitle();
+            JOptionPane.showMessageDialog(gameController.getGameFrame(), "Failed to establish connection.");
+            gameController.getGameFrame().returnToTitle();
             return;
         } finally {
             waitFrame.dispose();
@@ -46,7 +46,7 @@ public class NetGame {
     public void connectHost(){
         String host = JOptionPane.showInputDialog(null,"Enter host","Connect to Host",JOptionPane.PLAIN_MESSAGE);
         if (host == null || host.isEmpty()) {
-            JOptionPane.showMessageDialog(gameController.getChessGameFrame(), "Invalid host address.");
+            JOptionPane.showMessageDialog(gameController.getGameFrame(), "Invalid host address.");
             return;
         }
 
@@ -55,8 +55,8 @@ public class NetGame {
             t = new Handler(sock,gameController);
             t.start();
         }catch (IOException ioe){
-            JOptionPane.showMessageDialog(gameController.getChessGameFrame(),"Unable to connect to the server.\nPlease ensure the host is online.");
-            gameController.getChessGameFrame().returnToTitle();
+            JOptionPane.showMessageDialog(gameController.getGameFrame(),"Unable to connect to the server.\nPlease ensure the host is online.");
+            gameController.getGameFrame().returnToTitle();
         }
     }
     public void registerController(GameController gameController) {

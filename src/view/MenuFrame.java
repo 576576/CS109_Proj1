@@ -1,7 +1,7 @@
 package view;
 
 import controller.GameController;
-import model.Chessboard;
+import model.Board;
 import model.Difficulty;
 import model.DifficultyPreset;
 import net.NetGame;
@@ -15,7 +15,7 @@ import java.awt.*;
 import java.io.File;
 import java.util.ArrayList;
 
-import static view.ChessGameFrame.isGameFrameInitDone;
+import static view.GameFrame.isGameFrameInitDone;
 
 /**
  * This class build the frame of the main menu window. It defines its size via a constant and creates
@@ -49,7 +49,7 @@ public class MenuFrame extends MyFrame{
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setLayout(gbl);
 
-        //initChessboard();
+        //initBoard();
         initLabel();
         initPlayButton();
         initOnlineButton();
@@ -62,9 +62,9 @@ public class MenuFrame extends MyFrame{
         System.out.println("Musics Loaded: "+musicFiles.size());
         setDarkMode();
     }
-    private void initChessboard() {
+    private void initBoard() {
         //TODO:planning to add autoplaying chessboard
-        ChessboardComponent chessboardComponent = new ChessboardComponent(ONE_CHESS_SIZE);
+        BoardView chessboardComponent = new BoardView(ONE_CHESS_SIZE, Board.DEFAULT_SIZE, Board.DEFAULT_SIZE);
         chessPanel.add(chessboardComponent,BorderLayout.CENTER);
         addComponent(this,gbl,chessPanel,0,0,560,560,0,0);
     }
@@ -110,12 +110,12 @@ public class MenuFrame extends MyFrame{
     public void generateNewGame(){
         isGameFrameInitDone=false;
         if (startPlayMode!=0) { //when game start, generate new game
-            ChessGameFrame mainFrame = new ChessGameFrame(1100, 810);
-            GameController gameController = new GameController(mainFrame.getChessboardComponent(),
-                    new Chessboard(), new NetGame());
+            GameFrame mainFrame = new GameFrame(1100, 810);
+            GameController gameController = new GameController(mainFrame.getBoardView(),
+                    new Board(), new NetGame());
             mainFrame.setGameController(gameController);
             mainFrame.setMenuFrame(this);
-            gameController.setChessGameFrame(mainFrame);
+            gameController.setGameFrame(mainFrame);
             System.out.println("GameFrame: Initialize done");
             System.out.println("Difficulty: "+difficulty.getName());
             mainFrame.setVisible(true);

@@ -1,17 +1,17 @@
 package listener;
 
-import model.ChessboardPoint;
+import model.BoardPoint;
 import view.CellComponent;
-import view.ChessComponent;
+import view.TileView;
 
 import java.io.File;
 
 public interface GameListener {
 
-    void onPlayerClickCell(ChessboardPoint point, CellComponent component);
+    void onPlayerClickCell(BoardPoint point, CellComponent component);
 
 
-    void onPlayerClickChessPiece(ChessboardPoint point, ChessComponent component);
+    void onPlayerClickPiece(BoardPoint point, TileView component);
 
     void onPlayerSwapChess();
 

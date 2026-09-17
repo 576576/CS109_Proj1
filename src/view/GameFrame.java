@@ -1,6 +1,7 @@
 package view;
 
 import controller.GameController;
+import model.Board;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -16,12 +17,12 @@ import static controller.GameController.pauseMilliSeconds;
 import static view.DifficultySelectFrame.selectedFile;
 import static view.MenuFrame.*;
 
-public class ChessGameFrame extends MyFrame{
+public class GameFrame extends MyFrame{
     private final int ONE_CHESS_SIZE;
     public static boolean isGameFrameInitDone =false;
     private GameController gameController;
     public MenuFrame menuFrame;
-    private ChessboardComponent chessboardComponent;
+    private BoardView chessboardComponent;
     private JButton swapConfirmButton,nextStepButton;
     private final JPanel panelRight = new JPanel();
     private final JPanel panelLeft = new JPanel();
@@ -37,10 +38,10 @@ public class ChessGameFrame extends MyFrame{
     };
     private final JFileChooser jf = new JFileChooser(".\\");
 
-    public ChessGameFrame(int width, int height) {
+    public GameFrame(int width, int height) {
         setTitle("CS109 消消乐");
         int CHESSBOARD_SIZE = (int) (3 * Math.sqrt(width * height) / 5);
-        ONE_CHESS_SIZE = CHESSBOARD_SIZE /8;
+        ONE_CHESS_SIZE = CHESSBOARD_SIZE / Board.DEFAULT_SIZE;
         setMinimumSize(new Dimension(905,600));
 
         jf.setFileSelectionMode(JFileChooser.FILES_ONLY);
@@ -62,7 +63,7 @@ public class ChessGameFrame extends MyFrame{
 
         System.out.println("Play Start: "+startPlayMode);
 
-        initChessboard();
+        initBoard();
         initStatusLabels();
         if (!isOnlinePlay()) initLocalPlayPanel();
         else initOnlinePlayPanel();
@@ -170,7 +171,7 @@ public class ChessGameFrame extends MyFrame{
         initReturnTitleButton();
         initExitButton();
     }
-    public ChessboardComponent getChessboardComponent() {
+    public BoardView getBoardView() {
         return chessboardComponent;
     }
     public void setMenuFrame(MenuFrame menuFrame) {
@@ -188,8 +189,8 @@ public class ChessGameFrame extends MyFrame{
     /**
      * 在游戏面板中添加棋盘
      */
-    private void initChessboard() {
-        chessboardComponent = new ChessboardComponent(ONE_CHESS_SIZE);
+    private void initBoard() {
+        chessboardComponent = new BoardView(ONE_CHESS_SIZE, Board.DEFAULT_SIZE, Board.DEFAULT_SIZE);
         addComponent(playPanel,gbl,chessboardComponent,25,1,560,560,560,560);
     }
 
