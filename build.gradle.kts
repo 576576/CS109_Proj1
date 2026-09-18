@@ -8,8 +8,15 @@ repositories {
     mavenCentral()
 }
 
-// 音频解码全部走 javax.sound.sampled 的 SPI：
-// jflac 提供 FLAC 的 AudioFileReader，mp3spi 提供 MP3 的，jlayer 是 mp3spi 的解码后端。
+// JavaFX 的稳定版在 Maven Central 上只到 24.0.1；25 只有 EA，26 还没有。
+val fxVersion = "24.0.1"
+// javafx-graphics / controls / fxml 带了各平台的本地库，必须挑对应平台的 classifier。
+val fxPlatform = when {
+    System.getProperty("os.name").contains("win", ignoreCase = true) -> "win"
+    System.getProperty("os.name").contains("mac", ignoreCase = true) -> "mac"
+    else -> "linux"
+}
+
 dependencies {
     implementation("org.jflac:jflac-codec:1.5.2")
     implementation("com.googlecode.soundlibs:mp3spi:1.9.5.4")
@@ -18,6 +25,14 @@ dependencies {
     implementation("com.googlecode.soundlibs:jlayer:1.0.1.4") {
         exclude(group = "junit")
     }
+
+    // 不带 classifier 的 javafx-base / controls 只是 300 字节的空壳，真正的类在带平台的那个 jar 里
+    implementation("org.openjfx:javafx-base:$fxVersion:$fxPlatform")
+    implementation("org.openjfx:javafx-graphics:$fxVersion:$fxPlatform")
+    implementation("org.openjfx:javafx-controls:$fxVersion:$fxPlatform")
+    implementation("org.openjfx:javafx-fxml:$fxVersion:$fxPlatform")
+    implementation("io.github.palexdev:materialfx-all:11.27.0")
+    implementation("org.glavo:MonetFX:0.1.0")
 }
 
 version = "1.0.0"
@@ -145,4 +160,12 @@ tasks.register<JavaExec>("smokeTest") {
     description = "跑 smoke.SmokeTest"
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass = "smoke.SmokeTest"
+}
+
+// 临时：验证 JavaFX + MaterialFX + MonetFX 能否在本机跑起来，迁移完成后删除。
+tasks.register<JavaExec>("fxSpike") {
+    group = "verification"
+    description = "跑 spike.FxSpike"
+    classpath = sourceSets.main.get().runtimeClasspath
+    mainClass = "spike.FxSpike"
 }
