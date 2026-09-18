@@ -31,7 +31,9 @@ dependencies {
     implementation("org.openjfx:javafx-graphics:$fxVersion:$fxPlatform")
     implementation("org.openjfx:javafx-controls:$fxVersion:$fxPlatform")
     implementation("org.openjfx:javafx-fxml:$fxVersion:$fxPlatform")
-    implementation("io.github.palexdev:materialfx-all:11.27.0")
+    // materialfx-all 11.x 只拆出了 6 个基础控件；21.x 才有 MFXTextField / MFXRadioButton /
+    // MFXSlider / MFXComboBox 这些，做完整界面得用它。
+    implementation("io.github.palexdev:materialfx:21.18.0-alpha")
     implementation("org.glavo:MonetFX:0.1.0")
 }
 
@@ -65,9 +67,11 @@ application {
     mainClass = "Main"
 }
 
-// 主 jar 不带版本号：jpackage 的 --main-jar 要写死这个名字。
+// 薄 jar 只给 packageInput 用，加个 classifier 免得和 fatJar 抢 build/libs/match3.jar；
+// 进 package-input 时再改回 match3.jar，因为 --main-jar 要写死这个名字。
 tasks.jar {
     archiveVersion = ""
+    archiveClassifier = "slim"
 }
 
 tasks.withType<JavaCompile>().configureEach {
@@ -140,14 +144,76 @@ val fatJar = tasks.register<Jar>("fatJar") {
     exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA", "META-INF/MANIFEST.MF")
 }
 
+// JavaFX 是模块化的，jlink 要从模块路径上拿它们；这里单独摊一份，别和普通依赖混在一起。
+val fxModules = tasks.register<Sync>("fxModules") {
+    group = "build"
+    description = "把 JavaFX 的模块 jar 集中到 build/fx-modules，给 jlink 用"
+    into(layout.buildDirectory.dir("fx-modules"))
+    from(configurations.runtimeClasspath) {
+        include { it.file.name.startsWith("javafx-") && it.file.name.endsWith(".jar") }
+    }
+}
+
 // 供 jpackage 使用：主 jar + 依赖 jar 平铺在一个目录里，各自的 SPI 文件保持独立。
+// JavaFX 不放进来：它已经在 jlink 裁出来的运行时里了，再放一份就从 classpath 加载、退回未命名模块。
 val packageInput = tasks.register<Sync>("packageInput") {
     group = "build"
     description = "把主 jar、依赖 jar 和 resource 目录集中到 build/package-input"
     into(layout.buildDirectory.dir("package-input"))
-    from(tasks.jar)
-    from(configurations.runtimeClasspath)
+    from(tasks.jar) { rename { "match3.jar" } }
+    from(configurations.runtimeClasspath) {
+        exclude { it.file.name.startsWith("javafx-") }
+    }
     from("resource") { into("resource") }
+}
+
+// jlink 裁运行时 + jpackage 出安装包；CI 里跑的也是这两步。
+val runtimeModules = listOf(
+    "java.base", "java.desktop", "java.logging", "java.prefs", "java.sql",
+    "jdk.localedata", "jdk.unsupported", "jdk.zipfs",
+    "javafx.base", "javafx.graphics", "javafx.controls", "javafx.fxml",
+)
+
+fun jtool(name: String): String {
+    val home = System.getenv("JAVA_HOME")
+    return if (home == null) name else "$home/bin/$name"
+}
+
+val jlinkRuntime = tasks.register<Exec>("jlinkRuntime") {
+    group = "build"
+    description = "裁一份带 JavaFX 的运行时到 build/runtime"
+    dependsOn(fxModules)
+    doFirst {
+        delete(layout.buildDirectory.dir("runtime"))
+    }
+    commandLine(
+        jtool("jlink"),
+        "--module-path", layout.buildDirectory.dir("fx-modules").get().asFile.absolutePath,
+        "--add-modules", runtimeModules.joinToString(","),
+        "--strip-debug", "--no-header-files", "--no-man-pages", "--compress=zip-9",
+        "--output", layout.buildDirectory.dir("runtime").get().asFile.absolutePath,
+    )
+}
+
+tasks.register<Exec>("dist") {
+    group = "build"
+    description = "用 jpackage 把应用和裁出来的运行时打成 Windows 安装包"
+    dependsOn(packageInput, jlinkRuntime)
+    doFirst {
+        delete(layout.buildDirectory.dir("dist"))
+    }
+    commandLine(
+        jtool("jpackage"),
+        "--type", "exe",
+        "--input", layout.buildDirectory.dir("package-input").get().asFile.absolutePath,
+        "--main-jar", "match3.jar", "--main-class", "Main",
+        "--runtime-image", layout.buildDirectory.dir("runtime").get().asFile.absolutePath,
+        "--name", "Match3", "--app-version", "1.0.0", "--vendor", "CS109",
+        "--icon", "packaging/app.ico",
+        "--java-options", "--enable-native-access=ALL-UNNAMED",
+        "--dest", layout.buildDirectory.dir("dist").get().asFile.absolutePath,
+        "--win-dir-chooser", "--win-menu", "--win-shortcut",
+    )
 }
 
 tasks.build {
@@ -162,10 +228,3 @@ tasks.register<JavaExec>("smokeTest") {
     mainClass = "smoke.SmokeTest"
 }
 
-// 临时：验证 JavaFX + MaterialFX + MonetFX 能否在本机跑起来，迁移完成后删除。
-tasks.register<JavaExec>("fxSpike") {
-    group = "verification"
-    description = "跑 spike.FxSpike"
-    classpath = sourceSets.main.get().runtimeClasspath
-    mainClass = "spike.FxSpike"
-}

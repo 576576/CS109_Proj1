@@ -1,12 +1,12 @@
 package controller;
 
 import config.GameSettings;
+import javafx.application.Platform;
 import listener.GameListener;
 import model.*;
 import net.NetGame;
-import view.*;
+import ui.*;
 
-import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
@@ -57,7 +57,7 @@ public class GameController implements GameListener {
     private Thread autoModeThread;
     public boolean isAutoConfirm = false;
     public int timeLeft;
-    private GameFrame chessGameFrame;
+    private final GameScreen screen;
     private boolean isAutoMode = false;
     // Record whether there is a selected piece before
     private BoardPoint selectedPoint;
@@ -65,17 +65,16 @@ public class GameController implements GameListener {
     private int score, stepLeft;
     private boolean isAlive = true;
     private int victoryMode = 0; // 1=win 2=loss
-    private JLabel[] statusLabels = new JLabel[4];
     public Thread timerThread = new Thread(() -> {
         timeLeft = difficulty().timeLimit();
-        updateTimerLabel();
+        refreshStatus();
         Log.info("Timer Start: " + difficulty().timeLimit() + "s");
         if (difficulty().timeLimit() != -1) {
             for (int i = difficulty().timeLimit(); i >= 0; i--) {
                 if (!isAlive) break;
                 pauseMilliSeconds(998);
                 timeLeft--;
-                updateTimerLabel();
+                refreshStatus();
                 checkVictory();
                 if (timeLeft % 10 == 0 || timeLeft <= 5) {
                     Log.info("TimeLeft:" + timeLeft);
@@ -84,8 +83,9 @@ public class GameController implements GameListener {
         }
     });
 
-    public GameController(BoardView view, Board model, NetGame net, GameSettings settings) {
+    public GameController(BoardView view, Board model, NetGame net, GameSettings settings, GameScreen screen) {
         this.settings = settings;
+        this.screen = screen;
         resetCounters();
         this.view = view;
         this.model = model;
@@ -130,9 +130,6 @@ public class GameController implements GameListener {
         this.timeLeft = timeLeft;
     }
 
-    public void setStatusLabels(JLabel[] statusLabels) {
-        this.statusLabels = statusLabels;
-    }
 
     private void resetCounters() {
         timeLeft = difficulty().timeLimit();
@@ -151,8 +148,8 @@ public class GameController implements GameListener {
             paintTilesFromModel();
         } while (isNotContinuable());
 
-        updateDifficultyLabel();
-        updateScoreAndStepLabel();
+        refreshStatus();
+        refreshStatus();
         view.repaint();
         Log.info("New game initialized");
         boardReady.countDown();
@@ -185,7 +182,7 @@ public class GameController implements GameListener {
 
     // click an empty cell
     @Override
-    public void onPlayerClickCell(BoardPoint point, CellComponent component) {
+    public void onPlayerClickCell(BoardPoint point) {
         playWarning();
     }
 
@@ -204,12 +201,12 @@ public class GameController implements GameListener {
         }
         if (isNotContinuable()) {
             Log.info("Dead end: shuffled");
-            if (settings.verboseDialogs()) JOptionPane.showMessageDialog(chessGameFrame, "Auto Shuffled: Dead end");
+            if (settings.verboseDialogs()) Dialogs.info("Auto Shuffled: Dead end");
             onPlayerShuffle();
             return;
         }
         if (model.hasEmptyCells()) {
-            if (settings.verboseDialogs()) JOptionPane.showMessageDialog(chessGameFrame, "Swap Fail: board has empty");
+            if (settings.verboseDialogs()) Dialogs.info("Swap Fail: board has empty");
             Log.info("Swap Fail: has empty");
             return;
         }
@@ -231,7 +228,7 @@ public class GameController implements GameListener {
                 model.swapPieces(selectedPoint, selectedPoint2);
                 view.setTileAt(selectedPoint2, view.removeTileAt(selectedPoint));
                 view.setTileAt(selectedPoint, tmp);
-                if (settings.verboseDialogs()) JOptionPane.showMessageDialog(chessGameFrame, "Swap Fail! Nothing can be match");
+                if (settings.verboseDialogs()) Dialogs.info("Swap Fail! Nothing can be match");
                 Log.info("Swap Fail: Nothing can be match");
             }
         } catch (RuntimeException e) {
@@ -242,16 +239,13 @@ public class GameController implements GameListener {
             selectedPoint = null;
             selectedPoint2 = null;
             view.repaint();
-            updateScoreAndStepLabel();
+            refreshStatus();
         }
     }
 
-    /** 取格子上的棋子视图；格子空着或还没摆上棋子时返回 null。 */
+    /** 取格子上的棋子视图；格子空着时返回 null。 */
     private TileView tileAt(BoardPoint point) {
-        if (point == null) return null;
-        CellComponent cell = view.getGridComponentAt(point);
-        if (cell.getComponentCount() == 0) return null;
-        return cell.getComponent(0) instanceof TileView tile ? tile : null;
+        return view.tileAt(point);
     }
 
     private void clearSelection(BoardPoint point) {
@@ -276,37 +270,37 @@ public class GameController implements GameListener {
             model.removePieceAt(point);
             score += 1;
         }
-        runOnEdt(() -> {
+        runOnFx(() -> {
             for (BoardPoint point : matched) view.removeTileAt(point);
             view.repaint();
-            updateScoreAndStepLabel();
+            refreshStatus();
         });
         pauseIfAnimating(ELIMINATE_PAUSE_MS);
-        runOnEdt(this::checkVictory);
+        runOnFx(this::checkVictory);
         return true;
     }
 
     private void checkVictory() {
         if (!isAlive) return;
         if (score >= difficulty().goal()) {
-            JOptionPane.showMessageDialog(chessGameFrame, "Congratulations! You win.");
+            Dialogs.info("Congratulations! You win.");
             Log.info("Victory: Reach the goal");
             playEffect("victory");
             victoryMode = 1;
-            chessGameFrame.returnToTitle();
+            screen.finish();
             this.terminate();
         }
         if (score < difficulty().goal() && stepLeft == 0 || timeLeft <= 0 && difficulty().timeLimit() > 0) {
-            if (!settings.verboseDialogs()) JOptionPane.showMessageDialog(chessGameFrame, "Oh no,you loss.");
+            if (!settings.verboseDialogs()) Dialogs.info("Oh no,you loss.");
             else if (stepLeft == 0) {
-                JOptionPane.showMessageDialog(chessGameFrame, "Oh no, no more steps!");
+                Dialogs.info("Oh no, no more steps!");
                 Log.info("Loss: Step limit exceeded");
             } else if (timeLeft <= 0 && difficulty().timeLimit() > 0) {
-                JOptionPane.showMessageDialog(chessGameFrame, "Oh no, you DON'T have time!");
+                Dialogs.info("Oh no, you DON'T have time!");
                 Log.info("Loss: Time limit exceeded");
             }
             victoryMode = 2;
-            chessGameFrame.returnToTitle();
+            screen.finish();
             this.terminate();
         }
     }
@@ -317,7 +311,7 @@ public class GameController implements GameListener {
 
     public void nextStep() {
         if (!model.hasEmptyCells()) {
-            if (settings.verboseDialogs()) JOptionPane.showMessageDialog(chessGameFrame, "NextStep failed: no empty");
+            if (settings.verboseDialogs()) Dialogs.info("NextStep failed: no empty");
             Log.info("NextStep Fail: no empty cells");
             playWarning();
             return;
@@ -325,7 +319,7 @@ public class GameController implements GameListener {
 
         // 手动点按钮时这里是 EDT。下落要一帧一帧地停，睡在 EDT 上重绘根本发不出来，
         // 所以 EDT 上只提交任务；auto 线程本来就在后台，直接跑完再决定下一轮。
-        if (SwingUtilities.isEventDispatchThread()) fallAnimator.execute(this::runGuardedFallCycle);
+        if (Platform.isFxApplicationThread()) fallAnimator.execute(this::runGuardedFallCycle);
         else runGuardedFallCycle();
     }
 
@@ -343,18 +337,18 @@ public class GameController implements GameListener {
         do {
             // Fall done has done, if there is any match-3, eliminate them
             if (settings.verboseDialogs()) {
-                runOnEdt(() -> {
-                    JOptionPane.showMessageDialog(chessGameFrame, "Bonus! Match occurs after falling down.");
+                runOnFx(() -> {
+                    Dialogs.info("Bonus! Match occurs after falling down.");
                     Log.info("Bonus! Match occurs after falling down.");
                 });
             }
-            runOnEdt(() -> view.repaint());
+            runOnFx(() -> view.repaint());
             doFallDown();
         } while (doChessEliminate());
 
         stepLeft--;
-        runOnEdt(() -> {
-            updateScoreAndStepLabel();
+        runOnFx(() -> {
+            refreshStatus();
             checkVictory();
         });
     }
@@ -376,42 +370,35 @@ public class GameController implements GameListener {
 
     /** 动一下视图、重绘、停一帧。 */
     private void animateStep(Runnable mutation) {
-        runOnEdt(mutation);
+        runOnFx(mutation);
         view.repaint();
         pauseIfAnimating(FALL_STEP_MS);
     }
 
     /** 只有在后台线程上才停——在 EDT 上睡等于把重绘一起堵死，动画就没了。 */
     private static void pauseIfAnimating(int ms) {
-        if (!SwingUtilities.isEventDispatchThread()) pauseMilliSeconds(ms);
+        if (!Platform.isFxApplicationThread()) pauseMilliSeconds(ms);
     }
 
-    public void updateScoreAndStepLabel() {
-        if (statusLabels[0] == null) setStatusLabels(chessGameFrame.getStatusLabels());
-        statusLabels[1].setText("Score:" + score + "/" + difficulty().goal());
-        statusLabels[2].setText("StepLeft:" + ((difficulty().stepLimit() > 0) ? (stepLeft + "/" + difficulty().stepLimit()) : ('∞')));
-    }
-
-    public void updateDifficultyLabel() {
-        if (statusLabels[0] == null) setStatusLabels(chessGameFrame.getStatusLabels());
-        statusLabels[0].setText("Difficulty:" + difficulty().name());
-    }
-
-    public void updateTimerLabel() {
-        if (difficulty().timeLimit() == -1) statusLabels[3].setText("TimeLimit:∞");
-        else statusLabels[3].setText("TimeLimit:" + timeLeft);
+    /** 四个状态位一次算好交给界面，控制器不再碰标签控件。 */
+    public void refreshStatus() {
+        screen.setStatus(
+                difficulty().name(),
+                score + "/" + difficulty().goal(),
+                difficulty().hasStepLimit() ? (difficulty().stepLimit() - stepLeft) + "/" + difficulty().stepLimit() : "∞",
+                difficulty().hasTimeLimit() ? timeLeft + "s" : "∞");
     }
 
     public void loadFromFile(File file) {
         if (!file.exists() || !file.canRead()) {
-            JOptionPane.showMessageDialog(chessGameFrame, "Can't Access the file!");
+            Dialogs.info("Can't Access the file!");
             return;
         }
         String text;
         try {
             text = Files.readString(file.toPath());
         } catch (IOException _) {
-            JOptionPane.showMessageDialog(chessGameFrame, "Can't Access the file!");
+            Dialogs.info("Can't Access the file!");
             return;
         }
         loadFromState(text, false);
@@ -426,15 +413,15 @@ public class GameController implements GameListener {
     private void loadFromState(String text, boolean restartTimer) {
         Optional<GameState> loaded = GameStateCodec.fromText(text, model.rows(), model.cols());
         if (loaded.isEmpty()) {
-            JOptionPane.showMessageDialog(chessGameFrame, "File format error:101");
+            Dialogs.info("File format error:101");
             return;
         }
         applyState(loaded.get());
         Log.info("Difficulty:" + difficulty().name() + "\nLoaded.");
-        updateDifficultyLabel();
-        updateScoreAndStepLabel();
+        refreshStatus();
+        refreshStatus();
         if (restartTimer) {
-            updateTimerLabel();
+            refreshStatus();
             startTimer();
         }
         view.repaint();
@@ -563,21 +550,26 @@ public class GameController implements GameListener {
 
     public void onlineGameTerminate(boolean isWinner) {
         if (isWinner) {
-            JOptionPane.showMessageDialog(chessGameFrame, "Congratulations! You win.");
+            Dialogs.info("Congratulations! You win.");
             Log.info("Victory: Your Competitor Loss");
             victoryMode = 1;
         } else {
-            JOptionPane.showMessageDialog(chessGameFrame, "Oh no! Your competitor win.");
+            Dialogs.info("Oh no! Your competitor win.");
             Log.info("Loss: Your Competitor Win");
             victoryMode = 2;
         }
         score = 0;
         isAlive = false;
-        chessGameFrame.returnToTitle();
+        screen.finish();
     }
 
     public boolean isNotContinuable() {
         return !model.hasValidSwap();
+    }
+
+    /** 当前棋盘上一处可行的交换；没有就是死局。 */
+    public Optional<Swap> currentHint() {
+        return model.findHint();
     }
 
     public void hint() {
@@ -585,7 +577,7 @@ public class GameController implements GameListener {
         Optional<Swap> hint = model.findHint();
         if (hint.isEmpty()) {
             Log.info("Dead end: shuffled");
-            if (settings.verboseDialogs()) JOptionPane.showMessageDialog(chessGameFrame, "Auto Shuffled: Dead end");
+            if (settings.verboseDialogs()) Dialogs.info("Auto Shuffled: Dead end");
             onPlayerShuffle();
             return;
         }
@@ -624,9 +616,9 @@ public class GameController implements GameListener {
      * 它靠一帧一帧的停顿来表现，而 EDT 一旦被睡住，重绘就再也发不出来了。
      */
     private void autoStep() {
-        runOnEdt(this::hint);
+        runOnFx(this::hint);
         if (selectedPoint == null || selectedPoint2 == null) return;
-        runOnEdt(this::onPlayerSwapChess);
+        runOnFx(this::onPlayerSwapChess);
         nextStep();
     }
 
@@ -639,15 +631,29 @@ public class GameController implements GameListener {
         });
     }
 
-    /** 走一步棋要动视图，必须回到 EDT；auto 线程只是等它做完再决定下一轮。 */
-    private static void runOnEdt(Runnable task) {
+    /**
+     * 动视图的动作一律回到 JavaFX 应用线程；auto 线程和动画线程只是等它做完再继续。
+     * JavaFX 没有 invokeAndWait，所以自己用闩等一下。
+     */
+    private static void runOnFx(Runnable task) {
+        if (Platform.isFxApplicationThread()) {
+            task.run();
+            return;
+        }
+        CountDownLatch done = new CountDownLatch(1);
+        Platform.runLater(() -> {
+            try {
+                task.run();
+            } catch (RuntimeException e) {
+                Log.warn("Auto step failed: " + e);
+            } finally {
+                done.countDown();
+            }
+        });
         try {
-            if (SwingUtilities.isEventDispatchThread()) task.run();
-            else SwingUtilities.invokeAndWait(task);
+            done.await();
         } catch (InterruptedException _) {
             Thread.currentThread().interrupt();
-        } catch (InvocationTargetException e) {
-            Log.warn("Auto step failed: " + e.getCause());
         }
     }
 
@@ -673,27 +679,26 @@ public class GameController implements GameListener {
         autoConfirmWorker.shutdownNow();
         fallAnimator.shutdownNow();
         if (settings.playMode().isOnline()) net.stopHandler();
-        else if (settings.autoRestart()) {
-            DifficultySelectFrame difficultySelectFrame = new DifficultySelectFrame(chessGameFrame.menuFrame, settings);
-            SwingUtilities.invokeLater(() -> difficultySelectFrame.setVisible(true));
-        }
+        else screen.finish();
     }
 
     public boolean isAlive() {
         return isAlive;
     }
 
+    public BoardView getBoard() {
+        return view;
+    }
+
+    public void setAutoConfirm(boolean autoConfirm) {
+        this.isAutoConfirm = autoConfirm;
+    }
+
     public int getVictoryMode() {
         return victoryMode;
     }
 
-    public GameFrame getGameFrame() {
-        return chessGameFrame;
-    }
 
-    public void setGameFrame(GameFrame chessGameFrame) {
-        this.chessGameFrame = chessGameFrame;
-    }
 
     public void startTimer() {
         timeLeft = difficulty().timeLimit();

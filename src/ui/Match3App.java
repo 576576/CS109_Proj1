@@ -1,0 +1,187 @@
+package ui;
+
+import config.GameSettings;
+import config.PlayMode;
+import config.PlayMode;
+import controller.GameController;
+import io.github.palexdev.materialfx.theming.JavaFXThemes;
+import io.github.palexdev.materialfx.theming.MaterialFXStylesheets;
+import io.github.palexdev.materialfx.theming.UserAgentBuilder;
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.scene.Node;
+import javafx.scene.Scene;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.StackPane;
+import javafx.stage.FileChooser;
+import javafx.stage.Stage;
+import model.Board;
+import net.NetGame;
+import player.MusicLibrary;
+
+import java.io.File;
+import java.util.concurrent.CountDownLatch;
+
+import util.ResourceRoot;
+
+/** 整个应用只有一个窗口：菜单、开局设置、对局、设置都是换掉中间那块内容。 */
+public class Match3App extends Application {
+
+    private static final int WIDTH = 1180;
+    private static final int HEIGHT = 820;
+
+    private static Match3App instance;
+    /** 探针要等到窗口真的起来才能接着操作。 */
+    public static final CountDownLatch STARTED = new CountDownLatch(1);
+
+    private Stage stage;
+    private Scene scene;
+    private StackPane root;
+    private ImageView background;
+    private Theme theme;
+    private MusicLibrary musicLibrary;
+    private GameSettings settings = new GameSettings();
+    private GameView gameView;
+
+    public static Match3App get() {
+        return instance;
+    }
+
+    @Override
+    public void start(Stage stage) {
+        instance = this;
+        this.stage = stage;
+
+        // MaterialFX 把自己的样式表并进 user-agent，必须在建任何控件之前做
+        UserAgentBuilder.builder()
+                .themes(JavaFXThemes.MODENA)
+                .themes(MaterialFXStylesheets.forAssemble(true))
+                .setDeploy(true)
+                .setResolveAssets(true)
+                .build()
+                .setGlobal();
+
+        theme = new Theme();
+        musicLibrary = new MusicLibrary();
+
+        background = new ImageView();
+        root = new StackPane(background);
+        scene = new Scene(root, WIDTH, HEIGHT);
+        background.fitWidthProperty().bind(scene.widthProperty());
+        background.fitHeightProperty().bind(scene.heightProperty());
+
+        applyTheme();
+        showMenu();
+
+        stage.setTitle("Match-3 CS109");
+        stage.setScene(scene);
+        stage.setMinWidth(900);
+        stage.setMinHeight(620);
+        setStageIcon(stage);
+        stage.show();
+        STARTED.countDown();
+    }
+
+    public Stage stage() {
+        return stage;
+    }
+
+    public Scene scene() {
+        return scene;
+    }
+
+    public Theme theme() {
+        return theme;
+    }
+
+    public MusicLibrary musicLibrary() {
+        return musicLibrary;
+    }
+
+    /** 当前对局的控制器；没有对局时为 null。 */
+    public GameController controller() {
+        return gameView == null ? null : gameView.controller();
+    }
+
+    public void showMenu() {
+        settings = new GameSettings();
+        setContent(new MenuView(theme, this));
+    }
+
+    public void showSetup(GameSettings settings) {
+        setContent(new SetupView(settings, theme, this));
+    }
+
+    /** 菜单里选定玩法之后进开局设置。 */
+    public void startSetup(PlayMode mode) {
+        settings.setPlayMode(mode);
+        showSetup(settings);
+    }
+
+    public void showSettings(GameSettings settings) {
+        setContent(new SettingsView(settings == null ? this.settings : settings, theme, this));
+    }
+
+    public void showGame(GameSettings settings) {
+        if (settings.playMode() == PlayMode.LOAD_LOCAL && settings.saveFile() == null) {
+            Dialogs.warn("Pick a saved game first.");
+            return;
+        }
+        GameView view = new GameView(settings, theme, this);
+        GameController controller =
+                new GameController(view.board(), new Board(), new NetGame(settings), settings, view);
+        view.setController(controller);
+        gameView = view;
+        setContent(view);
+        view.beginPlay();
+    }
+
+    /** 主题重新取色后：换壁纸、换样式表，正在下的那局也跟着重画。 */
+    public void applyTheme() {
+        background.setImage(theme.background());
+        scene.getStylesheets().clear();
+        String css = theme.stylesheet();
+        if (css != null) scene.getStylesheets().add(css);
+        root.setStyle("-fx-background-color: " + Theme.hex(theme.surface()) + ";");
+        if (gameView != null) {
+            gameView.paint();
+            gameView.board().setTheme(theme);
+        }
+    }
+
+    public void loadGame(GameController controller) {
+        File file = chooseSave("Open saved game");
+        if (file != null) controller.loadFromFile(file);
+    }
+
+    public void saveGame(GameController controller) {
+        File file = chooseSave("Save game");
+        if (file != null) controller.saveToFile(file);
+    }
+
+    public void exit() {
+        Platform.exit();
+    }
+
+    private File chooseSave(String title) {
+        FileChooser chooser = new FileChooser();
+        chooser.setTitle(title);
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Saved game", "*.txt"));
+        return chooser.showSaveDialog(stage);
+    }
+
+    private void setContent(Node content) {
+        if (root.getChildren().size() > 1) root.getChildren().set(1, content);
+        else root.getChildren().add(content);
+    }
+
+    private void setStageIcon(Stage stage) {
+        try {
+            File icon = ResourceRoot.path("icon/app.png").toFile();
+            if (icon.exists()) stage.getIcons().add(new Image(icon.toURI().toString()));
+        } catch (RuntimeException _) {
+            // 没有图标文件就不设，不影响启动
+        }
+    }
+}

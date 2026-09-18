@@ -4,7 +4,9 @@ import config.GameSettings;
 import config.PlayMode;
 import controller.GameController;
 
-import javax.swing.*;
+import javafx.application.Platform;
+import javafx.scene.control.TextInputDialog;
+
 import java.io.*;
 import java.net.InetAddress;
 import java.net.ServerSocket;
@@ -12,6 +14,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import ui.Dialogs;
 import util.Log;
 
 public class NetGame {
@@ -28,42 +31,45 @@ public class NetGame {
     public void stopHandler() {
         if (handler != null) handler.interrupt();
     }
+    /** 建房。accept() 会一直阻塞，所以整段挪到后台线程，JavaFX 线程不能等在这儿。 */
     public void serverHost() {
-        JFrame waitFrame = new JFrame("Waiting for Player...");
-        waitFrame.setSize(400, 100);
-        waitFrame.setLocationRelativeTo(null);
-        waitFrame.setVisible(true);
-        Log.info("OnlineGame Host: Waiting for player.");
-
-        try (ServerSocket ss = new ServerSocket(port)) {
-            waitFrame.setTitle("Waiting for player: " + getPublicIP());
-            sock = ss.accept();
-            Log.info("Connected from " + sock.getRemoteSocketAddress());
-        } catch (IOException _) {
-            JOptionPane.showMessageDialog(gameController.getGameFrame(), "Failed to establish connection.");
-            gameController.getGameFrame().returnToTitle();
-            return;
-        } finally {
-            waitFrame.dispose();
-        }
-
-        handler = new Handler(sock, gameController, settings.playMode());
-        handler.start();
+        Thread wait = new Thread(() -> {
+            Dialogs.notifyInfo("Waiting for a player...\nYour address: " + getPublicIP());
+            try (ServerSocket ss = new ServerSocket(port)) {
+                Log.info("OnlineGame Host: Waiting for player.");
+                sock = ss.accept();
+                Log.info("Connected from " + sock.getRemoteSocketAddress());
+            } catch (IOException e) {
+                Log.warn("Failed to establish connection: " + e);
+                Dialogs.warn("Failed to establish connection.");
+                Platform.runLater(gameController::terminate);
+                return;
+            }
+            handler = new Handler(sock, gameController, settings.playMode());
+            handler.start();
+        }, "host-wait");
+        wait.setDaemon(true);
+        wait.start();
     }
-    public void connectHost(){
-        String host = JOptionPane.showInputDialog(null,"Enter host","Connect to Host",JOptionPane.PLAIN_MESSAGE);
-        if (host == null || host.isEmpty()) {
-            JOptionPane.showMessageDialog(gameController.getGameFrame(), "Invalid host address.");
+
+    public void connectHost() {
+        var dialog = new TextInputDialog();
+        dialog.setTitle("Connect to Host");
+        dialog.setHeaderText(null);
+        dialog.setContentText("Enter host");
+        var host = dialog.showAndWait();
+        if (host.isEmpty() || host.get().isBlank()) {
+            Dialogs.warn("Invalid host address.");
             return;
         }
 
         try {
-            sock = new Socket(host, port);
+            sock = new Socket(host.get().trim(), port);
             handler = new Handler(sock, gameController, settings.playMode());
             handler.start();
-        } catch (IOException _) {
-            JOptionPane.showMessageDialog(gameController.getGameFrame(),"Unable to connect to the server.\nPlease ensure the host is online.");
-            gameController.getGameFrame().returnToTitle();
+        } catch (IOException e) {
+            Dialogs.warn("Unable to connect to the server.\nPlease ensure the host is online.");
+            gameController.terminate();
         }
     }
     public void registerController(GameController gameController) {

@@ -34,20 +34,6 @@ jobs:
           distribution: temurin
           java-version: '26'
       - uses: gradle/actions/setup-gradle@v6.3.0
-      - name: Lay out the app jar, its dependencies and resource/
-        run: ./gradlew packageInput
-
-      # 只留 Swing、声音、日志用到的模块，外加 zipfs（ResourceRoot 用它读 jar 里的 resource）。
-      # 完整 JDK 是几百 MB，这样下来约 60 MB。
-      - name: Trim a runtime image
-        shell: bash
-        run: >
-          "$JAVA_HOME/bin/jlink"
-          --add-modules java.base,java.desktop,java.logging,java.prefs,jdk.localedata,jdk.unsupported,jdk.zipfs
-          --strip-debug --no-header-files --no-man-pages --compress=zip-9
-          --output build/runtime
-
-      # jpackage 的 --type exe 需要 WiX 3；镜像里未必预装。
       - name: Make sure WiX is available
         shell: powershell
         run: |
@@ -56,16 +42,11 @@ jobs:
           }
           Get-Command candle.exe | Select-Object -ExpandProperty Source
 
-      - name: Package the installer
-        shell: bash
-        run: >
-          "$JAVA_HOME/bin/jpackage" --type exe
-          --input build/package-input
-          --main-jar match3.jar --main-class Main
-          --runtime-image build/runtime
-          --name Match3 --app-version 1.0.0 --vendor CS109
-          --dest build/dist
-          --win-dir-chooser --win-menu --win-shortcut
+      # dist = packageInput（主 jar + 依赖 + resource，JavaFX 除外）
+      #      + fxModules（JavaFX 的模块 jar，给 jlink 用）
+      #      + jlinkRuntime（裁运行时）+ jpackage（出 exe，带图标）
+      - name: Build the installer
+        run: ./gradlew dist
 
       - uses: actions/upload-artifact@v7.0.1
         with:
