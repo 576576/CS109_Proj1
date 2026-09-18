@@ -11,7 +11,7 @@ import java.awt.event.ComponentEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.io.File;
-import java.util.Random;
+import java.util.random.RandomGenerator;
 
 import util.Log;
 import static controller.GameController.pauseMilliSeconds;
@@ -73,14 +73,14 @@ public class GameFrame extends MyFrame{
         addComponent(playPanel,gbl, panelRight,590,1,560,4,0,1);
 
         musicThread = new Thread(() -> {
-            int i=new Random().nextInt(musicFiles.size());
+            if (musicFiles == null || musicFiles.isEmpty()) return;
+            int i = RandomGenerator.getDefault().nextInt(musicFiles.size());
             while (gameController.isAlive()) {
-                var f = musicFiles.get(i);
-                i++;
-                i%=musicFiles.size();
-                musicPlayer.play(f);
+                musicPlayer.play(musicFiles.get(i));
+                i = (i + 1) % musicFiles.size();
             }
-        });
+        }, "music");
+        musicThread.setDaemon(true);
 
         SwingUtilities.invokeLater(()->{ //initialize game functions in order
             while (isOnlinePlay()) {

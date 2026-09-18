@@ -8,10 +8,13 @@ import view.*;
 import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
 import util.Log;
@@ -34,6 +37,13 @@ public class GameController implements GameListener {
     private final Board model;
     private final BoardView view;
     private final NetGame net;
+    /** auto 确认动作的串行队列，避免连点时两步棋的业务逻辑互相穿插。 */
+    private final ExecutorService autoConfirmWorker = Executors.newSingleThreadExecutor(r -> {
+        Thread worker = new Thread(r, "auto-confirm");
+        worker.setDaemon(true);
+        return worker;
+    });
+    private Thread autoModeThread;
     public boolean isAutoConfirm = false;
     public int timeLeft;
     private GameFrame chessGameFrame;
@@ -171,6 +181,10 @@ public class GameController implements GameListener {
      */
     @Override
     public void onPlayerSwapChess() {
+        if (selectedPoint == null || selectedPoint2 == null) {
+            Log.info("Swap Fail: less than two pieces selected");
+            return;
+        }
         if (isNotContinuable()) {
             Log.info("Dead end: shuffled");
             if (isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame, "Auto Shuffled: Dead end");
@@ -203,8 +217,8 @@ public class GameController implements GameListener {
                 if (isDetailedDialog) JOptionPane.showMessageDialog(chessGameFrame, "Swap Fail! Nothing can be match");
                 Log.info("Swap Fail: Nothing can be match");
             }
-        } catch (RuntimeException _) {
-            Log.info("Swap Failed!");
+        } catch (RuntimeException e) {
+            Log.warn("Swap Failed: " + e);
         } finally {
             clearSelection(selectedPoint);
             clearSelection(selectedPoint2);
@@ -218,7 +232,9 @@ public class GameController implements GameListener {
     /** 取格子上的棋子视图；格子空着或还没摆上棋子时返回 null。 */
     private TileView tileAt(BoardPoint point) {
         if (point == null) return null;
-        return view.getGridComponentAt(point).getComponent(0) instanceof TileView tile ? tile : null;
+        CellComponent cell = view.getGridComponentAt(point);
+        if (cell.getComponentCount() == 0) return null;
+        return cell.getComponent(0) instanceof TileView tile ? tile : null;
     }
 
     private void clearSelection(BoardPoint point) {
@@ -480,11 +496,7 @@ public class GameController implements GameListener {
                 doAutoConfirm();
             }
         } else {
-            var grid = (TileView) view.getGridComponentAt(selectedPoint).getComponent(0);
-            if (grid == null) return;
-            grid.setSelected(false);
-            grid.repaint();
-
+            clearSelection(selectedPoint);
             selectedPoint = point;
         }
         component.setSelected(true);
@@ -532,8 +544,13 @@ public class GameController implements GameListener {
         Swap swap = hint.get();
         selectedPoint = swap.first();
         selectedPoint2 = swap.second();
-        var tile1 = (TileView) view.getGridComponentAt(selectedPoint).getComponent(0);
-        var tile2 = (TileView) view.getGridComponentAt(selectedPoint2).getComponent(0);
+        TileView tile1 = tileAt(selectedPoint);
+        TileView tile2 = tileAt(selectedPoint2);
+        if (tile1 == null || tile2 == null) {
+            selectedPoint = null;
+            selectedPoint2 = null;
+            return;
+        }
         tile1.setSelected(true);
         tile2.setSelected(true);
         tile1.repaint();
@@ -542,25 +559,44 @@ public class GameController implements GameListener {
 
     // Implement auto-mode
     private void doAutoMode() {
-        // Create a new thread to run the auto mode logic.
-        new Thread(() -> {
+        // 已经有一个循环在跑了就别再开一条，否则每次洗牌都会多出一条永不退出的线程
+        if (autoModeThread != null && autoModeThread.isAlive()) return;
+        autoModeThread = new Thread(() -> {
             while (score <= difficulty.goal() && isAutoMode && isAlive) {
-                hint();
-                onPlayerSwapChess();
-                nextStep();
+                runOnEdt(this::autoStep);
             }
-        }).start();
+        }, "auto-mode");
+        autoModeThread.setDaemon(true);
+        autoModeThread.start();
+    }
+
+    /** auto 的一轮：找一处可行交换，换掉它，再把空位补满。 */
+    private void autoStep() {
+        hint();
+        if (selectedPoint == null || selectedPoint2 == null) return;
+        onPlayerSwapChess();
+        nextStep();
     }
 
     // To handle auto confirm when it is on
     private void doAutoConfirm() {
-        // Create a new thread to run the auto confirm logic.
-        new Thread(() -> {
-            if (selectedPoint != null && selectedPoint2 != null) {
-                onPlayerSwapChess();
-                nextStep();
-            }
-        }).start();
+        // 串行执行：连点时后一次不会和前一次的交换/落子重叠
+        autoConfirmWorker.execute(() -> {
+            if (selectedPoint == null || selectedPoint2 == null) return;
+            runOnEdt(this::autoStep);
+        });
+    }
+
+    /** 走一步棋要动视图，必须回到 EDT；auto 线程只是等它做完再决定下一轮。 */
+    private static void runOnEdt(Runnable task) {
+        try {
+            if (SwingUtilities.isEventDispatchThread()) task.run();
+            else SwingUtilities.invokeAndWait(task);
+        } catch (InterruptedException _) {
+            Thread.currentThread().interrupt();
+        } catch (InvocationTargetException e) {
+            Log.warn("Auto step failed: " + e.getCause());
+        }
     }
 
     public boolean isAutoConfirm() {
@@ -578,12 +614,14 @@ public class GameController implements GameListener {
 
     @Override
     public void terminate() {
+        isAlive = false;
+        isAutoMode = false;
+        autoConfirmWorker.shutdownNow();
         if (isOnlinePlay()) NetGame.t.interrupt();
-        else if (isAlive && isAutoRestart) {
+        else if (isAutoRestart) {
             DifficultySelectFrame difficultySelectFrame = new DifficultySelectFrame(chessGameFrame.menuFrame);
             SwingUtilities.invokeLater(() -> difficultySelectFrame.setVisible(true));
         }
-        isAlive = false;
     }
 
     public boolean isAlive() {
