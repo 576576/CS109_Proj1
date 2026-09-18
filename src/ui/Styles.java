@@ -17,11 +17,13 @@ public final class Styles {
     }
 
     private static void fill(MFXButton button, Color background, Color text) {
+        // maxWidth=MAX 配合菜单的 setFillWidth(true)，让所有按钮等宽铺满菜单
+        button.setMaxWidth(Double.MAX_VALUE);
         button.setStyle("-fx-background-color: " + Theme.hex(background) + ";"
                 + "-fx-text-fill: " + Theme.hex(text) + ";"
                 + "-fx-background-radius: 16;"
-                + "-fx-padding: 10 20 10 20;"
-                + "-fx-font-size: 14px;"
+                + "-fx-padding: 9 12 9 12;"
+                + "-fx-font-size: 13px;"
                 + "-fx-cursor: hand;");
     }
 

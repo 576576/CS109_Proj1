@@ -6,9 +6,15 @@ import controller.GameController;
 import io.github.palexdev.materialfx.controls.MFXButton;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
+import javafx.scene.Cursor;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
 import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import model.Board;
 import player.MusicLibrary;
@@ -21,25 +27,32 @@ import java.util.random.RandomGenerator;
 /**
  * 对局界面：左菜单放状态与对局操作，右菜单放存档与退出，中间棋盘完全居中。
  * 左右菜单各有背景面板，是两块整块的菜单，而不是散落的按钮。
+ * 状态信息单独包在一个内嵌卡片里；Load/Save 合成一个背靠背的分段按钮。
  */
 public class GameView extends BorderPane implements GameScreen {
 
     private static final int ONE_CHESS_SIZE = 72;
-    private static final double MENU_WIDTH = 200;
+    private static final double MENU_WIDTH = 172;
 
     private final GameSettings settings;
     private final Theme theme;
     private final Match3App app;
     private final BoardView board;
     private final Label[] status = new Label[4];
-    private final VBox leftMenu = new VBox(10);
-    private final VBox rightMenu = new VBox(10);
+    private final VBox leftMenu = new VBox(8);
+    private final VBox rightMenu = new VBox(8);
     private final List<MFXButton> buttons = new ArrayList<>();
     private final MusicPlayer musicPlayer = new MusicPlayer();
     private final Thread musicThread;
     private final MusicLibrary music;
 
     private GameController controller;
+
+    private VBox statusCard;
+    private Label statusHeading;
+    private HBox loadSaveBox;
+    private Region loadSaveDivider;
+    private final StackPane[] loadSaveHalves = new StackPane[2];
 
     public GameView(GameSettings settings, Theme theme, Match3App app) {
         this.settings = settings;
@@ -115,24 +128,30 @@ public class GameView extends BorderPane implements GameScreen {
         else app.showMenu();
     }
 
-    /** 一块菜单面板：有背景、圆角、标题感的间距。 */
+    /** 一块菜单面板：有背景、圆角，按钮在里面等宽铺满。 */
     private void styleMenu(VBox menu) {
-        menu.setPadding(new Insets(14));
+        menu.setPadding(new Insets(12));
         menu.setAlignment(Pos.TOP_CENTER);
         menu.setFillWidth(true);
-        menu.setStyle(cardStyle(theme.surfaceVariant()));
+        menu.setStyle("-fx-background-color: " + Theme.hex(theme.surface())
+                + "; -fx-background-radius: 18;");
     }
 
     private void buildStatus() {
-        Label heading = new Label("Status");
-        heading.setStyle("-fx-text-fill: " + Theme.hex(theme.onSurfaceVariant())
+        statusCard = new VBox(6);
+        statusCard.setPadding(new Insets(10));
+        statusCard.setStyle("-fx-background-color: " + Theme.hex(theme.surfaceVariant())
+                + "; -fx-background-radius: 12;");
+        statusHeading = new Label("Status");
+        statusHeading.setStyle("-fx-text-fill: " + Theme.hex(theme.onSurfaceVariant())
                 + "; -fx-font-size: 13px; -fx-font-weight: bold;");
-        leftMenu.getChildren().add(heading);
+        statusCard.getChildren().add(statusHeading);
         for (int i = 0; i < status.length; i++) {
             status[i] = new Label("-");
             status[i].setStyle("-fx-text-fill: " + Theme.hex(theme.onSurface()) + "; -fx-font-size: 15px;");
-            leftMenu.getChildren().add(status[i]);
+            statusCard.getChildren().add(status[i]);
         }
+        leftMenu.getChildren().add(statusCard);
     }
 
     private void buildLocalControls() {
@@ -145,8 +164,7 @@ public class GameView extends BorderPane implements GameScreen {
                 action("Next Step", e -> controller.nextStep()));
         rightMenu.getChildren().addAll(
                 action("Start New", e -> controller.initialize()),
-                action("Load", e -> app.loadGame(controller)),
-                action("Save", e -> app.saveGame(controller)),
+                loadSaveSplit(),
                 action("Settings", e -> app.showSettings(settings)),
                 action("Return Title", e -> controller.terminate()),
                 action("Exit", e -> app.exit()));
@@ -188,6 +206,45 @@ public class GameView extends BorderPane implements GameScreen {
         return button;
     }
 
+    /**
+     * Load/Save 合成一个圆角分段按钮：左半 Load、右半 Save，中间一条竖线当分隔。
+     * 两半各自高亮、各自响应点击，视觉上是一个整体而不是两个按钮。
+     */
+    private HBox loadSaveSplit() {
+        loadSaveBox = new HBox();
+        loadSaveBox.setMaxWidth(Double.MAX_VALUE);
+        loadSaveBox.setAlignment(Pos.CENTER);
+        loadSaveBox.setStyle("-fx-background-color: " + Theme.hex(theme.primaryContainer())
+                + "; -fx-background-radius: 16; -fx-padding: 0;");
+
+        loadSaveHalves[0] = splitHalf("Load", e -> app.loadGame(controller));
+        loadSaveHalves[1] = splitHalf("Save", e -> app.saveGame(controller));
+
+        loadSaveDivider = new Region();
+        loadSaveDivider.setPrefWidth(1.5);
+        loadSaveDivider.setStyle("-fx-background-color: " + Theme.hex(theme.onPrimaryContainer())
+                + "; -fx-opacity: 0.35;");
+
+        HBox.setHgrow(loadSaveHalves[0], Priority.ALWAYS);
+        HBox.setHgrow(loadSaveHalves[1], Priority.ALWAYS);
+        loadSaveBox.getChildren().addAll(loadSaveHalves[0], loadSaveDivider, loadSaveHalves[1]);
+        return loadSaveBox;
+    }
+
+    private StackPane splitHalf(String text, javafx.event.EventHandler<MouseEvent> handler) {
+        StackPane pane = new StackPane();
+        pane.setAlignment(Pos.CENTER);
+        pane.setPrefHeight(36);
+        pane.setCursor(Cursor.HAND);
+        Label label = new Label(text);
+        label.setStyle("-fx-text-fill: " + Theme.hex(theme.onPrimaryContainer()) + "; -fx-font-size: 13px;");
+        pane.getChildren().add(label);
+        pane.setOnMouseEntered(e -> pane.setStyle("-fx-background-color: " + Theme.hexA(theme.onPrimaryContainer(), 0.14) + ";"));
+        pane.setOnMouseExited(e -> pane.setStyle(""));
+        pane.setOnMouseClicked(handler);
+        return pane;
+    }
+
     private MFXButton action(String text, javafx.event.EventHandler<javafx.event.ActionEvent> handler) {
         MFXButton button = new MFXButton(text);
         Styles.button(button, theme);
@@ -206,10 +263,6 @@ public class GameView extends BorderPane implements GameScreen {
         }
     }
 
-    private String cardStyle(javafx.scene.paint.Color color) {
-        return "-fx-background-color: " + Theme.hex(color) + "; -fx-background-radius: 18;";
-    }
-
     /** 主题变了重刷一遍颜色。 */
     public void paint() {
         if (theme.background() != null) {
@@ -219,10 +272,35 @@ public class GameView extends BorderPane implements GameScreen {
         }
         styleMenu(leftMenu);
         styleMenu(rightMenu);
+        if (statusCard != null) {
+            statusCard.setStyle("-fx-background-color: " + Theme.hex(theme.surfaceVariant()) + "; -fx-background-radius: 12;");
+        }
+        if (statusHeading != null) {
+            statusHeading.setStyle("-fx-text-fill: " + Theme.hex(theme.onSurfaceVariant()) + "; -fx-font-size: 13px; -fx-font-weight: bold;");
+        }
         for (Label label : status) {
             label.setStyle("-fx-text-fill: " + Theme.hex(theme.onSurface()) + "; -fx-font-size: 15px;");
         }
         Styles.refresh(buttons, theme);
+        repaintLoadSave();
+    }
+
+    private void repaintLoadSave() {
+        if (loadSaveBox == null) return;
+        loadSaveBox.setStyle("-fx-background-color: " + Theme.hex(theme.primaryContainer())
+                + "; -fx-background-radius: 16; -fx-padding: 0;");
+        if (loadSaveDivider != null) {
+            loadSaveDivider.setStyle("-fx-background-color: " + Theme.hex(theme.onPrimaryContainer()) + "; -fx-opacity: 0.35;");
+        }
+        for (StackPane half : loadSaveHalves) {
+            if (half == null) continue;
+            half.setStyle("");
+            for (Node child : half.getChildren()) {
+                if (child instanceof Label label) {
+                    label.setStyle("-fx-text-fill: " + Theme.hex(theme.onPrimaryContainer()) + "; -fx-font-size: 13px;");
+                }
+            }
+        }
     }
 
 }

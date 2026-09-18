@@ -132,6 +132,14 @@ public final class Theme {
         return "#%06x".formatted(rgb);
     }
 
+    /** 带透明度的色值，用于 hover 之类的叠加高亮。 */
+    public static String hexA(Color color, double alpha) {
+        int r = (int) (color.getRed() * 255);
+        int g = (int) (color.getGreen() * 255);
+        int b = (int) (color.getBlue() * 255);
+        return "rgba(%d, %d, %d, %.3f)".formatted(r, g, b, alpha);
+    }
+
     /** 背景图上叠一层半透明底色，保证文字在壁纸上面仍然读得清。 */
     public Color scrim() {
         return dark ? Color.rgb(0, 0, 0, 0.55) : Color.rgb(255, 255, 255, 0.62);
