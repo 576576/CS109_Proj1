@@ -48,7 +48,7 @@ public class UiShot {
     }
 
     /** 对整个场景截图写 PNG；不依赖 javafx.swing 的 SwingFXUtils，自己逐像素搬。 */
-    private static void snapshot(javafx.scene.Scene scene, String path) {
+    public static void snapshot(javafx.scene.Scene scene, String path) {
         try {
             WritableImage image = scene.getRoot().snapshot(new SnapshotParameters(), null);
             int w = (int) image.getWidth(), h = (int) image.getHeight();

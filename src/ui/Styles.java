@@ -16,6 +16,26 @@ public final class Styles {
         fill(button, theme.primary(), theme.onPrimary());
     }
 
+    /**
+     * 开关按钮：开=实心主色（醒目），关=描边幽灵态（透明底 + outline 描边 + 弱化文字），
+     * 状态全靠颜色差异表达，按钮文案固定不变。
+     */
+    public static void toggle(MFXButton button, Theme theme, boolean on) {
+        button.setMaxWidth(Double.MAX_VALUE);
+        String base = "-fx-background-radius: 16; -fx-border-radius: 16;"
+                + " -fx-padding: 9 12 9 12; -fx-font-size: 13px; -fx-cursor: hand;";
+        if (on) {
+            button.setStyle("-fx-background-color: " + Theme.hex(theme.primary()) + ";"
+                    + "-fx-text-fill: " + Theme.hex(theme.onPrimary()) + ";"
+                    + "-fx-border-width: 0;" + base);
+        } else {
+            button.setStyle("-fx-background-color: transparent;"
+                    + "-fx-text-fill: " + Theme.hex(theme.onSurfaceVariant()) + ";"
+                    + "-fx-border-color: " + Theme.hex(theme.outline()) + ";"
+                    + "-fx-border-width: 1.5;" + base);
+        }
+    }
+
     private static void fill(MFXButton button, Color background, Color text) {
         // maxWidth=MAX 配合菜单的 setFillWidth(true)，让所有按钮等宽铺满菜单
         button.setMaxWidth(Double.MAX_VALUE);

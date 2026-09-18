@@ -53,6 +53,10 @@ public class GameView extends BorderPane implements GameScreen {
     private HBox loadSaveBox;
     private Region loadSaveDivider;
     private final StackPane[] loadSaveHalves = new StackPane[2];
+    private MFXButton autoButton;
+    private MFXButton confirmButton;
+    private boolean autoOn;
+    private boolean confirmOn;
 
     public GameView(GameSettings settings, Theme theme, Match3App app) {
         this.settings = settings;
@@ -180,28 +184,28 @@ public class GameView extends BorderPane implements GameScreen {
                 action("Exit", e -> app.exit()));
     }
 
-    /** Auto 开关按钮：文案跟着状态走。 */
+    /** Auto Play 开关：开=实心主色，关=描边幽灵态，靠颜色而非文字表示状态。 */
     private MFXButton autoToggle() {
-        MFXButton button = new MFXButton("Auto: OFF");
-        Styles.button(button, theme);
-        buttons.add(button);
+        MFXButton button = new MFXButton("Auto Play");
+        autoButton = button;
+        Styles.toggle(button, theme, false);
         button.setOnAction(e -> {
-            boolean on = !controller.isAutoMode();
-            controller.setAutoMode(on);
-            button.setText("Auto: " + (on ? "ON" : "OFF"));
+            autoOn = !controller.isAutoMode();
+            controller.setAutoMode(autoOn);
+            Styles.toggle(button, theme, autoOn);
         });
         return button;
     }
 
-    /** 手点确认 / 自动确认：开着时选好两枚就自动走完这一步。 */
+    /** Auto Confirm 开关：同样用颜色差异表示状态。 */
     private MFXButton confirmToggle() {
-        MFXButton button = new MFXButton("Confirm: Hand");
-        Styles.button(button, theme);
-        buttons.add(button);
+        MFXButton button = new MFXButton("Auto Confirm");
+        confirmButton = button;
+        Styles.toggle(button, theme, false);
         button.setOnAction(e -> {
-            boolean on = !controller.isAutoConfirm();
-            controller.setAutoConfirm(on);
-            button.setText("Confirm: " + (on ? "Auto" : "Hand"));
+            confirmOn = !controller.isAutoConfirm();
+            controller.setAutoConfirm(confirmOn);
+            Styles.toggle(button, theme, confirmOn);
         });
         return button;
     }
@@ -282,6 +286,8 @@ public class GameView extends BorderPane implements GameScreen {
             label.setStyle("-fx-text-fill: " + Theme.hex(theme.onSurface()) + "; -fx-font-size: 15px;");
         }
         Styles.refresh(buttons, theme);
+        if (autoButton != null) Styles.toggle(autoButton, theme, autoOn);
+        if (confirmButton != null) Styles.toggle(confirmButton, theme, confirmOn);
         repaintLoadSave();
     }
 
