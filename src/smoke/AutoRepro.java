@@ -25,9 +25,12 @@ public class AutoRepro {
         Thread.setDefaultUncaughtExceptionHandler((thread, error) -> {
             failures.add(thread.getName() + ": " + error);
             System.out.println("!!! UNCAUGHT in " + thread.getName() + ": " + error);
-            for (StackTraceElement el : error.getStackTrace()) {
+            Throwable cause = error.getCause() == null ? error : error.getCause();
+            System.out.println("      cause: " + cause);
+            for (StackTraceElement el : cause.getStackTrace()) {
                 String cls = el.getClassName();
-                if (cls.startsWith("controller") || cls.startsWith("view") || cls.startsWith("model")) {
+                if (cls.startsWith("controller") || cls.startsWith("view") || cls.startsWith("model")
+                        || cls.startsWith("smoke") || cls.startsWith("net")) {
                     System.out.println("      at " + el);
                 }
             }
@@ -77,7 +80,9 @@ public class AutoRepro {
         SwingUtilities.invokeAndWait(() -> {
             GameFrame frame = controller.getGameFrame();
             CellComponent cell = frame.getBoardView().getGridComponentAt(point);
-            controller.onPlayerClickPiece(point, (TileView) cell.getComponent(0));
+            // 下落动画正在后台跑时，这一格可能刚好是空的
+            if (cell.getComponentCount() == 0) return;
+            if (cell.getComponent(0) instanceof TileView tile) controller.onPlayerClickPiece(point, tile);
         });
     }
 }

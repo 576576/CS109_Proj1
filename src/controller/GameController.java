@@ -30,6 +30,11 @@ import static player.MusicPlayer.*;
  */
 public class GameController implements GameListener {
 
+    /** 一枚棋子落到位的停顿。整批一起动就只能看到首尾两帧，没有"一个个下坠"。 */
+    private static final int FALL_STEP_MS = 55;
+    /** 消除后到开始下落之间的停顿，让"变空"这一帧看得见。 */
+    private static final int ELIMINATE_PAUSE_MS = 120;
+
     private final CountDownLatch boardReady = new CountDownLatch(1);
     private final GameSettings settings;
     private final Board model;
@@ -41,6 +46,14 @@ public class GameController implements GameListener {
         worker.setDaemon(true);
         return worker;
     });
+    /** 下落动画跑在这上面：改视图回 EDT，停顿留在这一侧。 */
+    private final ExecutorService fallAnimator = Executors.newSingleThreadExecutor(r -> {
+        Thread worker = new Thread(r, "fall-animation");
+        worker.setDaemon(true);
+        return worker;
+    });
+    private final java.util.concurrent.atomic.AtomicBoolean falling =
+            new java.util.concurrent.atomic.AtomicBoolean();
     private Thread autoModeThread;
     public boolean isAutoConfirm = false;
     public int timeLeft;
@@ -257,16 +270,19 @@ public class GameController implements GameListener {
     // notice that there may be multiple matched simultaneously
     private boolean doChessEliminate() {
         List<BoardPoint> matched = model.listMatches();
-        for (BoardPoint point : matched) {
-            model.removePieceAt(point);
-            view.removeTileAt(point);
-            score += 1;
-        }
         if (matched.isEmpty()) return false;
 
-        view.repaint();
-        updateScoreAndStepLabel();
-        checkVictory();
+        for (BoardPoint point : matched) {
+            model.removePieceAt(point);
+            score += 1;
+        }
+        runOnEdt(() -> {
+            for (BoardPoint point : matched) view.removeTileAt(point);
+            view.repaint();
+            updateScoreAndStepLabel();
+        });
+        pauseIfAnimating(ELIMINATE_PAUSE_MS);
+        runOnEdt(this::checkVictory);
         return true;
     }
 
@@ -307,37 +323,67 @@ public class GameController implements GameListener {
             return;
         }
 
+        // 手动点按钮时这里是 EDT。下落要一帧一帧地停，睡在 EDT 上重绘根本发不出来，
+        // 所以 EDT 上只提交任务；auto 线程本来就在后台，直接跑完再决定下一轮。
+        if (SwingUtilities.isEventDispatchThread()) fallAnimator.execute(this::runGuardedFallCycle);
+        else runGuardedFallCycle();
+    }
+
+    private void runGuardedFallCycle() {
+        if (!falling.compareAndSet(false, true)) return;
+        try {
+            runFallCycle();
+        } finally {
+            falling.set(false);
+        }
+    }
+
+    private void runFallCycle() {
         doFallDown();
         do {
             // Fall done has done, if there is any match-3, eliminate them
             if (settings.verboseDialogs()) {
-                JOptionPane.showMessageDialog(chessGameFrame, "Bonus! Match occurs after falling down.");
-                Log.info("Bonus! Match occurs after falling down.");
+                runOnEdt(() -> {
+                    JOptionPane.showMessageDialog(chessGameFrame, "Bonus! Match occurs after falling down.");
+                    Log.info("Bonus! Match occurs after falling down.");
+                });
             }
-            view.repaint();
+            runOnEdt(() -> view.repaint());
             doFallDown();
         } while (doChessEliminate());
 
         stepLeft--;
-        updateScoreAndStepLabel();
-        checkVictory();
+        runOnEdt(() -> {
+            updateScoreAndStepLabel();
+            checkVictory();
+        });
     }
 
-    /** 反复“顶部补棋 + 整列下落”，直到棋盘重新填满。 */
+    /** 反复"顶部补棋 + 整列下落"，直到棋盘重新填满。每枚棋子各占一帧。 */
     private void doFallDown() {
         for (;;) {
             List<Spawn> spawned = model.refill();
-            for (Spawn spawn : spawned) {
-                view.setTileAt(spawn.point(), new TileView(view.getCHESS_SIZE(), spawn.type()));
-            }
             List<Move> moves = model.collapse();
-            for (Move move : moves) {
-                view.setTileAt(move.to(), view.removeTileAt(move.from()));
-            }
             if (spawned.isEmpty() && moves.isEmpty()) return;
-            view.repaint();
-            pauseMilliSeconds(100);
+            for (Spawn spawn : spawned) {
+                animateStep(() -> view.setTileAt(spawn.point(), new TileView(view.getCHESS_SIZE(), spawn.type())));
+            }
+            for (Move move : moves) {
+                animateStep(() -> view.setTileAt(move.to(), view.removeTileAt(move.from())));
+            }
         }
+    }
+
+    /** 动一下视图、重绘、停一帧。 */
+    private void animateStep(Runnable mutation) {
+        runOnEdt(mutation);
+        view.repaint();
+        pauseIfAnimating(FALL_STEP_MS);
+    }
+
+    /** 只有在后台线程上才停——在 EDT 上睡等于把重绘一起堵死，动画就没了。 */
+    private static void pauseIfAnimating(int ms) {
+        if (!SwingUtilities.isEventDispatchThread()) pauseMilliSeconds(ms);
     }
 
     public void updateScoreAndStepLabel() {
@@ -566,19 +612,21 @@ public class GameController implements GameListener {
         // 已经有一个循环在跑了就别再开一条，否则每次洗牌都会多出一条永不退出的线程
         if (autoModeThread != null && autoModeThread.isAlive()) return;
         autoModeThread = new Thread(() -> {
-            while (score <= difficulty().goal() && isAutoMode && isAlive) {
-                runOnEdt(this::autoStep);
-            }
+            while (score <= difficulty().goal() && isAutoMode && isAlive) autoStep();
         }, "auto-mode");
         autoModeThread.setDaemon(true);
         autoModeThread.start();
     }
 
-    /** auto 的一轮：找一处可行交换，换掉它，再把空位补满。 */
+    /**
+     * auto 的一轮：找一处可行交换，换掉它，再把空位补满。
+     * 只有动 Swing 的那两步回 EDT；下落动画必须留在本线程上跑——
+     * 它靠一帧一帧的停顿来表现，而 EDT 一旦被睡住，重绘就再也发不出来了。
+     */
     private void autoStep() {
-        hint();
+        runOnEdt(this::hint);
         if (selectedPoint == null || selectedPoint2 == null) return;
-        onPlayerSwapChess();
+        runOnEdt(this::onPlayerSwapChess);
         nextStep();
     }
 
@@ -587,7 +635,7 @@ public class GameController implements GameListener {
         // 串行执行：连点时后一次不会和前一次的交换/落子重叠
         autoConfirmWorker.execute(() -> {
             if (selectedPoint == null || selectedPoint2 == null) return;
-            runOnEdt(this::autoStep);
+            autoStep();
         });
     }
 
@@ -623,6 +671,7 @@ public class GameController implements GameListener {
         isAlive = false;
         isAutoMode = false;
         autoConfirmWorker.shutdownNow();
+        fallAnimator.shutdownNow();
         if (settings.playMode().isOnline()) net.stopHandler();
         else if (settings.autoRestart()) {
             DifficultySelectFrame difficultySelectFrame = new DifficultySelectFrame(chessGameFrame.menuFrame, settings);
