@@ -14,6 +14,7 @@ import model.BoardPoint;
 import model.BoardSnapshot;
 import model.PieceType;
 
+import java.nio.file.Path;
 import java.util.EnumMap;
 import java.util.Map;
 
@@ -26,9 +27,9 @@ import util.ResourceRoot;
  */
 public class BoardView extends Pane {
 
-    private static final int TILE_INSET = 4;
-    private static final int CELL_INSET = 2;
-    private static final int CORNER = 14;
+    private static final int TILE_INSET = 2;
+    private static final int CELL_INSET = 1;
+    private static final int CORNER = 12;
 
     private final int chessSize;
     private final int rows;
@@ -172,12 +173,14 @@ public class BoardView extends Pane {
         Image cached = textures.get(type);
         if (cached != null) return cached;
         try {
-            Image loaded = new Image(ResourceRoot.path(type.texturePath()).toUri().toString());
+            // 路径只解析一次；同步加载（backgroundLoading=false）让 isError() 立刻可靠，缺图就走回退字形
+            Path file = ResourceRoot.path("texture/chess/" + type.textureIndex() + ".png").toAbsolutePath();
+            Image loaded = new Image(file.toUri().toString(), false);
             if (loaded.isError()) return null;
             textures.put(type, loaded);
             return loaded;
         } catch (RuntimeException e) {
-            Log.warn("Cannot read texture " + type.texturePath() + ": " + e);
+            Log.warn("Cannot read texture for " + type + ": " + e);
             return null;
         }
     }

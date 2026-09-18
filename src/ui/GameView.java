@@ -8,28 +8,33 @@ import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import model.Board;
 import player.MusicLibrary;
 import player.MusicPlayer;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.random.RandomGenerator;
 
 /**
- * 对局界面：左边状态与棋局操作，中间棋盘，右边存档与退出。
+ * 对局界面：左菜单放状态与对局操作，右菜单放存档与退出，中间棋盘完全居中。
+ * 左右菜单各有背景面板，是两块整块的菜单，而不是散落的按钮。
  */
 public class GameView extends BorderPane implements GameScreen {
 
     private static final int ONE_CHESS_SIZE = 72;
+    private static final double MENU_WIDTH = 200;
 
     private final GameSettings settings;
     private final Theme theme;
     private final Match3App app;
     private final BoardView board;
     private final Label[] status = new Label[4];
-    private final VBox leftColumn = new VBox(12);
-    private final VBox rightColumn = new VBox(10);
-    private VBox statusCard;
+    private final VBox leftMenu = new VBox(10);
+    private final VBox rightMenu = new VBox(10);
+    private final List<MFXButton> buttons = new ArrayList<>();
     private final MusicPlayer musicPlayer = new MusicPlayer();
     private final Thread musicThread;
     private final MusicLibrary music;
@@ -45,13 +50,22 @@ public class GameView extends BorderPane implements GameScreen {
         this.musicThread = new Thread(this::playMusicInLoop, "music");
 
         board.setTheme(theme);
-        setPadding(new Insets(24));
+        setPadding(new Insets(12));
 
-        setLeft(card(leftColumn));
+        // 左右等宽，棋盘才在窗口里真正居中
+        leftMenu.setPrefWidth(MENU_WIDTH);
+        rightMenu.setPrefWidth(MENU_WIDTH);
+        styleMenu(leftMenu);
+        styleMenu(rightMenu);
+
+        setLeft(leftMenu);
+        setRight(rightMenu);
+        // BorderPane 默认把 center 拉满剩余空间，Canvas 会贴在左上角；
+        // 限制棋盘为首选尺寸后它才真正按 576x576 在中间居中
+        board.setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
         setCenter(board);
-        setRight(card(rightColumn));
-        BorderPane.setMargin(board, new Insets(0, 24, 0, 24));
-        setAlignment(board, Pos.CENTER);
+        BorderPane.setAlignment(board, Pos.CENTER);
+        BorderPane.setMargin(board, new Insets(0, 10, 0, 10));
 
         buildStatus();
         if (settings.playMode().isOnline()) buildOnlineControls();
@@ -101,26 +115,35 @@ public class GameView extends BorderPane implements GameScreen {
         else app.showMenu();
     }
 
+    /** 一块菜单面板：有背景、圆角、标题感的间距。 */
+    private void styleMenu(VBox menu) {
+        menu.setPadding(new Insets(14));
+        menu.setAlignment(Pos.TOP_CENTER);
+        menu.setFillWidth(true);
+        menu.setStyle(cardStyle(theme.surfaceVariant()));
+    }
+
     private void buildStatus() {
+        Label heading = new Label("Status");
+        heading.setStyle("-fx-text-fill: " + Theme.hex(theme.onSurfaceVariant())
+                + "; -fx-font-size: 13px; -fx-font-weight: bold;");
+        leftMenu.getChildren().add(heading);
         for (int i = 0; i < status.length; i++) {
             status[i] = new Label("-");
             status[i].setStyle("-fx-text-fill: " + Theme.hex(theme.onSurface()) + "; -fx-font-size: 15px;");
+            leftMenu.getChildren().add(status[i]);
         }
-        statusCard = new VBox(8, status[0], status[1], status[2], status[3]);
-        statusCard.setPadding(new Insets(16));
-        statusCard.setStyle(cardStyle(theme.surfaceVariant()));
-        leftColumn.getChildren().add(statusCard);
     }
 
     private void buildLocalControls() {
-        leftColumn.getChildren().addAll(
+        leftMenu.getChildren().addAll(
                 action("Hint", e -> controller.hint()),
                 action("Shuffle", e -> controller.onPlayerShuffle()),
-                autoToggle());
-        rightColumn.getChildren().addAll(
+                autoToggle(),
                 confirmToggle(),
                 action("Confirm Swap", e -> controller.onPlayerSwapChess()),
-                action("Next Step", e -> controller.nextStep()),
+                action("Next Step", e -> controller.nextStep()));
+        rightMenu.getChildren().addAll(
                 action("Start New", e -> controller.initialize()),
                 action("Load", e -> app.loadGame(controller)),
                 action("Save", e -> app.saveGame(controller)),
@@ -130,8 +153,8 @@ public class GameView extends BorderPane implements GameScreen {
     }
 
     private void buildOnlineControls() {
-        leftColumn.getChildren().add(action("Shuffle", e -> controller.onPlayerShuffle()));
-        rightColumn.getChildren().addAll(
+        leftMenu.getChildren().add(action("Shuffle", e -> controller.onPlayerShuffle()));
+        rightMenu.getChildren().addAll(
                 action("Confirm Swap", e -> controller.onPlayerSwapChess()),
                 action("Next Step", e -> controller.nextStep()),
                 action("Settings", e -> app.showSettings(settings)),
@@ -143,6 +166,7 @@ public class GameView extends BorderPane implements GameScreen {
     private MFXButton autoToggle() {
         MFXButton button = new MFXButton("Auto: OFF");
         Styles.button(button, theme);
+        buttons.add(button);
         button.setOnAction(e -> {
             boolean on = !controller.isAutoMode();
             controller.setAutoMode(on);
@@ -155,6 +179,7 @@ public class GameView extends BorderPane implements GameScreen {
     private MFXButton confirmToggle() {
         MFXButton button = new MFXButton("Confirm: Hand");
         Styles.button(button, theme);
+        buttons.add(button);
         button.setOnAction(e -> {
             boolean on = !controller.isAutoConfirm();
             controller.setAutoConfirm(on);
@@ -166,6 +191,7 @@ public class GameView extends BorderPane implements GameScreen {
     private MFXButton action(String text, javafx.event.EventHandler<javafx.event.ActionEvent> handler) {
         MFXButton button = new MFXButton(text);
         Styles.button(button, theme);
+        buttons.add(button);
         button.setOnAction(handler);
         return button;
     }
@@ -180,13 +206,6 @@ public class GameView extends BorderPane implements GameScreen {
         }
     }
 
-    private VBox card(VBox content) {
-        content.setPadding(new Insets(12));
-        content.setAlignment(Pos.TOP_CENTER);
-        content.setFillWidth(true);
-        return content;
-    }
-
     private String cardStyle(javafx.scene.paint.Color color) {
         return "-fx-background-color: " + Theme.hex(color) + "; -fx-background-radius: 18;";
     }
@@ -198,8 +217,12 @@ public class GameView extends BorderPane implements GameScreen {
         } else {
             setStyle("-fx-background-color: " + Theme.hex(theme.surface()) + ";");
         }
-        statusCard.setStyle(cardStyle(theme.surfaceVariant()));
-        for (Label label : status) label.setStyle("-fx-text-fill: " + Theme.hex(theme.onSurface()) + "; -fx-font-size: 15px;");
+        styleMenu(leftMenu);
+        styleMenu(rightMenu);
+        for (Label label : status) {
+            label.setStyle("-fx-text-fill: " + Theme.hex(theme.onSurface()) + "; -fx-font-size: 15px;");
+        }
+        Styles.refresh(buttons, theme);
     }
 
 }
