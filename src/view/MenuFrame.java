@@ -1,11 +1,10 @@
 package view;
 
+import config.GameSettings;
+import config.PlayMode;
 import controller.GameController;
 import model.Board;
-import model.Difficulty;
-import model.DifficultyPreset;
 import net.NetGame;
-import player.MusicPlayer;
 
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.FloatControl;
@@ -16,7 +15,6 @@ import java.io.File;
 import java.util.ArrayList;
 
 import util.Log;
-import static view.GameFrame.isGameFrameInitDone;
 
 /**
  * This class build the frame of the main menu window. It defines its size via a constant and creates
@@ -25,19 +23,14 @@ import static view.GameFrame.isGameFrameInitDone;
  * as showing the HighScoreFrame if the user wants this view.
  */
 public class MenuFrame extends MyFrame{
-    public static boolean isDetailedDialog=false;
     public static int musicVolume;
-    public static int startPlayMode=0;// 0=not to start 1=play new game locally 2=play locally load from file 3=host game 4=join game
-    public static Difficulty difficulty=DifficultyPreset.EASY.difficulty();
+    public static ArrayList<File> musicFiles = new ArrayList<>();
     private final int ONE_CHESS_SIZE;
+    private final GameSettings settings = new GameSettings();
 
     private final JPanel controlPanel = new JPanel(new GridLayout(5,1,4,8));
     private final JPanel chessPanel = new JPanel(new BorderLayout());
     private final GridBagLayout gbl = new GridBagLayout();
-    public static ArrayList<File> musicFiles = new ArrayList<>();
-    public static Thread musicThread;
-
-    public static MusicPlayer musicPlayer = new MusicPlayer();
 
     public MenuFrame(int width, int height) {
         setTitle("MATCH-3 CS109");
@@ -50,7 +43,6 @@ public class MenuFrame extends MyFrame{
         setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
         setLayout(gbl);
 
-        //initBoard();
         initLabel();
         initPlayButton();
         initOnlineButton();
@@ -63,11 +55,6 @@ public class MenuFrame extends MyFrame{
         Log.info("Musics Loaded: "+musicFiles.size());
         setDarkMode();
     }
-    private void initBoard() {
-        BoardView chessboardComponent = new BoardView(ONE_CHESS_SIZE, Board.DEFAULT_SIZE, Board.DEFAULT_SIZE);
-        chessPanel.add(chessboardComponent,BorderLayout.CENTER);
-        addComponent(this,gbl,chessPanel,0,0,560,560,0,0);
-    }
     private void initLabel() {
         JLabel label = new JLabel("MATCH-3");
         label.setSize(200, 60);
@@ -77,27 +64,23 @@ public class MenuFrame extends MyFrame{
     }
     private void initPlayButton() {
         JButton button = initButton("Play");
-        button.addActionListener(e -> {
-            startPlayMode=1;
-            DifficultySelectFrame difficultySelectFrame = new DifficultySelectFrame(this);
-            difficultySelectFrame.setVisible(true);
-        });
+        button.addActionListener(e -> openDifficultySelect(PlayMode.NEW_LOCAL));
         controlPanel.add(button);
     }
     private void initOnlineButton() {
         JButton button = initButton("Online Play");
-
-        button.addActionListener(e -> {
-            startPlayMode=4;
-            DifficultySelectFrame difficultySelectFrame = new DifficultySelectFrame(this);
-            difficultySelectFrame.setVisible(true);
-        });
+        button.addActionListener(e -> openDifficultySelect(PlayMode.JOIN));
         controlPanel.add(button);
+    }
+    private void openDifficultySelect(PlayMode mode) {
+        settings.setPlayMode(mode);
+        DifficultySelectFrame difficultySelectFrame = new DifficultySelectFrame(this, settings);
+        difficultySelectFrame.setVisible(true);
     }
     private void initSettingButton(){
         JButton button = initButton("Settings");
         button.addActionListener(e -> {
-            SettingFrame settingFrame = new SettingFrame();
+            SettingFrame settingFrame = new SettingFrame(settings);
             settingFrame.setVisible(true);
         });
         controlPanel.add(button);
@@ -108,21 +91,21 @@ public class MenuFrame extends MyFrame{
         controlPanel.add(button);
     }
     public void generateNewGame(){
-        isGameFrameInitDone=false;
-        if (startPlayMode!=0) { //when game start, generate new game
-            GameFrame mainFrame = new GameFrame(1100, 810);
-            GameController gameController = new GameController(mainFrame.getBoardView(),
-                    new Board(), new NetGame());
-            mainFrame.setGameController(gameController);
-            mainFrame.setMenuFrame(this);
-            gameController.setGameFrame(mainFrame);
-            Log.info("GameFrame: Initialize done");
-            Log.info("Difficulty: "+difficulty.name());
-            mainFrame.setVisible(true);
-            this.setState(Frame.ICONIFIED);
-            isGameFrameInitDone =true;
+        if (settings.playMode() == PlayMode.NONE) {
+            JOptionPane.showMessageDialog(this,"No game-mode selected!");
+            return;
         }
-        else JOptionPane.showMessageDialog(this,"No game-mode selected!");
+        GameFrame mainFrame = new GameFrame(1100, 810, settings);
+        GameController gameController = new GameController(mainFrame.getBoardView(),
+                new Board(), new NetGame(settings), settings);
+        mainFrame.setGameController(gameController);
+        mainFrame.setMenuFrame(this);
+        gameController.setGameFrame(mainFrame);
+        Log.info("GameFrame: Initialize done");
+        Log.info("Difficulty: "+settings.difficulty().name());
+        mainFrame.setVisible(true);
+        this.setState(Frame.ICONIFIED);
+        mainFrame.beginPlay();
     }
 
     public static void setVolume(int volume) {
@@ -131,7 +114,6 @@ public class MenuFrame extends MyFrame{
             try {
                 var mixer = AudioSystem.getMixer(mixerInfo);
                 mixer.open();
-//                Line.Info[] lineInfos = mixer.getSourceLineInfo(); // 获取音频设备的Line.Info对象
                 SourceDataLine sourceDataLine = (SourceDataLine) mixer.getLine(mixer.getSourceLineInfo()[0]); // 选择第n个音频设备
                 FloatControl.Type volumeControlType = FloatControl.Type.MASTER_GAIN; // 主音量控制
                 if (!sourceDataLine.isControlSupported(volumeControlType)) {
@@ -145,4 +127,3 @@ public class MenuFrame extends MyFrame{
         }
     }
 }
-

@@ -1,5 +1,7 @@
 package net;
 
+import config.GameSettings;
+import config.PlayMode;
 import controller.GameController;
 
 import javax.swing.*;
@@ -11,14 +13,20 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import util.Log;
-import static view.MenuFrame.startPlayMode;
 
 public class NetGame {
     public GameController gameController;
     private final int port = 14723;
+    private final GameSettings settings;
     Socket sock;
-    public static Thread t;
-    public NetGame(){
+    private Thread handler;
+    public NetGame(GameSettings settings){
+        this.settings = settings;
+    }
+
+    /** 断开这一局的连接线程。 */
+    public void stopHandler() {
+        if (handler != null) handler.interrupt();
     }
     public void serverHost() {
         JFrame waitFrame = new JFrame("Waiting for Player...");
@@ -39,8 +47,8 @@ public class NetGame {
             waitFrame.dispose();
         }
 
-        t = new Handler(sock, gameController);
-        t.start();
+        handler = new Handler(sock, gameController, settings.playMode());
+        handler.start();
     }
     public void connectHost(){
         String host = JOptionPane.showInputDialog(null,"Enter host","Connect to Host",JOptionPane.PLAIN_MESSAGE);
@@ -51,8 +59,8 @@ public class NetGame {
 
         try {
             sock = new Socket(host, port);
-            t = new Handler(sock,gameController);
-            t.start();
+            handler = new Handler(sock, gameController, settings.playMode());
+            handler.start();
         } catch (IOException _) {
             JOptionPane.showMessageDialog(gameController.getGameFrame(),"Unable to connect to the server.\nPlease ensure the host is online.");
             gameController.getGameFrame().returnToTitle();
@@ -78,11 +86,13 @@ public class NetGame {
 class Handler extends Thread {
     private final Socket sock;
     private final GameController gameController;
+    private final PlayMode playMode;
     private static final AtomicBoolean running = new AtomicBoolean(true);
 
-    public Handler(Socket sock,GameController gameController) {
+    Handler(Socket sock, GameController gameController, PlayMode playMode) {
         this.sock = sock;
-        this.gameController=gameController;
+        this.gameController = gameController;
+        this.playMode = playMode;
     }
     @Override
     public void run() {
@@ -106,9 +116,9 @@ class Handler extends Thread {
     private void handleCommunication(BufferedWriter writer, BufferedReader reader) throws IOException {
         String s;
         while (running.get()) {
-            if (startPlayMode == 3) {
+            if (playMode == PlayMode.HOST) {
                 initializeGameAsHost(writer, reader);
-            } else if (startPlayMode == 4) {
+            } else if (playMode == PlayMode.JOIN) {
                 joinGame(writer, reader);
             }
 

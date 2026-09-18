@@ -19,7 +19,7 @@ dependencies {
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(27)
+        languageVersion = JavaLanguageVersion.of(26)
     }
 }
 
@@ -33,7 +33,7 @@ sourceSets {
 }
 
 application {
-    mainClass = "view.MenuFrame"
+    mainClass = "Main"
 }
 
 tasks.withType<JavaCompile>().configureEach {
@@ -89,7 +89,7 @@ val fatJar = tasks.register<Jar>("fatJar") {
     archiveClassifier = ""
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
-        attributes["Main-Class"] = "view.MenuFrame"
+        attributes["Main-Class"] = "Main"
     }
     from(sourceSets.main.get().output)
     dependsOn(mergeServiceFiles)

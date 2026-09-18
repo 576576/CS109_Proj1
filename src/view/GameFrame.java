@@ -1,5 +1,6 @@
 package view;
 
+import config.GameSettings;
 import controller.GameController;
 import model.Board;
 import player.MusicPlayer;
@@ -16,12 +17,11 @@ import java.util.random.RandomGenerator;
 
 import util.Log;
 import static controller.GameController.pauseMilliSeconds;
-import static view.DifficultySelectFrame.selectedFile;
-import static view.MenuFrame.*;
+import static view.MenuFrame.musicFiles;
 
 public class GameFrame extends MyFrame{
     private final int ONE_CHESS_SIZE;
-    public static boolean isGameFrameInitDone =false;
+    private final GameSettings settings;
     private GameController gameController;
     public MenuFrame menuFrame;
     private BoardView chessboardComponent;
@@ -42,7 +42,8 @@ public class GameFrame extends MyFrame{
     };
     private final JFileChooser jf = new JFileChooser(".\\");
 
-    public GameFrame(int width, int height) {
+    public GameFrame(int width, int height, GameSettings settings) {
+        this.settings = settings;
         setTitle("CS109 消消乐");
         int CHESSBOARD_SIZE = (int) (3 * Math.sqrt(width * height) / 5);
         ONE_CHESS_SIZE = CHESSBOARD_SIZE / Board.DEFAULT_SIZE;
@@ -65,47 +66,17 @@ public class GameFrame extends MyFrame{
         add(playPanel);
         add(backgroundPanel);
 
-        Log.info("Play Start: "+startPlayMode);
+        Log.info("Play Start: "+settings.playMode());
 
         initBoard();
         initStatusLabels();
-        if (!isOnlinePlay()) initLocalPlayPanel();
-        else initOnlinePlayPanel();
+        if (settings.playMode().isOnline()) initOnlinePlayPanel();
+        else initLocalPlayPanel();
 
         addComponent(playPanel,gbl, panelLeft,1,1,24,24,0,1);
         addComponent(playPanel,gbl, panelRight,590,1,560,4,0,1);
 
         musicThread.setDaemon(true);
-
-        SwingUtilities.invokeLater(()->{ //initialize game functions in order
-            while (isOnlinePlay()) {
-                Log.info("OnlineGame: start");
-                if (isGameFrameInitDone) {
-                    if (startPlayMode == 3) gameController.onPlayerHostGame();
-                    if (startPlayMode == 4) gameController.onPlayerJoinGame();
-                    uiInitialize();
-                    break;
-                }
-                GameController.pauseMilliSeconds(100);
-            }
-            if (startPlayMode==2){
-                for (;;){
-                    if (isGameFrameInitDone){
-                        gameController.loadFromFile(selectedFile);
-                        uiInitialize();
-                        break;
-                    }
-                }
-            }
-            if (startPlayMode==1){
-                for (;;){
-                    if (isGameFrameInitDone){
-                        uiInitialize();
-                        break;
-                    }
-                }
-            }
-        });
 
         //add listeners to adapt window change
         addComponentListener(new ComponentAdapter() {
@@ -127,6 +98,19 @@ public class GameFrame extends MyFrame{
             }
         });
     }
+    /** 由 MenuFrame 在装好 controller 之后调用：联机则先握手，读档则先读档，然后起 UI 线程。 */
+    public void beginPlay() {
+        SwingUtilities.invokeLater(() -> {
+            switch (settings.playMode()) {
+                case HOST -> gameController.onPlayerHostGame();
+                case JOIN -> gameController.onPlayerJoinGame();
+                case LOAD_LOCAL -> gameController.loadFromFile(settings.saveFile());
+                case NEW_LOCAL, NONE -> { }
+            }
+            uiInitialize();
+        });
+    }
+
     /** 轮播 resource/music 下的曲目，直到这一局结束。 */
     private void playMusicInLoop() {
         if (musicFiles == null || musicFiles.isEmpty()) return;
@@ -204,10 +188,11 @@ public class GameFrame extends MyFrame{
      * 在游戏面板中添加标签面板
      */
     private void initStatusLabels() {
+        var difficulty = settings.difficulty();
         statusLabels[0] = initLabel("Difficulty:"+difficulty.name());
         statusLabels[1] = initLabel("Score:0/"+difficulty.goal());
-        statusLabels[2] = initLabel("StepLeft:"+(difficulty.stepLimit()!=-1?difficulty.stepLimit():"∞"));
-        statusLabels[3] = initLabel("TimeLimit:"+(difficulty.timeLimit()!=-1?difficulty.timeLimit():"∞"));
+        statusLabels[2] = initLabel("StepLeft:"+(difficulty.hasStepLimit()?difficulty.stepLimit():"∞"));
+        statusLabels[3] = initLabel("TimeLimit:"+(difficulty.hasTimeLimit()?difficulty.timeLimit():"∞"));
         for (JLabel statusLabel : statusLabels) statusLabel.setHorizontalAlignment(SwingConstants.RIGHT);
         for (var i:statusLabels) panelLeft.add(i);
     }
@@ -234,7 +219,7 @@ public class GameFrame extends MyFrame{
     private void initSettingButton(){
         JButton button = initButton("Setting");
         button.addActionListener(e -> {
-            SettingFrame settingFrame = new SettingFrame();
+            SettingFrame settingFrame = new SettingFrame(settings);
             settingFrame.setVisible(true);
         });
         panelRight.add(button);
@@ -251,16 +236,13 @@ public class GameFrame extends MyFrame{
             button.setText(gameController.isAutoConfirm?"Auto Confirm":"Hand Confirm");
             swapConfirmButton.setEnabled(!gameController.isAutoConfirm);
             nextStepButton.setEnabled(!gameController.isAutoConfirm);
-            var dialogMode = isDetailedDialog;
-            isDetailedDialog = false;
-            try {
-                gameController.onPlayerSwapChess();
-            } catch (Exception _) {}
+            // 切模式时顺手确认当前这一步，但这不该弹出一堆提示框
+            var dialogMode = settings.verboseDialogs();
+            settings.setVerboseDialogs(false);
+            gameController.onPlayerSwapChess();
             pauseMilliSeconds(100);
-            try {
-                gameController.nextStep();
-            } catch (Exception _) {}
-            isDetailedDialog=dialogMode;
+            gameController.nextStep();
+            settings.setVerboseDialogs(dialogMode);
         });
         panelRight.add(button);
     }
@@ -319,7 +301,7 @@ public class GameFrame extends MyFrame{
         panelRight.add(button);
     }
     private void initReturnTitleButton(){
-        JButton button = initButton(isOnlinePlay()?"Disconnect":"Return Title");
+        JButton button = initButton(settings.playMode().isOnline()?"Disconnect":"Return Title");
         button.addActionListener(e -> returnToTitle());
         panelRight.add(button);
     }
@@ -335,8 +317,5 @@ public class GameFrame extends MyFrame{
         JButton button = initButton("Exit");
         button.addActionListener(e -> System.exit(0));
         panelRight.add(button);
-    }
-    public static boolean isOnlinePlay(){
-        return startPlayMode>2;
     }
 }

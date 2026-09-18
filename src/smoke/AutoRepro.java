@@ -1,5 +1,7 @@
 package smoke;
 
+import config.GameSettings;
+import config.PlayMode;
 import controller.GameController;
 import model.Board;
 import model.BoardPoint;
@@ -37,15 +39,15 @@ public class AutoRepro {
         var board = new Board();
 
         // 目标定得极高、步数与时间不限，避免中途弹出胜利对话框把线程卡住
-        view.MenuFrame.difficulty = new Difficulty("REPRO", 1_000_000, -1, -1);
-        view.MenuFrame.startPlayMode = 1;
+        var settings = new GameSettings();
+        settings.setDifficulty(new Difficulty("REPRO", 1_000_000, -1, -1));
+        settings.setPlayMode(PlayMode.NEW_LOCAL);
 
         SwingUtilities.invokeAndWait(() -> {
-            GameFrame frame = new GameFrame(1100, 810);
-            GameController controller = new GameController(frame.getBoardView(), board, new NetGame());
+            GameFrame frame = new GameFrame(1100, 810, settings);
+            GameController controller = new GameController(frame.getBoardView(), board, new NetGame(settings), settings);
             frame.setGameController(controller);
             controller.setGameFrame(frame);
-            GameFrame.isGameFrameInitDone = true;
             holder[0] = controller;
             if (autoConfirm) controller.isAutoConfirm = true;
             else controller.setAutoMode(true);

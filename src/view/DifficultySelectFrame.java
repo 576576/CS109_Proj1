@@ -1,5 +1,7 @@
 package view;
 
+import config.GameSettings;
+import config.PlayMode;
 import model.Difficulty;
 import model.DifficultyPreset;
 
@@ -9,15 +11,13 @@ import java.awt.*;
 import java.io.File;
 
 import util.Log;
-import static view.GameFrame.isOnlinePlay;
-import static view.MenuFrame.difficulty;
-import static view.MenuFrame.startPlayMode;
 
 public class DifficultySelectFrame extends MyFrame{
-    public static File selectedFile;
+    private final GameSettings settings;
     private final JFileChooser jf = new JFileChooser(".\\");
 
-    public DifficultySelectFrame(MenuFrame menuFrame){
+    public DifficultySelectFrame(MenuFrame menuFrame, GameSettings settings){
+        this.settings = settings;
         setTitle("Select a difficulty");
         setSize(600,400);
         setLayout(new GridLayout(1,1));
@@ -35,14 +35,14 @@ public class DifficultySelectFrame extends MyFrame{
             this.dispose();
         });
         selectPanel.add(startButton);
-        if (isOnlinePlay()){
+        if (settings.playMode().isOnline()){
             var onlineButtons = initSelectButtons("Host Game","Join Game");
             for (var i:onlineButtons){
                 i.setBackground(Color.DARK_GRAY);
                 i.setForeground(Color.WHITE);
             }
-            onlineButtons.get(0).addActionListener(e -> startPlayMode=3);
-            onlineButtons.get(1).addActionListener(e -> startPlayMode=4);
+            onlineButtons.get(0).addActionListener(e -> settings.setPlayMode(PlayMode.HOST));
+            onlineButtons.get(1).addActionListener(e -> settings.setPlayMode(PlayMode.JOIN));
             onlineButtons.get(1).setSelected(true);
             JPanel panel = new JPanel(new GridLayout(1,2));
             for (int i = 0; i < 2; i++) panel.add(onlineButtons.get(i));
@@ -54,16 +54,16 @@ public class DifficultySelectFrame extends MyFrame{
                 i.setBackground(Color.DARK_GRAY);
                 i.setForeground(Color.WHITE);
             }
-            localButtons.get(0).addActionListener(e -> startPlayMode = 1);
+            localButtons.get(0).addActionListener(e -> settings.setPlayMode(PlayMode.NEW_LOCAL));
             localButtons.get(1).addActionListener(e -> {
-                startPlayMode = 0;
+                settings.setPlayMode(PlayMode.NONE);
                 int result = jf.showOpenDialog(this);
                 if (result == JFileChooser.APPROVE_OPTION) {
-                    selectedFile = jf.getSelectedFile();
-                    startPlayMode=2;
+                    settings.setSaveFile(jf.getSelectedFile());
+                    settings.setPlayMode(PlayMode.LOAD_LOCAL);
                 }else {
                     localButtons.getFirst().setSelected(true);
-                    startPlayMode=1;
+                    settings.setPlayMode(PlayMode.NEW_LOCAL);
                     Log.info("No file selected!");
                     JOptionPane.showMessageDialog(this,"\"No file selected!\"");
                 }
@@ -79,12 +79,12 @@ public class DifficultySelectFrame extends MyFrame{
         for (int i = 0; i < presets.length; i++) {
             Difficulty preset = presets[i].difficulty();
             difficultyButtons.get(i).addActionListener(e -> {
-                difficulty = preset;
+                settings.setDifficulty(preset);
                 Log.info("Difficulty Selected: " + preset.name());
             });
         }
         difficultyButtons.getLast().addActionListener(e -> {
-            var difficultyCreateFrame = new DifficultyCreateFrame();
+            var difficultyCreateFrame = new DifficultyCreateFrame(settings);
             difficultyCreateFrame.setVisible(true);
         });
         JPanel panel = new JPanel(new GridLayout(1,4));

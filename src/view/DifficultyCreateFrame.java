@@ -1,5 +1,6 @@
 package view;
 
+import config.GameSettings;
 import model.Difficulty;
 import model.DifficultyPreset;
 
@@ -8,14 +9,15 @@ import java.awt.*;
 import java.util.regex.Pattern;
 
 import util.Log;
-import static view.MenuFrame.difficulty;
 
 public class DifficultyCreateFrame extends MyFrame{
     private final JPanel formPanel = new JPanel(new GridLayout(3,1));
     private final JButton submitButton;
+    private final GameSettings settings;
     private JTextField goalInputField,stepInputField,timeInputField;
     private String goal=DifficultyPreset.EASY.difficulty().goal()+"",timeLimit=DifficultyPreset.EASY.difficulty().timeLimit()+"",stepLimit=DifficultyPreset.EASY.difficulty().stepLimit()+"";
-    public DifficultyCreateFrame(){
+    public DifficultyCreateFrame(GameSettings settings){
+        this.settings = settings;
         setTitle("Create a difficulty");
         setSize(500, 300);
         setLocationRelativeTo(null);
@@ -28,8 +30,9 @@ public class DifficultyCreateFrame extends MyFrame{
             stepLimit=stepInputField.getText();
             timeLimit=timeInputField.getText();
             if (isLegalInput(goal,1)&&isLegalInput(stepLimit,-1)&&isLegalInput(timeLimit,-1)){
-                difficulty=new Difficulty(Integer.parseInt(goal),Integer.parseInt(stepLimit),Integer.parseInt(timeLimit));
-                Log.info("Difficulty Selected: "+difficulty.name());
+                var created = new Difficulty(Integer.parseInt(goal),Integer.parseInt(stepLimit),Integer.parseInt(timeLimit));
+                settings.setDifficulty(created);
+                Log.info("Difficulty Selected: "+created.name());
                 dispose();
                 return;
             }
