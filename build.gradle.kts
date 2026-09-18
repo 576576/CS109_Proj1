@@ -105,6 +105,8 @@ val fatJar = tasks.register<Jar>("fatJar") {
     group = "build"
     description = "把所有依赖和合并后的 SPI 注册打进一个可直接运行的 jar"
     archiveBaseName = "match3"
+    // 产物名字要稳定，CI 按 build/libs/match3.jar 上传
+    archiveVersion = ""
     archiveClassifier = ""
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
     manifest {
