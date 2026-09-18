@@ -27,6 +27,13 @@ Requires a JDK 27 toolchain. Use the wrapper; it fetches Gradle itself.
 ./gradlew packageInput    # build/package-input, laid out for jpackage
 ```
 
+CI (`.github/workflows/build.yml`) publishes two artifacts:
+
+- `match3-jar` — the fat jar.
+- `match3-exe` — a Windows installer built by `jpackage` on top of a `jlink`
+  runtime trimmed to `java.base,java.desktop,java.logging,java.prefs,jdk.localedata,jdk.unsupported,jdk.zipfs`
+  (~60 MB instead of a full JDK).
+
 Dependencies (jflac, mp3spi, tritonus-share, jlayer) come from Maven Central —
 there is no `lib/` to check in. Audio formats are discovered through the
 `javax.sound.sampled` SPI, so supporting another format is a matter of adding

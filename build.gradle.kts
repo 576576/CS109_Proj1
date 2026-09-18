@@ -14,7 +14,16 @@ dependencies {
     implementation("org.jflac:jflac-codec:1.5.2")
     implementation("com.googlecode.soundlibs:mp3spi:1.9.5.4")
     implementation("com.googlecode.soundlibs:tritonus-share:0.3.7.4")
-    implementation("com.googlecode.soundlibs:jlayer:1.0.1.4")
+    // jlayer 的 pom 把 junit 声明成了运行期依赖，这里用不上
+    implementation("com.googlecode.soundlibs:jlayer:1.0.1.4") {
+        exclude(group = "junit")
+    }
+}
+
+version = "1.0.0"
+
+base {
+    archivesName = "match3"
 }
 
 java {
@@ -24,6 +33,11 @@ java {
 }
 
 // 源码直接挂在 src/<package> 下，没有 main/java 这一层。
+// jlayer 的 pom 把 junit 挂成了运行期依赖，游戏用不上它。
+configurations.all {
+    exclude(group = "junit")
+}
+
 sourceSets {
     main {
         java.setSrcDirs(listOf("src"))
@@ -34,6 +48,11 @@ sourceSets {
 
 application {
     mainClass = "Main"
+}
+
+// 主 jar 不带版本号：jpackage 的 --main-jar 要写死这个名字。
+tasks.jar {
+    archiveVersion = ""
 }
 
 tasks.withType<JavaCompile>().configureEach {

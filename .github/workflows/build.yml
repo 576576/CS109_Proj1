@@ -1,0 +1,73 @@
+name: build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  jar:
+    name: Runnable jar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-java@v6.0.1
+        with:
+          distribution: temurin
+          java-version: '26'
+      - uses: gradle/actions/setup-gradle@v6.3.0
+      - name: Build the fat jar and run the smoke checks
+        run: ./gradlew fatJar smokeTest
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: match3-jar
+          path: build/libs/match3.jar
+
+  exe:
+    name: Single exe with a trimmed runtime
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/setup-java@v6.0.1
+        with:
+          distribution: temurin
+          java-version: '26'
+      - uses: gradle/actions/setup-gradle@v6.3.0
+      - name: Lay out the app jar, its dependencies and resource/
+        run: ./gradlew packageInput
+
+      # 只留 Swing、声音、日志用到的模块，外加 zipfs（ResourceRoot 用它读 jar 里的 resource）。
+      # 完整 JDK 是几百 MB，这样下来约 60 MB。
+      - name: Trim a runtime image
+        shell: bash
+        run: >
+          "$JAVA_HOME/bin/jlink"
+          --add-modules java.base,java.desktop,java.logging,java.prefs,jdk.localedata,jdk.unsupported,jdk.zipfs
+          --strip-debug --no-header-files --no-man-pages --compress=zip-9
+          --output build/runtime
+
+      # jpackage 的 --type exe 需要 WiX 3；镜像里未必预装。
+      - name: Make sure WiX is available
+        shell: powershell
+        run: |
+          if (-not (Get-Command candle.exe -ErrorAction SilentlyContinue)) {
+            choco install wixtoolset --no-progress -y
+          }
+          Get-Command candle.exe | Select-Object -ExpandProperty Source
+
+      - name: Package the installer
+        shell: bash
+        run: >
+          "$JAVA_HOME/bin/jpackage" --type exe
+          --input build/package-input
+          --main-jar match3.jar --main-class Main
+          --runtime-image build/runtime
+          --name Match3 --app-version 1.0.0 --vendor CS109
+          --dest build/dist
+          --win-dir-chooser --win-menu --win-shortcut
+
+      - uses: actions/upload-artifact@v7.0.1
+        with:
+          name: match3-exe
+          path: build/dist/*.exe
