@@ -1,191 +1,102 @@
 package player;
 
-import javazoom.jl.player.Player;
-
-import javax.sound.sampled.*;
-import java.io.BufferedInputStream;
-import java.io.File;
-import java.io.FileInputStream;
-
 import util.Log;
-import static view.MenuFrame.musicThread;
 
+import javax.sound.sampled.AudioFormat;
+import javax.sound.sampled.AudioInputStream;
+import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.SourceDataLine;
+import javax.sound.sampled.UnsupportedAudioFileException;
+import java.io.File;
+
+/**
+ * 播放音频。格式识别与解码全部交给 javax.sound.sampled 的 SPI：
+ * AudioSystem 会从 classpath 上发现 AudioFileReader（wav 内置，flac 由 jflac 提供，
+ * mp3 由 mp3spi 提供），再由 FormatConversionProvider 统一转成 PCM。
+ * 这里不按扩展名分支，因此新增格式只需加一个 provider jar。
+ */
 public class MusicPlayer {
-    private SourceDataLine sourceDataLine;
 
-    /**
-     * 播放指定的音频文件。
-     *
-     * @param f 音频文件
-     */
-    public void play(File f) {
-        if (!isValidFile(f)) {
+    private static final int BUFFER_SIZE = 4096;
+
+    private volatile SourceDataLine line;
+    private volatile boolean stopped;
+
+    /** 播放一个音频文件；没有 provider 认得这个格式时只记一条日志。 */
+    public void play(File file) {
+        if (file == null || !file.isFile()) {
             Log.info("Invalid file input.");
             return;
         }
-
-        Log.info("Current Music: " + f.getName());
-
-        try {
-            String fileName = f.getName().toLowerCase();
-            switch (fileName.substring(fileName.lastIndexOf('.') + 1).toLowerCase()) {
-                case "flac" -> playFlac(f);
-                case "mp3" -> playMp3(f);
-                case "wav" -> playWav(f);
-                default -> Log.info("Unsupported music format (mp3, flac, wav)");
+        Log.info("Current Music: " + file.getName());
+        try (AudioInputStream raw = AudioSystem.getAudioInputStream(file)) {
+            AudioFormat pcm = pcmOf(raw.getFormat());
+            try (AudioInputStream decoded = AudioSystem.getAudioInputStream(pcm, raw)) {
+                writeToLine(decoded, pcm);
             }
+        } catch (UnsupportedAudioFileException _) {
+            Log.info("Unsupported music format: " + file.getName());
         } catch (Exception e) {
             Log.info("Error playing file: " + e.getMessage());
         }
     }
 
-    /**
-     * 播放FLAC格式的音频文件。
-     *
-     * @param f FLAC音频文件
-     * @throws Exception 如果播放过程中出现错误
-     */
-    private void playFlac(File f) throws Exception {
-        try (AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(f)) {
-            AudioFormat audioFormat = getPCMFormat(audioInputStream.getFormat());
-            playAudioStream(audioInputStream, audioFormat);
+    /** 源文件不是 PCM 时给出要转成的目标格式；已经是 PCM 就原样用。 */
+    private static AudioFormat pcmOf(AudioFormat source) {
+        if (source.getEncoding() == AudioFormat.Encoding.PCM_SIGNED) return source;
+        return new AudioFormat(
+                AudioFormat.Encoding.PCM_SIGNED,
+                source.getSampleRate(),
+                16,
+                source.getChannels(),
+                source.getChannels() * 2,
+                source.getSampleRate(),
+                false);
+    }
+
+    private void writeToLine(AudioInputStream decoded, AudioFormat pcm) throws Exception {
+        var info = new SourceDataLine.Info(SourceDataLine.class, pcm);
+        if (!(AudioSystem.getLine(info) instanceof SourceDataLine target)) {
+            throw new IllegalStateException("No source line for " + pcm);
         }
-    }
-
-    /**
-     * 播放MP3格式的音频文件。
-     *
-     * @param f MP3音频文件
-     * @throws Exception 如果播放过程中出现错误
-     */
-    private void playMp3(File f) throws Exception {
-        try (BufferedInputStream stream = new BufferedInputStream(new FileInputStream(f))) {
-            Player mp3Player = createMp3Player(stream);
-            mp3Player.play();
-        }
-    }
-
-    /**
-     * 创建并返回一个MP3播放器实例。
-     *
-     * @param stream MP3文件的输入流
-     * @return MP3播放器实例
-     * @throws Exception 如果创建播放器时出错
-     */
-    private Player createMp3Player(BufferedInputStream stream) throws Exception {
-        return new Player(stream);
-    }
-
-    /**
-     * 播放WAV格式的音频文件。
-     *
-     * @param f WAV音频文件
-     * @throws Exception 如果播放过程中出现错误
-     */
-    private void playWav(File f) throws Exception {
-        try (AudioInputStream audioInputStream = AudioSystem.getAudioInputStream(f)) {
-            playAudioStream(audioInputStream, audioInputStream.getFormat());
-        }
-    }
-
-    /**
-     * 播放音频流。
-     *
-     * @param audioInputStream 音频输入流
-     * @param audioFormat      音频格式
-     * @throws Exception 如果播放过程中出现错误
-     */
-    private void playAudioStream(AudioInputStream audioInputStream, AudioFormat audioFormat) throws Exception {
-        DataLine.Info info = new DataLine.Info(SourceDataLine.class, audioFormat);
-        sourceDataLine = (SourceDataLine) AudioSystem.getLine(info);
-        sourceDataLine.open(audioFormat);
-        sourceDataLine.start();
-
-        byte[] buffer = new byte[4096];
-        int bytesRead;
-        while ((bytesRead = audioInputStream.read(buffer)) != -1) {
-            sourceDataLine.write(buffer, 0, bytesRead);
-        }
-
-        sourceDataLine.drain();
-        sourceDataLine.stop();
-        sourceDataLine.close();
-    }
-
-    /**
-     * 获取PCM格式的音频格式。
-     *
-     * @param format 原始音频格式
-     * @return PCM格式的音频格式
-     */
-    private AudioFormat getPCMFormat(AudioFormat format) {
-        if (format.getEncoding() != AudioFormat.Encoding.PCM_SIGNED) {
-            return new AudioFormat(
-                    AudioFormat.Encoding.PCM_SIGNED,
-                    format.getSampleRate(),
-                    16,
-                    format.getChannels(),
-                    format.getChannels() * 2,
-                    format.getSampleRate(),
-                    false
-            );
-        }
-        return format;
-    }
-
-    /**
-     * 关闭所有正在播放的音频。
-     */
-    public void close() {
+        line = target;
+        stopped = false;
+        target.open(pcm);
         try {
-            if (musicThread != null) {
-                musicThread.interrupt();
+            target.start();
+            byte[] buffer = new byte[BUFFER_SIZE];
+            for (int read = decoded.read(buffer); read != -1 && !stopped; read = decoded.read(buffer)) {
+                target.write(buffer, 0, read);
             }
-            if (sourceDataLine != null && sourceDataLine.isOpen()) {
-                sourceDataLine.close();
-            }
-        } catch (Exception e) {
-            Log.info("Error closing resources: " + e.getMessage());
+            target.drain();
+        } finally {
+            target.stop();
+            target.close();
+            line = null;
         }
     }
 
-    /**
-     * 检查文件是否有效。
-     *
-     * @param f 文件
-     * @return 如果文件有效，则返回true；否则返回false
-     */
-    private boolean isValidFile(File f) {
-        return f != null && f.exists() && f.isFile();
+    /** 停止当前播放。 */
+    public void stop() {
+        stopped = true;
+        SourceDataLine current = line;
+        if (current != null && current.isOpen()) current.close();
     }
 
-    /**
-     * 播放警告音效。
-     */
+    /** 播放音效，找不到文件就跳过。 */
+    public static void playEffect(String effectName) {
+        playEffect(new File("resource/effect/sound/" + effectName + ".mp3"));
+    }
+
+    public static void playEffect(File effectFile) {
+        if (effectFile == null || !effectFile.isFile()) {
+            Log.info("Effect file not found: " + effectFile);
+            return;
+        }
+        new Thread(() -> new MusicPlayer().play(effectFile), "effect-" + effectFile.getName()).start();
+    }
+
     public static void playWarning() {
         playEffect("warning");
-    }
-
-    /**
-     * 播放指定名称的音效。
-     *
-     * @param effectName 音效名称
-     */
-    public static void playEffect(String effectName) {
-        new Thread(() -> {
-            try {
-                File effectFile = new File("resource/effect/sound/" + effectName + ".mp3");
-                if (effectFile.exists() && effectFile.isFile()) {
-                    try (BufferedInputStream stream = new BufferedInputStream(new FileInputStream(effectFile))) {
-                        Player mp3Player = new Player(stream);
-                        mp3Player.play();
-                    }
-                } else {
-                    Log.info("Effect file not found: " + effectFile.getAbsolutePath());
-                }
-            } catch (Exception e) {
-                Log.info("Error playing effect: " + e.getMessage());
-            }
-        }).start();
     }
 }

@@ -16,3 +16,18 @@
 - network game *576-planned*
 - autoMode(autoGo&autoConfirm)
 - ...
+
+## Build
+
+Requires a JDK 27 toolchain. Use the wrapper; it fetches Gradle itself.
+
+```shell
+./gradlew fatJar          # build/libs/match3.jar, runnable on its own
+./gradlew smokeTest       # pure-main smoke checks
+./gradlew packageInput    # build/package-input, laid out for jpackage
+```
+
+Dependencies (jflac, mp3spi, tritonus-share, jlayer) come from Maven Central —
+there is no `lib/` to check in. Audio formats are discovered through the
+`javax.sound.sampled` SPI, so supporting another format is a matter of adding
+one provider jar to `build.gradle.kts`.

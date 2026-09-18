@@ -2,6 +2,7 @@ package view;
 
 import controller.GameController;
 import model.Board;
+import player.MusicPlayer;
 
 import javax.swing.*;
 import javax.swing.filechooser.FileNameExtensionFilter;
@@ -30,6 +31,8 @@ public class GameFrame extends MyFrame{
     private final JLabel[] statusLabels = new JLabel[4];
     private final GridBagLayout gbl = new GridBagLayout();
     private final JPanel playPanel = new JPanel(gbl);
+    private final MusicPlayer musicPlayer = new MusicPlayer();
+    private final Thread musicThread = new Thread(this::playMusicInLoop, "music");
     private final JPanel backgroundPanel = new JPanel(gbl){
         @Override
         protected void paintComponent(Graphics g) {
@@ -72,14 +75,6 @@ public class GameFrame extends MyFrame{
         addComponent(playPanel,gbl, panelLeft,1,1,24,24,0,1);
         addComponent(playPanel,gbl, panelRight,590,1,560,4,0,1);
 
-        musicThread = new Thread(() -> {
-            if (musicFiles == null || musicFiles.isEmpty()) return;
-            int i = RandomGenerator.getDefault().nextInt(musicFiles.size());
-            while (gameController.isAlive()) {
-                musicPlayer.play(musicFiles.get(i));
-                i = (i + 1) % musicFiles.size();
-            }
-        }, "music");
         musicThread.setDaemon(true);
 
         SwingUtilities.invokeLater(()->{ //initialize game functions in order
@@ -132,6 +127,16 @@ public class GameFrame extends MyFrame{
             }
         });
     }
+    /** 轮播 resource/music 下的曲目，直到这一局结束。 */
+    private void playMusicInLoop() {
+        if (musicFiles == null || musicFiles.isEmpty()) return;
+        int i = RandomGenerator.getDefault().nextInt(musicFiles.size());
+        while (gameController.isAlive()) {
+            musicPlayer.play(musicFiles.get(i));
+            i = (i + 1) % musicFiles.size();
+        }
+    }
+
     private void uiInitialize(){ //initialize the gui threads
         panelLeft.setOpaque(false);
         panelRight.setOpaque(false);
@@ -322,7 +327,7 @@ public class GameFrame extends MyFrame{
     public void returnToTitle() {
         gameController.terminate();
         menuFrame.setState(Frame.NORMAL);
-        musicPlayer.close();
+        musicPlayer.stop();
         dispose();
     }
 
