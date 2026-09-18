@@ -27,12 +27,22 @@ public final class SmokeTest {
         checkLegacySaveStillLoads();
         checkSnapshotIsImmutable();
         checkPointDistance();
+        checkTexturesResolveFromAnyWorkingDirectory();
 
         if (failures > 0) {
             System.out.println(failures + " check(s) failed");
             System.exit(1);
         }
         System.out.println("All smoke checks passed");
+    }
+
+    /** 打成 exe 后启动目录不一定是工程目录，纹理必须还能找到。 */
+    private static void checkTexturesResolveFromAnyWorkingDirectory() {
+        for (PieceType type : PieceType.values()) {
+            var texture = java.nio.file.Path.of(type.texturePath());
+            expect(java.nio.file.Files.isRegularFile(texture),
+                    "texture should resolve: " + texture + " (cwd=" + java.nio.file.Path.of("").toAbsolutePath() + ")");
+        }
     }
 
     private static void checkInitialBoardHasNoMatch() {

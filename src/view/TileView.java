@@ -7,6 +7,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.util.random.RandomGenerator;
 
+import util.ResourceRoot;
 import static view.ImageUtils.scaleImage;
 
 /**
@@ -69,7 +70,7 @@ public class TileView extends JComponent {
     private void drawSelectionPointer(Graphics g) {
         try {
             String suffix = POINTER_SUFFIXES[POINTER_RANDOM.nextInt(POINTER_SUFFIXES.length)];
-            BufferedImage pointerImage = ImageUtils.readImage("resource/texture/chess/select_pointer" + suffix + ".png");
+            BufferedImage pointerImage = ImageUtils.readImage(ResourceRoot.pathText("texture/chess/select_pointer" + suffix + ".png"));
             g.drawImage(scaleImage(pointerImage, 16, 16), 0, 0, null);
             g.drawImage(scaleImage(pointerImage, 16, 16), 0, 52, null);
             g.drawImage(scaleImage(pointerImage, 16, 16), 52, 0, null);

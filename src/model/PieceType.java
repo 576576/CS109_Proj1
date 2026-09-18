@@ -1,5 +1,7 @@
 package model;
 
+import util.ResourceRoot;
+
 import java.awt.Color;
 import java.util.random.RandomGenerator;
 
@@ -14,7 +16,6 @@ public enum PieceType {
     SMILE(4, Color.YELLOW, "\uD83D\uDE42"),
     EYE(5, Color.MAGENTA, "\uD83D\uDC40");
 
-    private static final String TEXTURE_DIR = "resource/texture/chess/";
     private static final PieceType[] VALUES = values();
 
     private final int textureIndex;
@@ -41,7 +42,7 @@ public enum PieceType {
     }
 
     public String texturePath() {
-        return TEXTURE_DIR + textureIndex + ".png";
+        return ResourceRoot.pathText("texture/chess/" + textureIndex + ".png");
     }
 
     public static PieceType ofIndex(int index) {

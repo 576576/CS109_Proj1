@@ -8,12 +8,19 @@ import java.util.ArrayList;
 import java.util.Random;
 
 import util.Log;
+import util.ResourceRoot;
 import static view.ImageUtils.scaleImage;
 
 public abstract class MyFrame extends JFrame{
     public static boolean isImageBackground=false,isDarkMode=true;
-    public static Image currentBackgroundImage = ImageUtils.readImage("resource/texture/background/default.png");
-    public static ImageIcon currentBackground = new ImageIcon("resource/texture/background/default.png");
+    public static Image currentBackgroundImage;
+    public static ImageIcon currentBackground;
+
+    // 背景要在 ResourceRoot 能用之后才读，所以不能写进字段初始值里
+    static {
+        currentBackgroundImage = pickBackgroundImage();
+        currentBackground = new ImageIcon(currentBackgroundImage);
+    }
     static void addComponent(JFrame motherFrame, GridBagLayout gbl, Component comp,
                                     int gridx, int grid_y, int grid_height, int grid_width, int weight_x, int weight_y) {
         GridBagConstraints gbc = new GridBagConstraints();
@@ -69,7 +76,7 @@ public abstract class MyFrame extends JFrame{
         if (getContentPane() instanceof JPanel panel) setDarkMode(panel);
     }
     static BufferedImage pickBackgroundImage(){
-        var files = readFiles("resource/texture/background/"+(isDarkMode?"dark/":"light/"));
+        var files = readFiles(ResourceRoot.pathText("texture/background/"+(isDarkMode?"dark/":"light/")));
         try {
             if (files != null) {
                 File imageInput = files.get(new Random().nextInt(files.size()));
@@ -78,7 +85,7 @@ public abstract class MyFrame extends JFrame{
             }
         } catch (Exception _){}
         Log.warn("CurrentBackground: unable to pick one, switch to default");
-        return ImageUtils.readImage("resource/texture/background/default.png");
+        return ImageUtils.readImage(ResourceRoot.pathText("texture/background/default.png"));
     }
     static ArrayList<File> readFiles(String filePath) {
         File file = new File(filePath);

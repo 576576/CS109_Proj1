@@ -1,6 +1,7 @@
 package player;
 
 import util.Log;
+import util.ResourceRoot;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
@@ -85,7 +86,7 @@ public class MusicPlayer {
 
     /** 播放音效，找不到文件就跳过。 */
     public static void playEffect(String effectName) {
-        playEffect(new File("resource/effect/sound/" + effectName + ".mp3"));
+        playEffect(ResourceRoot.path("effect/sound/" + effectName + ".mp3").toFile());
     }
 
     public static void playEffect(File effectFile) {

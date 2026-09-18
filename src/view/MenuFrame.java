@@ -15,6 +15,7 @@ import java.io.File;
 import java.util.ArrayList;
 
 import util.Log;
+import util.ResourceRoot;
 
 /**
  * This class build the frame of the main menu window. It defines its size via a constant and creates
@@ -50,7 +51,7 @@ public class MenuFrame extends MyFrame{
         initExitButton();
         controlPanel.setOpaque(false);
         addComponent(this,gbl,controlPanel,1,1,5,5,0,0);
-        musicFiles = readFiles("resource/music");
+        musicFiles = readFiles(ResourceRoot.pathText("music"));
         if (musicFiles==null || musicFiles.isEmpty()) return;
         Log.info("Musics Loaded: "+musicFiles.size());
         setDarkMode();
