@@ -62,18 +62,27 @@ public final class I18n {
 
     /** 取一条文案；当前语言里没有就回退英文，键真的不存在才抛异常。 */
     public static String tr(String key) {
-        if (bundle.containsKey(key)) return bundle.getString(key);
-        if (fallback == null) fallback = load(FALLBACK);
-        if (fallback.containsKey(key)) return fallback.getString(key);
+        String value = lookup(key);
+        if (value != null) return value;
         Log.warn("Missing i18n key: " + key);
         return key;
     }
 
-    /** 语言用它自己的名字显示；中文只分简体和繁体，不带地区名。 */
+    /** 语言用它自己的名字显示；中文按简繁两种字形分别标成「中文（简体）/中文（繁体）」。 */
     public static String name(Locale option) {
-        if (isChinese(option)) return traditional(option) ? "繁体" : "简体";
+        if (isChinese(option)) {
+            String label = lookup(traditional(option) ? "language.zh_TW" : "language.zh_CN");
+            return label != null ? label : (traditional(option) ? "中文（繁体）" : "中文（简体）");
+        }
         String display = option.getDisplayName(option);
         return display.isBlank() ? option.toLanguageTag() : display;
+    }
+
+    /** 先查当前语言，再查英文；都没有才返回 null。 */
+    private static String lookup(String key) {
+        if (bundle.containsKey(key)) return bundle.getString(key);
+        if (fallback == null) fallback = load(FALLBACK);
+        return fallback.containsKey(key) ? fallback.getString(key) : null;
     }
 
     /** 下拉框里的一项，toString 直接是显示名。 */
