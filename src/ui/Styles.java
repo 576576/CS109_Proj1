@@ -52,6 +52,13 @@ public final class Styles {
         for (MFXButton button : buttons) fill(button, theme.primaryContainer(), theme.onPrimaryContainer());
     }
 
+    /** 半透明 scrim 底卡：盖在壁纸上，保住页面内容的可读性。 */
+    public static String scrimCard(Theme theme) {
+        return "-fx-background-color: " + Theme.rgba(theme.scrim()) + ";"
+                + "-fx-background-radius: 24;"
+                + "-fx-padding: 36 48;";
+    }
+
     private Styles() {
     }
 }

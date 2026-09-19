@@ -140,6 +140,11 @@ public final class Theme {
         return "rgba(%d, %d, %d, %.3f)".formatted(r, g, b, alpha);
     }
 
+    /** 带颜色自身透明度的色值，scrim 之类的半透明底色用。 */
+    public static String rgba(Color color) {
+        return hexA(color, color.getOpacity());
+    }
+
     /** 背景图上叠一层半透明底色，保证文字在壁纸上面仍然读得清。 */
     public Color scrim() {
         return dark ? Color.rgb(0, 0, 0, 0.55) : Color.rgb(255, 255, 255, 0.62);
@@ -174,7 +179,29 @@ public final class Theme {
     private Path writeStylesheet() {
         try {
             Path file = Files.createTempFile("monet-", ".css");
-            Files.writeString(file, scheme.toStyleSheet());
+            // MaterialFX 把控件文字色写死成黑色 looked-up color（-mfx-text-*），深色下读不清。
+            // 作者样式表优先级高于它的 user-agent 样式表，这里统一覆盖成 Monet 色板。
+            String overrides = """
+                    * {
+                      -mfx-text-he: %s;
+                      -mfx-text-me: %s;
+                      -mfx-text-disabled: %s;
+                    }
+                    .mfx-checkbox, .mfx-radio-button {
+                      -mfx-main: %s;
+                      -mfx-secondary: %s;
+                    }
+                    .mfx-slider {
+                      -mfx-main-color: %s;
+                      -mfx-main-color-hover: %s;
+                      -mfx-main-color-pressed: %s;
+                      -mfx-disabled-color: %s;
+                    }
+                    """.formatted(
+                    hex(onSurface()), hex(onSurfaceVariant()), hex(outline()),
+                    hex(primary()), hex(onSurfaceVariant()),
+                    hex(primary()), hexA(primary(), 0.10), hexA(primary(), 0.30), hex(outline()));
+            Files.writeString(file, scheme.toStyleSheet() + "\n" + overrides);
             return file;
         } catch (IOException e) {
             Log.warn("Cannot write Monet stylesheet: " + e);

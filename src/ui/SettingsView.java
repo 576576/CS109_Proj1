@@ -5,11 +5,11 @@ import io.github.palexdev.materialfx.controls.MFXButton;
 import io.github.palexdev.materialfx.controls.MFXCheckbox;
 import io.github.palexdev.materialfx.controls.MFXRadioButton;
 import io.github.palexdev.materialfx.controls.MFXSlider;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 
 /** 明暗、壁纸取色、音量与若干开关。改完主题会当场重新取色。 */
@@ -18,8 +18,10 @@ public class SettingsView extends VBox {
     public SettingsView(GameSettings settings, Theme theme, Match3App app) {
         setAlignment(Pos.CENTER);
         setSpacing(16);
-        setPadding(new Insets(32));
         setFillWidth(false);
+        // StackPane 会把子节点拉满整页；限成首选尺寸，scrim 卡才贴着内容而不是铺满窗口
+        setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        setStyle(Styles.scrimCard(theme));
 
         Label title = new Label("Settings");
         title.setStyle("-fx-text-fill: " + Theme.hex(theme.primary()) + "; -fx-font-size: 26px; -fx-font-weight: bold;");
@@ -70,11 +72,14 @@ public class SettingsView extends VBox {
         back.setMinWidth(200);
         back.setOnAction(e -> app.showMenu());
 
+        Label volumeLabel = new Label("Music volume");
+        volumeLabel.setStyle("-fx-text-fill: " + Theme.hex(theme.onSurface()) + "; -fx-font-size: 15px;");
+
         getChildren().addAll(title,
                 new HBox(16, dark, light),
                 wallpaper,
                 shuffleWallpaper,
-                new Label("Music volume"), volume,
+                volumeLabel, volume,
                 verbose,
                 autoRestart,
                 back);

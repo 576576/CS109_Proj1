@@ -5,11 +5,11 @@ import config.PlayMode;
 import io.github.palexdev.materialfx.controls.MFXButton;
 import io.github.palexdev.materialfx.controls.MFXRadioButton;
 import io.github.palexdev.materialfx.controls.MFXTextField;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
 import javafx.stage.FileChooser;
 import model.Difficulty;
@@ -37,8 +37,10 @@ public class SetupView extends VBox {
 
         setAlignment(Pos.CENTER);
         setSpacing(14);
-        setPadding(new Insets(32));
         setFillWidth(false);
+        // StackPane 会把子节点拉满整页；限成首选尺寸，scrim 卡才贴着内容而不是铺满窗口
+        setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        setStyle(Styles.scrimCard(theme));
 
         Label title = new Label("Select a difficulty");
         title.setStyle("-fx-text-fill: " + Theme.hex(theme.primary()) + "; -fx-font-size: 26px; -fx-font-weight: bold;");

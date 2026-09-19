@@ -3,19 +3,20 @@ package ui;
 import config.PlayMode;
 import config.GameSettings;
 import io.github.palexdev.materialfx.controls.MFXButton;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
-
 /** 主菜单。 */
 public class MenuView extends VBox {
 
     public MenuView(Theme theme, Match3App app) {
         setAlignment(Pos.CENTER);
         setSpacing(16);
-        setPadding(new Insets(40));
         setFillWidth(false);
+        // StackPane 会把子节点拉满整页；限成首选尺寸，scrim 卡才贴着内容而不是铺满窗口
+        setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
+        setStyle(Styles.scrimCard(theme));
 
         Label title = new Label("MATCH-3");
         title.setStyle("-fx-text-fill: " + Theme.hex(theme.primary()) + "; -fx-font-size: 46px; -fx-font-weight: bold;");

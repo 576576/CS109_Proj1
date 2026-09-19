@@ -21,7 +21,7 @@
 
 Requires a JDK 26 toolchain. Use the wrapper; it fetches Gradle itself.
 
-The UI is built on JavaFX 24 with [MaterialFX](https://github.com/palexdev/MaterialFX)
+The UI is built on JavaFX 26 with [MaterialFX](https://github.com/palexdev/MaterialFX)
 and [MonetFX](https://github.com/Glavo/MonetFX) (the latter derives the dynamic
 Material-3 colour scheme from the background image).
 

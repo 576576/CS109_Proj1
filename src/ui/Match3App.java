@@ -2,17 +2,18 @@ package ui;
 
 import config.GameSettings;
 import config.PlayMode;
-import config.PlayMode;
 import controller.GameController;
 import io.github.palexdev.materialfx.theming.JavaFXThemes;
 import io.github.palexdev.materialfx.theming.MaterialFXStylesheets;
 import io.github.palexdev.materialfx.theming.UserAgentBuilder;
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.binding.Bindings;
 import javafx.scene.Node;
 import javafx.scene.Scene;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -66,10 +67,10 @@ public class Match3App extends Application {
         musicLibrary = new MusicLibrary();
 
         background = new ImageView();
+        background.setPreserveRatio(false);
         root = new StackPane(background);
         scene = new Scene(root, WIDTH, HEIGHT);
-        background.fitWidthProperty().bind(scene.widthProperty());
-        background.fitHeightProperty().bind(scene.heightProperty());
+        bindCover(background, root);
 
         applyTheme();
         showMenu();
@@ -174,6 +175,21 @@ public class Match3App extends Application {
     private void setContent(Node content) {
         if (root.getChildren().size() > 1) root.getChildren().set(1, content);
         else root.getChildren().add(content);
+    }
+
+    /** 壁纸覆盖式铺满：按比例取宽高缩放比较大者，溢出窗口的部分裁掉，不拉伸变形。 */
+    private void bindCover(ImageView view, Region container) {
+        var dims = Bindings.createObjectBinding(() -> {
+            Image image = view.getImage();
+            double w = container.getWidth(), h = container.getHeight();
+            if (image == null || image.getWidth() <= 0 || image.getHeight() <= 0 || w <= 0 || h <= 0) {
+                return new double[]{w, h};
+            }
+            double scale = Math.max(w / image.getWidth(), h / image.getHeight());
+            return new double[]{image.getWidth() * scale, image.getHeight() * scale};
+        }, view.imageProperty(), container.widthProperty(), container.heightProperty());
+        view.fitWidthProperty().bind(Bindings.createDoubleBinding(() -> dims.get()[0], dims));
+        view.fitHeightProperty().bind(Bindings.createDoubleBinding(() -> dims.get()[1], dims));
     }
 
     private void setStageIcon(Stage stage) {

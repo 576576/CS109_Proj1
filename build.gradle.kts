@@ -8,8 +8,9 @@ repositories {
     mavenCentral()
 }
 
-// JavaFX 的稳定版在 Maven Central 上只到 24.0.1；25 只有 EA，26 还没有。
-val fxVersion = "24.0.1"
+// JavaFX 26.0.2：25 修掉了 Marlin 里 sun.misc.Unsafe 的弃用调用（JDK-8334137），
+// 运行时不再刷 Unsafe 警告；26 线与工具链 JDK 26 对应。
+val fxVersion = "26.0.2"
 // javafx-graphics / controls / fxml 带了各平台的本地库，必须挑对应平台的 classifier。
 val fxPlatform = when {
     System.getProperty("os.name").contains("win", ignoreCase = true) -> "win"
@@ -30,7 +31,6 @@ dependencies {
     implementation("org.openjfx:javafx-base:$fxVersion:$fxPlatform")
     implementation("org.openjfx:javafx-graphics:$fxVersion:$fxPlatform")
     implementation("org.openjfx:javafx-controls:$fxVersion:$fxPlatform")
-    implementation("org.openjfx:javafx-fxml:$fxVersion:$fxPlatform")
     // materialfx-all 11.x 只拆出了 6 个基础控件；21.x 才有 MFXTextField / MFXRadioButton /
     // MFXSlider / MFXComboBox 这些，做完整界面得用它。
     implementation("io.github.palexdev:materialfx:21.18.0-alpha")
@@ -65,6 +65,8 @@ sourceSets {
 
 application {
     mainClass = "Main"
+    // javafx.graphics 经 NativeLibLoader 走 System::load（受限方法），不加这条运行时会刷警告
+    applicationDefaultJvmArgs = listOf("--enable-native-access=ALL-UNNAMED")
 }
 
 // 薄 jar 只给 packageInput 用，加个 classifier 免得和 fatJar 抢 build/libs/match3.jar；
@@ -171,7 +173,7 @@ val packageInput = tasks.register<Sync>("packageInput") {
 val runtimeModules = listOf(
     "java.base", "java.desktop", "java.logging", "java.prefs", "java.sql",
     "jdk.localedata", "jdk.unsupported", "jdk.zipfs",
-    "javafx.base", "javafx.graphics", "javafx.controls", "javafx.fxml",
+    "javafx.base", "javafx.graphics", "javafx.controls",
 )
 
 fun jtool(name: String): String {
