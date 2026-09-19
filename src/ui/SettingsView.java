@@ -13,6 +13,8 @@ import javafx.scene.control.ToggleGroup;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
+import org.kordamp.ikonli.material2.Material2AL;
+import org.kordamp.ikonli.material2.Material2MZ;
 
 /** 明暗、壁纸取色、语言、音量与若干开关。改完主题会当场重新取色。 */
 public class SettingsView extends VBox {
@@ -51,7 +53,8 @@ public class SettingsView extends VBox {
             app.applyTheme();
         });
 
-        var shuffleWallpaper = new MFXButton(I18n.tr("settings.nextWallpaper"));
+        var shuffleWallpaper = new MFXButton(I18n.tr("settings.nextWallpaper"),
+                Icons.of(Material2MZ.SHUFFLE, theme.onPrimaryContainer()));
         Styles.button(shuffleWallpaper, theme);
         shuffleWallpaper.setOnAction(e -> {
             theme.nextWallpaper();
@@ -75,26 +78,31 @@ public class SettingsView extends VBox {
         autoRestart.setSelected(settings.autoRestart());
         autoRestart.setOnAction(e -> settings.setAutoRestart(autoRestart.isSelected()));
 
-        var back = new MFXButton(I18n.tr("settings.back"));
+        var back = new MFXButton(I18n.tr("settings.back"), Icons.of(Material2AL.ARROW_BACK, theme.onPrimary()));
         Styles.primary(back, theme);
         back.setMinWidth(200);
         back.setOnAction(e -> app.showMenu());
 
-        getChildren().addAll(title,
-                new HBox(16, dark, light),
-                wallpaper,
+        getChildren().addAll(
+                Icons.beside(Material2MZ.TUNE, theme.primary(), title, 26),
+                new HBox(16,
+                        Icons.beside(Material2MZ.NIGHTS_STAY, theme.onSurface(), dark),
+                        Icons.beside(Material2MZ.WB_SUNNY, theme.onSurface(), light)),
+                Icons.beside(Material2MZ.WALLPAPER, theme.onSurface(), wallpaper),
                 shuffleWallpaper,
-                volumeLabel, volume,
-                languageLabel,
+                Icons.beside(Material2MZ.VOLUME_UP, theme.onSurface(), volumeLabel),
+                volume,
+                Icons.beside(Material2MZ.TRANSLATE, theme.onSurface(), languageLabel),
                 languageBox(app),
-                verbose,
-                autoRestart,
+                Icons.beside(Material2AL.CHAT, theme.onSurface(), verbose),
+                Icons.beside(Material2AL.AUTORENEW, theme.onSurface(), autoRestart),
                 back);
     }
 
     /** 下拉选语言，选中即切、整屏重建。 */
     private MFXComboBox<I18n.Language> languageBox(Match3App app) {
         MFXComboBox<I18n.Language> box = new MFXComboBox<>(FXCollections.observableArrayList(I18n.languages()));
+        box.setPrefWidth(240);
         I18n.languages().stream()
                 .filter(language -> language.locale().equals(I18n.locale()))
                 .findFirst()

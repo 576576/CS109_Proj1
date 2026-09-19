@@ -200,25 +200,63 @@ public final class Theme {
                     }
                     .mfx-text-field {
                       -fx-background-color: %s;
+                      -fx-background-radius: 16;
+                      -fx-background-insets: 0;
+                      -fx-border-color: %s;
+                      -fx-border-radius: 16;
+                      -fx-padding: 6 12 6 12;
                       -fx-highlight-fill: %s;
                       -fx-text-fill: %s;
+                    }
+                    .mfx-text-field:focus-within {
+                      -fx-border-color: %s;
+                      -fx-border-width: 1.5;
                     }
                     .mfx-text-field:floating .floating-text {
                       -fx-background-color: %s;
                     }
+                    .mfx-text-field .text-field {
+                      -fx-text-fill: %s;
+                      -fx-prompt-text-fill: %s;
+                    }
+                    .mfx-combo-box .text-field {
+                      -fx-alignment: center;
+                    }
+                    .mfx-combo-box .caret .mfx-font-icon {
+                      -mfx-color: %s;
+                    }
                     .mfx-combo-box .combo-popup .vfx-scroll-pane {
                       -fx-background-color: %s;
+                      -fx-background-radius: 16;
                       -fx-border-color: %s;
+                      -fx-border-radius: 16;
+                      -fx-max-height: 240;
                     }
                     .mfx-combo-box .combo-popup .mfx-list-cell {
                       -fx-background-color: transparent;
+                      -fx-border-color: transparent;
+                      -fx-padding: 8 14 8 14;
+                    }
+                    .mfx-combo-box .combo-popup .mfx-list-cell:hover {
+                      -fx-background-color: %s;
+                    }
+                    .mfx-combo-box .combo-popup .mfx-list-cell:selected {
+                      -fx-background-color: %s;
+                    }
+                    .mfx-combo-box .combo-popup .mfx-list-cell .data-label {
+                      -fx-text-fill: %s;
                     }
                     """.formatted(
                     hex(onSurface()), hex(onSurfaceVariant()), hex(outline()),
                     hex(primary()), hex(onSurfaceVariant()),
                     hex(primary()), hexA(primary(), 0.10), hexA(primary(), 0.30), hex(outline()),
-                    hex(surfaceVariant()), hexA(primary(), 0.30), hex(onSurface()), hex(surfaceVariant()),
-                    hex(surfaceVariant()), hex(outline()));
+                    hex(surfaceVariant()), hex(outline()), hexA(primary(), 0.30), hex(onSurface()),
+                    hex(primary()),
+                    hex(surfaceVariant()),
+                    hex(onSurface()), hex(onSurfaceVariant()),
+                    hex(onSurfaceVariant()),
+                    hex(surfaceVariant()), hex(outline()),
+                    hexA(primary(), 0.14), hexA(primary(), 0.28), hex(onSurface()));
             Files.writeString(file, scheme.toStyleSheet() + "\n" + overrides);
             return file;
         } catch (IOException e) {

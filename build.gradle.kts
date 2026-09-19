@@ -35,6 +35,9 @@ dependencies {
     // MFXSlider / MFXComboBox 这些，做完整界面得用它。
     implementation("io.github.palexdev:materialfx:21.18.0-alpha")
     implementation("org.glavo:MonetFX:0.1.0")
+    // Material 图标：字体随 jar 走，不需要额外的资源文件或联网
+    implementation("org.kordamp.ikonli:ikonli-javafx:12.4.0")
+    implementation("org.kordamp.ikonli:ikonli-material2-pack:12.4.0")
 }
 
 version = "1.0.0"
