@@ -15,6 +15,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import ui.Dialogs;
+import ui.I18n;
 import util.Log;
 
 public class NetGame {
@@ -34,14 +35,14 @@ public class NetGame {
     /** 建房。accept() 会一直阻塞，所以整段挪到后台线程，JavaFX 线程不能等在这儿。 */
     public void serverHost() {
         Thread wait = new Thread(() -> {
-            Dialogs.notifyInfo("Waiting for a player...\nYour address: " + getPublicIP());
+            Dialogs.notifyInfo(I18n.tr("dlg.waiting") + "\n" + I18n.tr("dlg.yourAddress") + getPublicIP());
             try (ServerSocket ss = new ServerSocket(port)) {
                 Log.info("OnlineGame Host: Waiting for player.");
                 sock = ss.accept();
                 Log.info("Connected from " + sock.getRemoteSocketAddress());
             } catch (IOException e) {
                 Log.warn("Failed to establish connection: " + e);
-                Dialogs.warn("Failed to establish connection.");
+                Dialogs.warn(I18n.tr("msg.connFailed"));
                 Platform.runLater(gameController::terminate);
                 return;
             }
@@ -59,7 +60,7 @@ public class NetGame {
         dialog.setContentText("Enter host");
         var host = dialog.showAndWait();
         if (host.isEmpty() || host.get().isBlank()) {
-            Dialogs.warn("Invalid host address.");
+            Dialogs.warn(I18n.tr("msg.invalidHost"));
             return;
         }
 
@@ -68,7 +69,7 @@ public class NetGame {
             handler = new Handler(sock, gameController, settings.playMode());
             handler.start();
         } catch (IOException e) {
-            Dialogs.warn("Unable to connect to the server.\nPlease ensure the host is online.");
+            Dialogs.warn(I18n.tr("msg.noHost"));
             gameController.terminate();
         }
     }

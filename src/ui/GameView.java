@@ -21,7 +21,9 @@ import player.MusicLibrary;
 import player.MusicPlayer;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.random.RandomGenerator;
 
 /**
@@ -57,6 +59,8 @@ public class GameView extends BorderPane implements GameScreen {
     private MFXButton confirmButton;
     private boolean autoOn;
     private boolean confirmOn;
+    private final Map<MFXButton, String> buttonKeys = new LinkedHashMap<>();
+    private final Map<StackPane, String> halfKeys = new LinkedHashMap<>();
 
     public GameView(GameSettings settings, Theme theme, Match3App app) {
         this.settings = settings;
@@ -119,10 +123,22 @@ public class GameView extends BorderPane implements GameScreen {
 
     @Override
     public void setStatus(String difficulty, String score, String steps, String time) {
-        status[0].setText("Difficulty  " + difficulty);
-        status[1].setText("Score  " + score);
-        status[2].setText("Steps  " + steps);
-        status[3].setText("Time  " + time);
+        status[0].setText(I18n.tr("game.difficulty") + "  " + difficulty);
+        status[1].setText(I18n.tr("game.score") + "  " + score);
+        status[2].setText(I18n.tr("game.steps") + "  " + steps);
+        status[3].setText(I18n.tr("game.time") + "  " + time);
+    }
+
+    /** 切换语言后原地换文案，不用重建整局。 */
+    public void retranslate() {
+        statusHeading.setText(I18n.tr("game.status"));
+        for (var entry : buttonKeys.entrySet()) entry.getKey().setText(I18n.tr(entry.getValue()));
+        for (var entry : halfKeys.entrySet()) {
+            for (Node child : entry.getKey().getChildren()) {
+                if (child instanceof Label label) label.setText(I18n.tr(entry.getValue()));
+            }
+        }
+        if (controller != null) controller.refreshStatus();
     }
 
     @Override
@@ -146,7 +162,7 @@ public class GameView extends BorderPane implements GameScreen {
         statusCard.setPadding(new Insets(10));
         statusCard.setStyle("-fx-background-color: " + Theme.hex(theme.surfaceVariant())
                 + "; -fx-background-radius: 12;");
-        statusHeading = new Label("Status");
+        statusHeading = new Label(I18n.tr("game.status"));
         statusHeading.setStyle("-fx-text-fill: " + Theme.hex(theme.onSurfaceVariant())
                 + "; -fx-font-size: 13px; -fx-font-weight: bold;");
         statusCard.getChildren().add(statusHeading);
@@ -160,34 +176,35 @@ public class GameView extends BorderPane implements GameScreen {
 
     private void buildLocalControls() {
         leftMenu.getChildren().addAll(
-                action("Hint", e -> controller.hint()),
-                action("Shuffle", e -> controller.onPlayerShuffle()),
+                action("game.hint", e -> controller.hint()),
+                action("game.shuffle", e -> controller.onPlayerShuffle()),
                 autoToggle(),
                 confirmToggle(),
-                action("Confirm Swap", e -> controller.onPlayerSwapChess()),
-                action("Next Step", e -> controller.nextStep()));
+                action("game.confirmSwap", e -> controller.onPlayerSwapChess()),
+                action("game.nextStep", e -> controller.nextStep()));
         rightMenu.getChildren().addAll(
-                action("Start New", e -> controller.initialize()),
+                action("game.startNew", e -> controller.initialize()),
                 loadSaveSplit(),
-                action("Settings", e -> app.showSettings(settings)),
-                action("Return Title", e -> controller.terminate()),
-                action("Exit", e -> app.exit()));
+                action("menu.settings", e -> app.showSettings(settings)),
+                action("game.returnTitle", e -> controller.terminate()),
+                action("menu.exit", e -> app.exit()));
     }
 
     private void buildOnlineControls() {
-        leftMenu.getChildren().add(action("Shuffle", e -> controller.onPlayerShuffle()));
+        leftMenu.getChildren().add(action("game.shuffle", e -> controller.onPlayerShuffle()));
         rightMenu.getChildren().addAll(
-                action("Confirm Swap", e -> controller.onPlayerSwapChess()),
-                action("Next Step", e -> controller.nextStep()),
-                action("Settings", e -> app.showSettings(settings)),
-                action("Disconnect", e -> controller.terminate()),
-                action("Exit", e -> app.exit()));
+                action("game.confirmSwap", e -> controller.onPlayerSwapChess()),
+                action("game.nextStep", e -> controller.nextStep()),
+                action("menu.settings", e -> app.showSettings(settings)),
+                action("game.disconnect", e -> controller.terminate()),
+                action("menu.exit", e -> app.exit()));
     }
 
     /** Auto Play 开关：开=实心主色，关=描边幽灵态，靠颜色而非文字表示状态。 */
     private MFXButton autoToggle() {
-        MFXButton button = new MFXButton("Auto Play");
+        MFXButton button = new MFXButton(I18n.tr("game.autoPlay"));
         autoButton = button;
+        buttonKeys.put(button, "game.autoPlay");
         Styles.toggle(button, theme, false);
         button.setOnAction(e -> {
             autoOn = !controller.isAutoMode();
@@ -199,8 +216,9 @@ public class GameView extends BorderPane implements GameScreen {
 
     /** Auto Confirm 开关：同样用颜色差异表示状态。 */
     private MFXButton confirmToggle() {
-        MFXButton button = new MFXButton("Auto Confirm");
+        MFXButton button = new MFXButton(I18n.tr("game.autoConfirm"));
         confirmButton = button;
+        buttonKeys.put(button, "game.autoConfirm");
         Styles.toggle(button, theme, false);
         button.setOnAction(e -> {
             confirmOn = !controller.isAutoConfirm();
@@ -221,8 +239,8 @@ public class GameView extends BorderPane implements GameScreen {
         loadSaveBox.setStyle("-fx-background-color: " + Theme.hex(theme.primaryContainer())
                 + "; -fx-background-radius: 16; -fx-padding: 0;");
 
-        loadSaveHalves[0] = splitHalf("Load", e -> app.loadGame(controller));
-        loadSaveHalves[1] = splitHalf("Save", e -> app.saveGame(controller));
+        loadSaveHalves[0] = splitHalf("game.load", e -> app.loadGame(controller));
+        loadSaveHalves[1] = splitHalf("game.save", e -> app.saveGame(controller));
 
         loadSaveDivider = new Region();
         loadSaveDivider.setPrefWidth(1.5);
@@ -235,12 +253,13 @@ public class GameView extends BorderPane implements GameScreen {
         return loadSaveBox;
     }
 
-    private StackPane splitHalf(String text, javafx.event.EventHandler<MouseEvent> handler) {
+    private StackPane splitHalf(String key, javafx.event.EventHandler<MouseEvent> handler) {
         StackPane pane = new StackPane();
         pane.setAlignment(Pos.CENTER);
         pane.setPrefHeight(36);
         pane.setCursor(Cursor.HAND);
-        Label label = new Label(text);
+        halfKeys.put(pane, key);
+        Label label = new Label(I18n.tr(key));
         label.setStyle("-fx-text-fill: " + Theme.hex(theme.onPrimaryContainer()) + "; -fx-font-size: 13px;");
         pane.getChildren().add(label);
         pane.setOnMouseEntered(e -> pane.setStyle("-fx-background-color: " + Theme.hexA(theme.onPrimaryContainer(), 0.14) + ";"));
@@ -249,8 +268,10 @@ public class GameView extends BorderPane implements GameScreen {
         return pane;
     }
 
-    private MFXButton action(String text, javafx.event.EventHandler<javafx.event.ActionEvent> handler) {
-        MFXButton button = new MFXButton(text);
+    /** 按钮文案一律走 i18n key，切换语言时靠 buttonKeys 原地重刷。 */
+    private MFXButton action(String key, javafx.event.EventHandler<javafx.event.ActionEvent> handler) {
+        MFXButton button = new MFXButton(I18n.tr(key));
+        buttonKeys.put(button, key);
         Styles.button(button, theme);
         buttons.add(button);
         button.setOnAction(handler);

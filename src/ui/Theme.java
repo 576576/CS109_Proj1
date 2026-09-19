@@ -181,6 +181,7 @@ public final class Theme {
             Path file = Files.createTempFile("monet-", ".css");
             // MaterialFX 把控件文字色写死成黑色 looked-up color（-mfx-text-*），深色下读不清。
             // 作者样式表优先级高于它的 user-agent 样式表，这里统一覆盖成 Monet 色板。
+            // 输入框和下拉框的底色也被它写死成白色，一起接进色板。
             String overrides = """
                     * {
                       -mfx-text-he: %s;
@@ -197,10 +198,27 @@ public final class Theme {
                       -mfx-main-color-pressed: %s;
                       -mfx-disabled-color: %s;
                     }
+                    .mfx-text-field {
+                      -fx-background-color: %s;
+                      -fx-highlight-fill: %s;
+                      -fx-text-fill: %s;
+                    }
+                    .mfx-text-field:floating .floating-text {
+                      -fx-background-color: %s;
+                    }
+                    .mfx-combo-box .combo-popup .vfx-scroll-pane {
+                      -fx-background-color: %s;
+                      -fx-border-color: %s;
+                    }
+                    .mfx-combo-box .combo-popup .mfx-list-cell {
+                      -fx-background-color: transparent;
+                    }
                     """.formatted(
                     hex(onSurface()), hex(onSurfaceVariant()), hex(outline()),
                     hex(primary()), hex(onSurfaceVariant()),
-                    hex(primary()), hexA(primary(), 0.10), hexA(primary(), 0.30), hex(outline()));
+                    hex(primary()), hexA(primary(), 0.10), hexA(primary(), 0.30), hex(outline()),
+                    hex(surfaceVariant()), hexA(primary(), 0.30), hex(onSurface()), hex(surfaceVariant()),
+                    hex(surfaceVariant()), hex(outline()));
             Files.writeString(file, scheme.toStyleSheet() + "\n" + overrides);
             return file;
         } catch (IOException e) {

@@ -22,6 +22,7 @@ import net.NetGame;
 import player.MusicLibrary;
 
 import java.io.File;
+import java.util.Locale;
 import java.util.concurrent.CountDownLatch;
 
 import util.ResourceRoot;
@@ -44,6 +45,7 @@ public class Match3App extends Application {
     private MusicLibrary musicLibrary;
     private GameSettings settings = new GameSettings();
     private GameView gameView;
+    private Node currentView;
 
     public static Match3App get() {
         return instance;
@@ -126,7 +128,7 @@ public class Match3App extends Application {
 
     public void showGame(GameSettings settings) {
         if (settings.playMode() == PlayMode.LOAD_LOCAL && settings.saveFile() == null) {
-            Dialogs.warn("Pick a saved game first.");
+            Dialogs.warn(I18n.tr("dlg.pickSave"));
             return;
         }
         GameView view = new GameView(settings, theme, this);
@@ -152,12 +154,12 @@ public class Match3App extends Application {
     }
 
     public void loadGame(GameController controller) {
-        File file = chooseSave("Open saved game");
+        File file = chooseSave("file.openSaved");
         if (file != null) controller.loadFromFile(file);
     }
 
     public void saveGame(GameController controller) {
-        File file = chooseSave("Save game");
+        File file = chooseSave("file.saveGame");
         if (file != null) controller.saveToFile(file);
     }
 
@@ -165,14 +167,22 @@ public class Match3App extends Application {
         Platform.exit();
     }
 
-    private File chooseSave(String title) {
+    /** 切换语言后重画当前界面：对局原地换文案，其余界面重建。 */
+    public void setLocale(Locale locale) {
+        I18n.setLocale(locale);
+        if (currentView instanceof GameView game) game.retranslate();
+        else if (currentView instanceof SettingsView) showSettings(settings);
+    }
+
+    private File chooseSave(String titleKey) {
         FileChooser chooser = new FileChooser();
-        chooser.setTitle(title);
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Saved game", "*.txt"));
+        chooser.setTitle(I18n.tr(titleKey));
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(I18n.tr("file.savedFilter"), "*.txt"));
         return chooser.showSaveDialog(stage);
     }
 
     private void setContent(Node content) {
+        currentView = content;
         if (root.getChildren().size() > 1) root.getChildren().set(1, content);
         else root.getChildren().add(content);
     }

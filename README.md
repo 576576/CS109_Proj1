@@ -49,3 +49,21 @@ Dependencies (jflac, mp3spi, tritonus-share, jlayer, JavaFX, MaterialFX,
 MonetFX) come from Maven Central — there is no `lib/` to check in. Audio
 formats are discovered through the `javax.sound.sampled` SPI, so supporting
 another format is a matter of adding one provider jar to `build.gradle.kts`.
+
+## i18n
+
+The UI language is auto-detected from the system locale at startup and falls
+back to English when nothing matches. `-Dmatch3.lang=<tag>` overrides the
+detection (`zh-CN`, `ja`, `ru`, ... — `zh_CN` also accepted). All strings live
+in `resource/i18n/messages_<tag>.properties` (UTF-8); the language can be
+switched at runtime from Settings.
+
+Adding a language:
+
+1. Copy `resource/i18n/messages_en.properties` to
+   `messages_<tag>.properties` (e.g. `messages_de.properties`) and translate
+   the values. Keep the keys; `\n` inside a value becomes a line break.
+2. Register the locale in `I18n.SUPPORTED` (`src/ui/I18n.java`) so it appears
+   in the Settings dropdown.
+3. Done — the fallback chain is `<language>_<region>` → `<language>` →
+   English, and any key missing from a bundle is read from the English file.

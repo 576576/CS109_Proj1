@@ -42,7 +42,7 @@ public class SetupView extends VBox {
         setMaxSize(Region.USE_PREF_SIZE, Region.USE_PREF_SIZE);
         setStyle(Styles.scrimCard(theme));
 
-        Label title = new Label("Select a difficulty");
+        Label title = new Label(I18n.tr("setup.title"));
         title.setStyle("-fx-text-fill: " + Theme.hex(theme.primary()) + "; -fx-font-size: 26px; -fx-font-weight: bold;");
         getChildren().add(title);
 
@@ -50,13 +50,13 @@ public class SetupView extends VBox {
         if (settings.playMode().isOnline()) getChildren().add(roleRow());
         else getChildren().addAll(customRow(), fileRow());
 
-        var start = new MFXButton("Start");
+        var start = new MFXButton(I18n.tr("setup.start"));
         Styles.primary(start, theme);
         start.setMinWidth(220);
         start.setOnAction(e -> app.showGame(settings));
         getChildren().add(start);
 
-        var back = new MFXButton("Back");
+        var back = new MFXButton(I18n.tr("setup.back"));
         Styles.button(back, theme);
         back.setMinWidth(220);
         back.setOnAction(e -> app.showMenu());
@@ -80,10 +80,10 @@ public class SetupView extends VBox {
     private HBox customRow() {
         HBox row = new HBox(10);
         row.setAlignment(Pos.CENTER);
-        goalField.setPromptText("Goal");
-        stepField.setPromptText("Steps (-1 = ∞)");
-        timeField.setPromptText("Time (-1 = ∞)");
-        var apply = new MFXButton("Use custom");
+        goalField.setPromptText(I18n.tr("setup.goal"));
+        stepField.setPromptText(I18n.tr("setup.steps"));
+        timeField.setPromptText(I18n.tr("setup.time"));
+        var apply = new MFXButton(I18n.tr("setup.useCustom"));
         Styles.button(apply, theme);
         apply.setOnAction(e -> applyCustom());
         row.getChildren().addAll(goalField, stepField, timeField, apply);
@@ -99,7 +99,7 @@ public class SetupView extends VBox {
             settings.setDifficulty(created);
             Log.info("Difficulty Selected: " + created.name());
         } catch (NumberFormatException _) {
-            ui.Dialogs.warn("Illegal difficulty, please check again!");
+            ui.Dialogs.warn(I18n.tr("setup.badDifficulty"));
         }
     }
 
@@ -107,10 +107,10 @@ public class SetupView extends VBox {
         ToggleGroup group = new ToggleGroup();
         HBox row = new HBox(12);
         row.setAlignment(Pos.CENTER);
-        var host = new MFXRadioButton("Host Game");
+        var host = new MFXRadioButton(I18n.tr("setup.host"));
         host.setToggleGroup(group);
         host.setOnAction(e -> settings.setPlayMode(PlayMode.HOST));
-        var join = new MFXRadioButton("Join Game");
+        var join = new MFXRadioButton(I18n.tr("setup.join"));
         join.setToggleGroup(group);
         join.setSelected(true);
         join.setOnAction(e -> settings.setPlayMode(PlayMode.JOIN));
@@ -121,7 +121,7 @@ public class SetupView extends VBox {
     private HBox fileRow() {
         HBox row = new HBox(10);
         row.setAlignment(Pos.CENTER);
-        var load = new MFXButton("Load a saved game");
+        var load = new MFXButton(I18n.tr("setup.loadSaved"));
         Styles.button(load, theme);
         load.setOnAction(e -> chooseSave());
         row.getChildren().add(load);
@@ -130,8 +130,8 @@ public class SetupView extends VBox {
 
     private void chooseSave() {
         FileChooser chooser = new FileChooser();
-        chooser.setTitle("Open saved game");
-        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter("Saved game", "*.txt"));
+        chooser.setTitle(I18n.tr("file.openSaved"));
+        chooser.getExtensionFilters().add(new FileChooser.ExtensionFilter(I18n.tr("file.savedFilter"), "*.txt"));
         File file = chooser.showOpenDialog(app.stage());
         if (file == null) return;
         settings.setSaveFile(file);

@@ -201,12 +201,12 @@ public class GameController implements GameListener {
         }
         if (isNotContinuable()) {
             Log.info("Dead end: shuffled");
-            if (settings.verboseDialogs()) Dialogs.info("Auto Shuffled: Dead end");
+            if (settings.verboseDialogs()) Dialogs.info(I18n.tr("msg.autoShuffle"));
             onPlayerShuffle();
             return;
         }
         if (model.hasEmptyCells()) {
-            if (settings.verboseDialogs()) Dialogs.info("Swap Fail: board has empty");
+            if (settings.verboseDialogs()) Dialogs.info(I18n.tr("msg.swapEmpty"));
             Log.info("Swap Fail: has empty");
             return;
         }
@@ -228,7 +228,7 @@ public class GameController implements GameListener {
                 model.swapPieces(selectedPoint, selectedPoint2);
                 view.setTileAt(selectedPoint2, view.removeTileAt(selectedPoint));
                 view.setTileAt(selectedPoint, tmp);
-                if (settings.verboseDialogs()) Dialogs.info("Swap Fail! Nothing can be match");
+                if (settings.verboseDialogs()) Dialogs.info(I18n.tr("msg.swapNoMatch"));
                 Log.info("Swap Fail: Nothing can be match");
             }
         } catch (RuntimeException e) {
@@ -283,7 +283,7 @@ public class GameController implements GameListener {
     private void checkVictory() {
         if (!isAlive) return;
         if (score >= difficulty().goal()) {
-            Dialogs.info("Congratulations! You win.");
+            Dialogs.info(I18n.tr("msg.win"));
             Log.info("Victory: Reach the goal");
             playEffect("victory");
             victoryMode = 1;
@@ -291,12 +291,12 @@ public class GameController implements GameListener {
             this.terminate();
         }
         if (score < difficulty().goal() && stepLeft == 0 || timeLeft <= 0 && difficulty().timeLimit() > 0) {
-            if (!settings.verboseDialogs()) Dialogs.info("Oh no,you loss.");
+            if (!settings.verboseDialogs()) Dialogs.info(I18n.tr("msg.lose"));
             else if (stepLeft == 0) {
-                Dialogs.info("Oh no, no more steps!");
+                Dialogs.info(I18n.tr("msg.noSteps"));
                 Log.info("Loss: Step limit exceeded");
             } else if (timeLeft <= 0 && difficulty().timeLimit() > 0) {
-                Dialogs.info("Oh no, you DON'T have time!");
+                Dialogs.info(I18n.tr("msg.noTime"));
                 Log.info("Loss: Time limit exceeded");
             }
             victoryMode = 2;
@@ -311,7 +311,7 @@ public class GameController implements GameListener {
 
     public void nextStep() {
         if (!model.hasEmptyCells()) {
-            if (settings.verboseDialogs()) Dialogs.info("NextStep failed: no empty");
+            if (settings.verboseDialogs()) Dialogs.info(I18n.tr("msg.nextStepNoEmpty"));
             Log.info("NextStep Fail: no empty cells");
             playWarning();
             return;
@@ -338,8 +338,8 @@ public class GameController implements GameListener {
             // Fall done has done, if there is any match-3, eliminate them
             if (settings.verboseDialogs()) {
                 runOnFx(() -> {
-                    Dialogs.info("Bonus! Match occurs after falling down.");
-                    Log.info("Bonus! Match occurs after falling down.");
+                    Dialogs.info(I18n.tr("msg.bonus"));
+                    Log.info(I18n.tr("msg.bonus"));
                 });
             }
             runOnFx(() -> view.repaint());
@@ -391,14 +391,14 @@ public class GameController implements GameListener {
 
     public void loadFromFile(File file) {
         if (!file.exists() || !file.canRead()) {
-            Dialogs.info("Can't Access the file!");
+            Dialogs.info(I18n.tr("msg.fileNoAccess"));
             return;
         }
         String text;
         try {
             text = Files.readString(file.toPath());
         } catch (IOException _) {
-            Dialogs.info("Can't Access the file!");
+            Dialogs.info(I18n.tr("msg.fileNoAccess"));
             return;
         }
         loadFromState(text, false);
@@ -413,7 +413,7 @@ public class GameController implements GameListener {
     private void loadFromState(String text, boolean restartTimer) {
         Optional<GameState> loaded = GameStateCodec.fromText(text, model.rows(), model.cols());
         if (loaded.isEmpty()) {
-            Dialogs.info("File format error:101");
+            Dialogs.info(I18n.tr("msg.fileFormat"));
             return;
         }
         applyState(loaded.get());
@@ -550,11 +550,11 @@ public class GameController implements GameListener {
 
     public void onlineGameTerminate(boolean isWinner) {
         if (isWinner) {
-            Dialogs.info("Congratulations! You win.");
+            Dialogs.info(I18n.tr("msg.win"));
             Log.info("Victory: Your Competitor Loss");
             victoryMode = 1;
         } else {
-            Dialogs.info("Oh no! Your competitor win.");
+            Dialogs.info(I18n.tr("msg.competitorWin"));
             Log.info("Loss: Your Competitor Win");
             victoryMode = 2;
         }
@@ -577,7 +577,7 @@ public class GameController implements GameListener {
         Optional<Swap> hint = model.findHint();
         if (hint.isEmpty()) {
             Log.info("Dead end: shuffled");
-            if (settings.verboseDialogs()) Dialogs.info("Auto Shuffled: Dead end");
+            if (settings.verboseDialogs()) Dialogs.info(I18n.tr("msg.autoShuffle"));
             onPlayerShuffle();
             return;
         }
