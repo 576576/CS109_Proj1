@@ -212,6 +212,10 @@ public final class Theme {
                       -fx-highlight-fill: %s;
                       -fx-text-fill: %s;
                     }
+                    /* 点整个框体都能展开，光标跟着变手型 */
+                    .mfx-combo-box {
+                      -fx-cursor: hand;
+                    }
                     /* 下拉框的文字画在内层 BoundTextField 上，对齐由代码设，这里只管颜色 */
                     .mfx-combo-box .text-field {
                       -fx-alignment: center;

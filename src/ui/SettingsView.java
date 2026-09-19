@@ -6,10 +6,14 @@ import io.github.palexdev.materialfx.controls.MFXComboBox;
 import io.github.palexdev.materialfx.controls.MFXCheckbox;
 import io.github.palexdev.materialfx.controls.MFXRadioButton;
 import io.github.palexdev.materialfx.controls.MFXSlider;
+import io.github.palexdev.materialfx.enums.FloatMode;
 import javafx.collections.FXCollections;
+import javafx.event.EventTarget;
 import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.control.Label;
 import javafx.scene.control.ToggleGroup;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.Region;
 import javafx.scene.layout.VBox;
@@ -106,8 +110,16 @@ public class SettingsView extends VBox {
     private MFXComboBox<I18n.Language> languageBox(Match3App app) {
         MFXComboBox<I18n.Language> box = new MFXComboBox<>(FXCollections.observableArrayList(I18n.languages()));
         box.setPrefWidth(240);
+        // 默认 INLINE 会在上半格留一行悬浮标签的位置、把文字压到下半格，关掉才垂直居中
+        box.setFloatMode(FloatMode.DISABLED);
         // 文字画在内层 BoundTextField 上，它的对齐被皮肤写死，只能用 API 改
         box.setAlignment(Pos.CENTER);
+        // 皮肤只给右侧箭头挂了展开逻辑，点框体没反应；箭头自己那份要留着，否则开完立刻被关上
+        box.addEventFilter(MouseEvent.MOUSE_PRESSED, event -> {
+            if (isCaret(event.getTarget())) return;
+            if (box.isShowing()) box.hide();
+            else box.show();
+        });
         I18n.Language current = I18n.languages().stream()
                 .filter(language -> I18n.isAuto()
                         ? language.locale() == null
@@ -122,5 +134,12 @@ public class SettingsView extends VBox {
             if (I18n.isAuto() ? wanted != null : !Objects.equals(wanted, I18n.locale())) app.setLocale(wanted);
         });
         return box;
+    }
+
+    private static boolean isCaret(EventTarget target) {
+        for (Node node = target instanceof Node n ? n : null; node != null; node = node.getParent()) {
+            if (node.getStyleClass().contains("caret")) return true;
+        }
+        return false;
     }
 }
