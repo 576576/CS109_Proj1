@@ -225,25 +225,21 @@ public final class Theme {
                     .mfx-combo-box .caret .mfx-font-icon {
                       -mfx-color: %s;
                     }
-                    .mfx-combo-box .combo-popup .vfx-scroll-pane {
+                    // 弹层是独立场景，没有 .mfx-combo-box 祖先，选择器不能带它
+                    .combo-popup .vfx-scroll-pane {
                       -fx-background-color: %s;
                       -fx-background-radius: 16;
                       -fx-border-color: %s;
                       -fx-border-radius: 16;
                       -fx-max-height: 240;
                     }
-                    .mfx-combo-box .combo-popup .mfx-list-cell {
-                      -fx-background-color: transparent;
-                      -fx-border-color: transparent;
+                    .mfx-combo-box-cell {
+                      -mfx-hover: %s;
+                      -mfx-selected: %s;
+                      -fx-background-radius: 12;
                       -fx-padding: 8 14 8 14;
                     }
-                    .mfx-combo-box .combo-popup .mfx-list-cell:hover {
-                      -fx-background-color: %s;
-                    }
-                    .mfx-combo-box .combo-popup .mfx-list-cell:selected {
-                      -fx-background-color: %s;
-                    }
-                    .mfx-combo-box .combo-popup .mfx-list-cell .data-label {
+                    .mfx-combo-box-cell .data-label, .mfx-combo-box-cell .label {
                       -fx-text-fill: %s;
                     }
                     """.formatted(
