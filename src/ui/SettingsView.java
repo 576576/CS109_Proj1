@@ -16,6 +16,9 @@ import javafx.scene.layout.VBox;
 import org.kordamp.ikonli.material2.Material2AL;
 import org.kordamp.ikonli.material2.Material2MZ;
 
+import java.util.Locale;
+import java.util.Objects;
+
 /** 明暗、壁纸取色、语言、音量与若干开关。改完主题会当场重新取色。 */
 public class SettingsView extends VBox {
 
@@ -99,17 +102,24 @@ public class SettingsView extends VBox {
                 back);
     }
 
-    /** 下拉选语言，选中即切、整屏重建。 */
+    /** 下拉选语言，选中即切、整屏重建。第一项「自动」的 locale 是 null。 */
     private MFXComboBox<I18n.Language> languageBox(Match3App app) {
         MFXComboBox<I18n.Language> box = new MFXComboBox<>(FXCollections.observableArrayList(I18n.languages()));
         box.setPrefWidth(240);
-        I18n.languages().stream()
-                .filter(language -> language.locale().equals(I18n.locale()))
+        // 文字画在内层 BoundTextField 上，它的对齐被皮肤写死，只能用 API 改
+        box.setAlignment(Pos.CENTER);
+        I18n.Language current = I18n.languages().stream()
+                .filter(language -> I18n.isAuto()
+                        ? language.locale() == null
+                        : Objects.equals(language.locale(), I18n.locale()))
                 .findFirst()
-                .ifPresent(box::selectItem);
+                .orElse(null);
+        if (current != null) box.selectItem(current);
         box.setOnAction(e -> {
             I18n.Language selected = box.getSelectedItem();
-            if (selected != null && !selected.locale().equals(I18n.locale())) app.setLocale(selected.locale());
+            if (selected == null) return;
+            Locale wanted = selected.locale();
+            if (I18n.isAuto() ? wanted != null : !Objects.equals(wanted, I18n.locale())) app.setLocale(wanted);
         });
         return box;
     }

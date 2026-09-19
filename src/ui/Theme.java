@@ -112,6 +112,10 @@ public final class Theme {
         return scheme.getSurfaceVariant();
     }
 
+    public Color onSecondaryContainer() {
+        return scheme.getOnSecondaryContainer();
+    }
+
     public Color onSurfaceVariant() {
         return scheme.getOnSurfaceVariant();
     }
@@ -208,6 +212,10 @@ public final class Theme {
                       -fx-highlight-fill: %s;
                       -fx-text-fill: %s;
                     }
+                    /* 下拉框的文字画在内层 BoundTextField 上，对齐由代码设，这里只管颜色 */
+                    .mfx-combo-box .text-field {
+                      -fx-alignment: center;
+                    }
                     .mfx-text-field:focus-within {
                       -fx-border-color: %s;
                       -fx-border-width: 1.5;
@@ -218,9 +226,6 @@ public final class Theme {
                     .mfx-text-field .text-field {
                       -fx-text-fill: %s;
                       -fx-prompt-text-fill: %s;
-                    }
-                    .mfx-combo-box .text-field {
-                      -fx-alignment: center;
                     }
                     .mfx-combo-box .caret .mfx-font-icon {
                       -mfx-color: %s;
@@ -246,13 +251,13 @@ public final class Theme {
                     hex(onSurface()), hex(onSurfaceVariant()), hex(outline()),
                     hex(primary()), hex(onSurfaceVariant()),
                     hex(primary()), hexA(primary(), 0.10), hexA(primary(), 0.30), hex(outline()),
-                    hex(surfaceVariant()), hex(outline()), hexA(primary(), 0.30), hex(onSurface()),
+                    hex(secondaryContainer()), hex(outline()), hexA(primary(), 0.30), hex(onSecondaryContainer()),
                     hex(primary()),
-                    hex(surfaceVariant()),
-                    hex(onSurface()), hex(onSurfaceVariant()),
-                    hex(onSurfaceVariant()),
-                    hex(surfaceVariant()), hex(outline()),
-                    hexA(primary(), 0.14), hexA(primary(), 0.28), hex(onSurface()));
+                    hex(secondaryContainer()),
+                    hex(onSecondaryContainer()), hex(onSurfaceVariant()),
+                    hex(onSecondaryContainer()),
+                    hex(secondaryContainer()), hex(outline()),
+                    hexA(primary(), 0.14), hexA(primary(), 0.28), hex(onSecondaryContainer()));
             Files.writeString(file, scheme.toStyleSheet() + "\n" + overrides);
             return file;
         } catch (IOException e) {

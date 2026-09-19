@@ -38,6 +38,7 @@ public final class I18n {
             Locale.forLanguageTag("ru"));
 
     private static Locale locale = detect();
+    private static boolean auto = true;
     private static ResourceBundle bundle = load(locale);
     private static ResourceBundle fallback;
 
@@ -49,15 +50,20 @@ public final class I18n {
         return locale;
     }
 
+    /** 是否跟随系统语言。 */
+    public static boolean isAuto() {
+        return auto;
+    }
+
     public static List<Locale> supported() {
         return SUPPORTED;
     }
 
-    /** 切换语言；调用方负责把界面重建一遍。 */
+    /** 切换语言；传 null 表示回到"跟随系统"。调用方负责把界面重建一遍。 */
     public static void setLocale(Locale wanted) {
-        if (wanted == null) return;
-        locale = wanted;
-        bundle = load(wanted);
+        auto = wanted == null;
+        locale = auto ? detect() : wanted;
+        bundle = load(locale);
     }
 
     /** 取一条文案；当前语言里没有就回退英文，键真的不存在才抛异常。 */
@@ -93,8 +99,12 @@ public final class I18n {
         }
     }
 
+    /** 列表第一项是"自动"，它不带 Locale，选它就回到跟随系统。 */
     public static List<Language> languages() {
-        return SUPPORTED.stream().map(option -> new Language(option, name(option))).toList();
+        List<Language> options = new ArrayList<>();
+        options.add(new Language(null, lookup("language.auto") == null ? "Auto (system)" : lookup("language.auto")));
+        SUPPORTED.forEach(option -> options.add(new Language(option, name(option))));
+        return List.copyOf(options);
     }
 
     /** 系统语言命中支持列表就用它，否则英文。可用 -Dmatch3.lang=ja 强制指定。 */

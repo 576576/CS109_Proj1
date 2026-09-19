@@ -56,7 +56,8 @@ The UI language is auto-detected from the system locale at startup and falls
 back to English when nothing matches. `-Dmatch3.lang=<tag>` overrides the
 detection (`zh-CN`, `ja`, `ru`, ... — `zh_CN` also accepted). All strings live
 in `resource/i18n/messages_<tag>.properties` (UTF-8); the language can be
-switched at runtime from Settings.
+switched at runtime from Settings, whose dropdown starts with an "auto"
+entry that goes back to following the system.
 
 Adding a language:
 
