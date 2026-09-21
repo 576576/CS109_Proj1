@@ -67,15 +67,16 @@ public class GameController implements GameListener {
     private int victoryMode = 0; // 1=win 2=loss
     public Thread timerThread = new Thread(() -> {
         timeLeft = difficulty().timeLimit();
-        refreshStatus();
+        runOnFx(this::refreshStatus);
         Log.info("Timer Start: " + difficulty().timeLimit() + "s");
         if (difficulty().timeLimit() != -1) {
             for (int i = difficulty().timeLimit(); i >= 0; i--) {
                 if (!isAlive) break;
                 pauseMilliSeconds(998);
                 timeLeft--;
-                refreshStatus();
-                checkVictory();
+                // 计时线程不是 FX 线程，碰 UI 必须回 FX：refreshStatus 写状态标签、checkVictory 会弹窗并切界面
+                runOnFx(this::refreshStatus);
+                runOnFx(this::checkVictory);
                 if (timeLeft % 10 == 0 || timeLeft <= 5) {
                     Log.info("TimeLeft:" + timeLeft);
                 }
@@ -405,8 +406,11 @@ public class GameController implements GameListener {
     }
 
     public void loadFromString(String string) {
-        initialize();
-        loadFromState(string, true);
+        // 由加入方 Handler 后台线程调用，里面会重画棋盘，必须回 FX 线程
+        runOnFx(() -> {
+            initialize();
+            loadFromState(string, true);
+        });
     }
 
     /** 读档：旧档与新档都交给 GameStateCodec 解析。 */
@@ -540,12 +544,9 @@ public class GameController implements GameListener {
         component.repaint();
     }
 
-    public void onPlayerHostGame() {
-        net.serverHost();
-    }
-
-    public void onPlayerJoinGame() {
-        net.connectHost(settings.joinAddress());
+    /** 连接已在主界面建立，这里只起收发线程。 */
+    public void startNetHandler() {
+        net.startHandler();
     }
 
     public void onlineGameTerminate(boolean isWinner) {
@@ -679,7 +680,8 @@ public class GameController implements GameListener {
         autoConfirmWorker.shutdownNow();
         fallAnimator.shutdownNow();
         if (settings.playMode().isOnline()) net.stopHandler();
-        else screen.finish();
+        // 无论是单机"返回标题"还是联机"断开连接"，都回到主界面
+        screen.finish();
     }
 
     public boolean isAlive() {

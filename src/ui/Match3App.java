@@ -109,6 +109,7 @@ public class Match3App extends Application {
 
     public void showMenu() {
         settings = new GameSettings();
+        gameView = null;
         setContent(new MenuView(settings, theme, this));
     }
 
@@ -117,6 +118,10 @@ public class Match3App extends Application {
     }
 
     public void showGame(GameSettings settings) {
+        if (settings.playMode().isOnline()) {
+            startOnline(settings);
+            return;
+        }
         if (settings.playMode() == PlayMode.LOAD_LOCAL && settings.saveFile() == null) {
             Dialogs.warn(I18n.tr("dlg.pickSave"));
             return;
@@ -128,6 +133,47 @@ public class Match3App extends Application {
         gameView = view;
         setContent(view);
         view.beginPlay();
+    }
+
+    /**
+     * 联机（建房/加入）：连接在主界面上建立，所以先不切到棋盘——等待/连接窗以主界面为背景呈现；
+     * 连上后才切到棋盘并开始对局，取消或失败则留在（或返回）主界面。
+     */
+    private void startOnline(GameSettings settings) {
+        GameView view = new GameView(settings, theme, this);
+        NetGame net = new NetGame(settings);
+        GameController controller =
+                new GameController(view.board(), new Board(), net, settings, view);
+        view.setController(controller);
+
+        Thread launch = new Thread(() -> {
+            if (settings.playMode() == PlayMode.HOST) {
+                Dialogs.waitWhile(
+                        I18n.tr("dlg.waiting") + "\n" + I18n.tr("dlg.yourAddress") + NetGame.getPublicIP(),
+                        net::prepareHost, net::cancelHost);
+                if (!net.isConnected() && !net.hostCancelled()) {
+                    Dialogs.warn(I18n.tr("msg.connFailed"));
+                }
+            } else {
+                Dialogs.waitWhile(
+                        I18n.tr("dlg.connecting"),
+                        () -> net.prepareJoin(settings.joinAddress()), net::cancelJoin);
+                if (!net.isConnected()) {
+                    Dialogs.warn(I18n.tr("msg.noHost"));
+                }
+            }
+            if (net.isConnected()) {
+                Platform.runLater(() -> {
+                    gameView = view;
+                    setContent(view);
+                    view.beginPlay();
+                });
+            } else {
+                Platform.runLater(this::showMenu);
+            }
+        }, "online-launch");
+        launch.setDaemon(true);
+        launch.start();
     }
 
     /** 主题重新取色后：换壁纸、换样式表，正在下的那局也跟着重画。 */

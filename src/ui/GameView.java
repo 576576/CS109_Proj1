@@ -4,6 +4,7 @@ import config.GameSettings;
 import config.PlayMode;
 import controller.GameController;
 import io.github.palexdev.materialfx.controls.MFXButton;
+import javafx.application.Platform;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Cursor;
@@ -107,16 +108,17 @@ public class GameView extends BorderPane implements GameScreen {
         return controller;
     }
 
-    /** 控制器装好之后由 Match3App 调用：联机先握手，读档先读档，然后起计时与音乐。 */
+    /** 控制器装好之后由 Match3App 调用：联机连接已在主界面建立，这里只起收发线程；读档先读档；然后起计时与音乐。 */
     public void beginPlay() {
         switch (settings.playMode()) {
-            case HOST -> controller.onPlayerHostGame();
-            case JOIN -> controller.onPlayerJoinGame();
+            case HOST, JOIN -> controller.startNetHandler();
             case LOAD_LOCAL -> controller.loadFromFile(settings.saveFile());
             case NEW_LOCAL, NONE -> { }
         }
         controller.refreshStatus();
-        controller.startTimer();
+        // 加入方的时间由对手同步过来的棋盘状态负责起表（loadFromString 里 restartTimer），
+        // 这里若再起一次会用错难度，所以只给非加入方起表
+        if (settings.playMode() != PlayMode.JOIN) controller.startTimer();
         musicThread.setDaemon(true);
         musicThread.start();
     }
@@ -144,7 +146,9 @@ public class GameView extends BorderPane implements GameScreen {
     @Override
     public void finish() {
         musicPlayer.stop();
-        app.showMenu();
+        // 联机断开时由后台 Handler 线程调用，切界面必须在 FX 线程上做
+        if (Platform.isFxApplicationThread()) app.showMenu();
+        else Platform.runLater(app::showMenu);
     }
 
     /** 一块菜单面板：有背景、圆角，按钮在里面等宽铺满。 */
