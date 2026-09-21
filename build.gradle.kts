@@ -150,13 +150,33 @@ val fatJar = tasks.register<Jar>("fatJar") {
 }
 
 // JavaFX 是模块化的，jlink 要从模块路径上拿它们；这里单独摊一份，别和普通依赖混在一起。
+// 只收带平台 classifier 的 jar：不带 classifier 的那两个是空壳，进了模块路径会和平台 jar 抢模块名。
 val fxModules = tasks.register<Sync>("fxModules") {
     group = "build"
-    description = "把 JavaFX 的模块 jar 集中到 build/fx-modules，给 jlink 用"
+    description = "把 JavaFX 的模块 jar 集中到 build/fx-modules，给 jlink 和 run 用"
     into(layout.buildDirectory.dir("fx-modules"))
     from(configurations.runtimeClasspath) {
-        include { it.file.name.startsWith("javafx-") && it.file.name.endsWith(".jar") }
+        include {
+            it.file.name.startsWith("javafx-")
+                    && it.file.name.contains("-$fxPlatform")
+                    && it.file.name.endsWith(".jar")
+        }
     }
+}
+
+// JavaFX 留在 classpath 上会落进未命名模块，NativeLibLoader 走 System::load 就刷 unnamed module 警告。
+// 这里摘出 classpath 改挂 --module-path，按命名模块加载（应用没有 module-info，未命名模块照样读得到）。
+// IDEA 用自己的 runner 跑 Main 时拿不到这段配置，需在 Run Configuration 的 VM options 里补同样几条。
+val fxModuleNames = "javafx.base,javafx.graphics,javafx.controls"
+
+tasks.named<JavaExec>("run") {
+    dependsOn(fxModules)
+    classpath = sourceSets.main.get().runtimeClasspath.filter { !it.name.startsWith("javafx-") }
+    jvmArgs = listOf(
+        "--module-path", layout.buildDirectory.dir("fx-modules").get().asFile.absolutePath,
+        "--add-modules", fxModuleNames,
+        "--enable-native-access=ALL-UNNAMED,$fxModuleNames",
+    )
 }
 
 // 供 jpackage 使用：主 jar + 依赖 jar 平铺在一个目录里，各自的 SPI 文件保持独立。
@@ -215,7 +235,8 @@ tasks.register<Exec>("dist") {
         "--runtime-image", layout.buildDirectory.dir("runtime").get().asFile.absolutePath,
         "--name", "Match3", "--app-version", "1.0.0", "--vendor", "CS109",
         "--icon", "packaging/app.ico",
-        "--java-options", "--enable-native-access=ALL-UNNAMED",
+        // 裁出来的运行时里 JavaFX 是命名模块，ALL-UNNAMED 覆盖不到它们
+        "--java-options", "--enable-native-access=ALL-UNNAMED,$fxModuleNames",
         "--dest", layout.buildDirectory.dir("dist").get().asFile.absolutePath,
         "--win-dir-chooser", "--win-menu", "--win-shortcut",
     )
