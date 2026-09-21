@@ -22,9 +22,10 @@ import java.io.File;
 
 /**
  * 主界面：把原来的菜单和开局设置合并成一个屏。
- * 上方是模式三选（单机 / 创建房间 / 加入游戏）外加右侧一个圆形感叹号样式的设置按钮；
+ * 上方是一个分段控件（单机 / 创建房间 / 加入游戏，三段一个大按钮、中间竖线隔开），
+ * 右侧并排一个同样高度的圆形齿轮设置按钮；
  * 选择「加入游戏」时内联显示地址文本框（不弹窗）；
- * 下方是难度表格——竖标题为四种难度（容易→自定义），横标题为各项设定（目标/步数/限时），
+ * 下方是难度表格——竖标题为四种难度（简单→自定义），横标题为各项设定（目标/步数/限时），
  * 除「自定义」以外的设定项只读，只有自定义行可编辑。
  */
 public class MenuView extends VBox {
@@ -33,14 +34,16 @@ public class MenuView extends VBox {
 
     private static final double COL0 = 132;
     private static final double COL = 124;
+    private static final double BTN_H = 46;
 
     private final GameSettings settings;
     private final Theme theme;
     private final Match3App app;
 
-    private final MFXButton singleBtn;
-    private final MFXButton hostBtn;
-    private final MFXButton joinBtn;
+    private final Mode[] MODE_ORDER = {Mode.SINGLE, Mode.HOST, Mode.JOIN};
+    private final String[] MODE_KEYS = {
+            "menu.mode.single", "menu.mode.host", "menu.mode.join"};
+    private final Label[] modeSeg = new Label[3];
     private Mode mode = Mode.SINGLE;
 
     private final HBox addressBox;
@@ -67,13 +70,7 @@ public class MenuView extends VBox {
 
         HBox modeRow = new HBox(12);
         modeRow.setAlignment(Pos.CENTER);
-        singleBtn = modeButton(I18n.tr("menu.mode.single"));
-        hostBtn = modeButton(I18n.tr("menu.mode.host"));
-        joinBtn = modeButton(I18n.tr("menu.mode.join"));
-        singleBtn.setOnAction(e -> selectMode(Mode.SINGLE));
-        hostBtn.setOnAction(e -> selectMode(Mode.HOST));
-        joinBtn.setOnAction(e -> selectMode(Mode.JOIN));
-        modeRow.getChildren().addAll(singleBtn, hostBtn, joinBtn, settingsButton());
+        modeRow.getChildren().addAll(buildModeBar(), settingsButton());
 
         addressField.setPromptText(I18n.tr("setup.address"));
         addressField.setPrefWidth(360);
@@ -113,18 +110,56 @@ public class MenuView extends VBox {
         selectRow(0);
     }
 
-    /** 三选按钮：固定宽度，等宽并排。 */
-    private MFXButton modeButton(String text) {
-        MFXButton button = new MFXButton(text);
-        button.setPrefWidth(150);
-        button.setMinWidth(150);
-        button.setMaxWidth(150);
-        return button;
+    /** 模式分段控件：一个大圆角容器，三段等宽，中间竖线隔开，整体高度与设置按钮一致。 */
+    private HBox buildModeBar() {
+        HBox bar = new HBox();
+        bar.setAlignment(Pos.CENTER);
+        bar.setStyle(segBarStyle());
+        bar.setPrefHeight(BTN_H);
+        bar.setMinHeight(BTN_H);
+        bar.setMaxHeight(BTN_H);
+        double segW = 132;
+        for (int i = 0; i < MODE_ORDER.length; i++) {
+            Label seg = new Label(I18n.tr(MODE_KEYS[i]));
+            seg.setAlignment(Pos.CENTER);
+            seg.setPrefWidth(segW);
+            seg.setMinWidth(segW);
+            seg.setMaxWidth(segW);
+            seg.setPrefHeight(BTN_H - 8);
+            seg.setMinHeight(BTN_H - 8);
+            seg.setMaxHeight(BTN_H - 8);
+            final Mode m = MODE_ORDER[i];
+            seg.setOnMouseClicked(e -> selectMode(m));
+            modeSeg[i] = seg;
+            bar.getChildren().add(seg);
+            if (i < MODE_ORDER.length - 1) bar.getChildren().add(separator());
+        }
+        return bar;
     }
 
-    /** 右侧圆形感叹号样式的设置按钮。 */
+    private Region separator() {
+        Region r = new Region();
+        r.setPrefWidth(1);
+        r.setMinWidth(1);
+        r.setMaxWidth(1);
+        r.setPrefHeight(24);
+        r.setMinHeight(24);
+        r.setMaxHeight(24);
+        r.setStyle("-fx-background-color: " + Theme.hex(theme.outline()) + ";");
+        return r;
+    }
+
+    private String segBarStyle() {
+        int r = (int) (BTN_H / 2);
+        return "-fx-background-color: " + Theme.hex(theme.surfaceVariant()) + ";"
+                + "-fx-background-radius: " + r + "; -fx-border-radius: " + r + ";"
+                + "-fx-border-color: " + Theme.hex(theme.outline()) + "; -fx-border-width: 1.5;"
+                + "-fx-padding: 4;";
+    }
+
+    /** 右侧圆形齿轮样式的设置按钮，高度与分段控件一致。 */
     private MFXButton settingsButton() {
-        MFXButton button = new MFXButton("", Icons.of(Material2MZ.PRIORITY_HIGH, theme.onPrimary(), 22));
+        MFXButton button = new MFXButton("", Icons.of(Material2MZ.SETTINGS, theme.onPrimary(), 22));
         Styles.primary(button, theme);
         button.setStyle(button.getStyle()
                 + " -fx-background-radius: 50%; -fx-min-width: 46; -fx-min-height: 46;"
@@ -135,26 +170,22 @@ public class MenuView extends VBox {
 
     private void selectMode(Mode next) {
         mode = next;
-        paintMode(singleBtn, next == Mode.SINGLE);
-        paintMode(hostBtn, next == Mode.HOST);
-        paintMode(joinBtn, next == Mode.JOIN);
+        for (int i = 0; i < modeSeg.length; i++) {
+            paintSegment(modeSeg[i], MODE_ORDER[i] == next);
+        }
         boolean join = next == Mode.JOIN;
         addressBox.setVisible(join);
         addressBox.setManaged(join);
     }
 
-    private void paintMode(MFXButton button, boolean selected) {
-        if (selected) {
-            Styles.primary(button, theme);
-        } else {
-            button.setMaxWidth(150);
-            button.setStyle("-fx-background-color: transparent;"
-                    + "-fx-text-fill: " + Theme.hex(theme.onSurfaceVariant()) + ";"
-                    + "-fx-border-color: " + Theme.hex(theme.outline()) + ";"
-                    + "-fx-border-width: 1.5;"
-                    + "-fx-background-radius: 16; -fx-border-radius: 16;"
-                    + "-fx-padding: 9 12 9 12; -fx-font-size: 13px; -fx-cursor: hand;");
-        }
+    private void paintSegment(Label seg, boolean selected) {
+        String fill = selected ? Theme.hex(theme.primary()) : "transparent";
+        String text = selected ? Theme.hex(theme.onPrimary())
+                : Theme.hex(theme.onSurfaceVariant());
+        seg.setStyle("-fx-background-color: " + fill + ";"
+                + "-fx-text-fill: " + text + ";"
+                + "-fx-background-radius: 19; -fx-padding: 0;"
+                + "-fx-font-size: 13px; -fx-cursor: hand;");
     }
 
     /** 难度表格：表头 + 三档预设（只读） + 自定义（可编辑）。 */
