@@ -5,7 +5,6 @@ import config.PlayMode;
 import controller.GameController;
 
 import javafx.application.Platform;
-import javafx.scene.control.TextInputDialog;
 
 import java.io.*;
 import java.net.InetAddress;
@@ -77,19 +76,18 @@ public class NetGame {
         wait.start();
     }
 
-    public void connectHost() {
-        var dialog = new TextInputDialog();
-        dialog.setTitle("Connect to Host");
-        dialog.setHeaderText(null);
-        dialog.setContentText("Enter host");
-        var host = dialog.showAndWait();
-        if (host.isEmpty() || host.get().isBlank()) {
+    /**
+     * 加入对手房间：地址从主界面内联文本框取得，不再弹窗询问。
+     * 地址为空或非法时弹警告并返回；连接失败同样弹警告并结束本局。
+     */
+    public void connectHost(String host) {
+        if (host == null || host.isBlank()) {
             Dialogs.warn(I18n.tr("msg.invalidHost"));
             return;
         }
 
         try {
-            sock = new Socket(host.get().trim(), port);
+            sock = new Socket(host.trim(), port);
             handler = new Handler(sock, gameController, settings.playMode());
             handler.start();
         } catch (IOException e) {

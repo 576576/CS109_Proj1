@@ -109,17 +109,7 @@ public class Match3App extends Application {
 
     public void showMenu() {
         settings = new GameSettings();
-        setContent(new MenuView(theme, this));
-    }
-
-    public void showSetup(GameSettings settings) {
-        setContent(new SetupView(settings, theme, this));
-    }
-
-    /** 菜单里选定玩法之后进开局设置。 */
-    public void startSetup(PlayMode mode) {
-        settings.setPlayMode(mode);
-        showSetup(settings);
+        setContent(new MenuView(settings, theme, this));
     }
 
     public void showSettings(GameSettings settings) {
@@ -172,6 +162,7 @@ public class Match3App extends Application {
         I18n.setLocale(locale);
         if (currentView instanceof GameView game) game.retranslate();
         else if (currentView instanceof SettingsView) showSettings(settings);
+        else if (currentView instanceof MenuView) showMenu();
     }
 
     private File chooseSave(String titleKey) {

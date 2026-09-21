@@ -545,7 +545,7 @@ public class GameController implements GameListener {
     }
 
     public void onPlayerJoinGame() {
-        net.connectHost();
+        net.connectHost(settings.joinAddress());
     }
 
     public void onlineGameTerminate(boolean isWinner) {

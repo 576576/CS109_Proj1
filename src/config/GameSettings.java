@@ -17,6 +17,8 @@ public class GameSettings {
     private boolean verboseDialogs;
     private boolean autoRestart = true;
     private File saveFile;
+    /** 加入游戏时对手房间的地址，从主界面内联文本框取得，不弹窗询问。 */
+    private String joinAddress = "";
 
     public Difficulty difficulty() {
         return difficulty;
@@ -58,5 +60,14 @@ public class GameSettings {
 
     public void setSaveFile(File saveFile) {
         this.saveFile = saveFile;
+    }
+
+    /** 加入游戏时对手房间的地址。 */
+    public String joinAddress() {
+        return joinAddress;
+    }
+
+    public void setJoinAddress(String joinAddress) {
+        this.joinAddress = joinAddress;
     }
 }

@@ -144,8 +144,7 @@ public class GameView extends BorderPane implements GameScreen {
     @Override
     public void finish() {
         musicPlayer.stop();
-        if (settings.autoRestart()) app.showSetup(settings);
-        else app.showMenu();
+        app.showMenu();
     }
 
     /** 一块菜单面板：有背景、圆角，按钮在里面等宽铺满。 */
