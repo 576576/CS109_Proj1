@@ -187,6 +187,9 @@ public class Match3App extends Application {
             gameView.paint();
             gameView.board().setTheme(theme);
         }
+        // 卡片底色是构建时算好的内联 hex，不重建界面不会跟着换主题；对局界面走上面的 paint()，重建会丢棋局。
+        if (currentView instanceof SettingsView) showSettings(settings);
+        else if (currentView instanceof MenuView) setContent(new MenuView(settings, theme, this));
     }
 
     public void loadGame(GameController controller) {

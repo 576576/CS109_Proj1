@@ -177,6 +177,7 @@ public final class Dialogs {
         dialog.sizeToScene();
         dialog.centerOnScreen();
 
+        final MFXButton[] okHolder = {null};
         if (withOk) {
             MFXButton ok = new MFXButton(I18n.tr("dlg.ok"));
             Styles.primary(ok, theme);
@@ -186,7 +187,13 @@ public final class Dialogs {
             scene.setOnKeyPressed(e -> {
                 if (e.getCode() == KeyCode.ESCAPE || e.getCode() == KeyCode.ENTER) dialog.close();
             });
+            okHolder[0] = ok;
         }
+        // 透明模态窗首次出现时第一次点击会被系统用于激活窗口、落不到 OK 上；显示即抢焦点，否则要连点两次。
+        dialog.setOnShown(e -> {
+            dialog.requestFocus();
+            if (okHolder[0] != null) okHolder[0].requestFocus();
+        });
         return dialog;
     }
 
