@@ -116,8 +116,7 @@ public class GameView extends BorderPane implements GameScreen {
             case NEW_LOCAL, NONE -> { }
         }
         controller.refreshStatus();
-        // 加入方的时间由对手同步过来的棋盘状态负责起表（loadFromString 里 restartTimer），
-        // 这里若再起一次会用错难度，所以只给非加入方起表
+        // 加入方的时间由对手同步过来的棋盘状态起表（loadFromString 里 restartTimer），这里再起一次会用错难度
         if (settings.playMode() != PlayMode.JOIN) controller.startTimer();
         musicThread.setDaemon(true);
         musicThread.start();
