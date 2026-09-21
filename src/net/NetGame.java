@@ -32,22 +32,46 @@ public class NetGame {
     public void stopHandler() {
         if (handler != null) handler.interrupt();
     }
-    /** 建房。accept() 会一直阻塞，所以整段挪到后台线程，JavaFX 线程不能等在这儿。 */
+    /** 建房。accept() 会一直阻塞：用阻塞式等待弹窗挡住界面，连上对手后弹窗自动关闭。 */
     public void serverHost() {
         Thread wait = new Thread(() -> {
-            Dialogs.notifyInfo(I18n.tr("dlg.waiting") + "\n" + I18n.tr("dlg.yourAddress") + getPublicIP());
-            try (ServerSocket ss = new ServerSocket(port)) {
-                Log.info("OnlineGame Host: Waiting for player.");
-                sock = ss.accept();
-                Log.info("Connected from " + sock.getRemoteSocketAddress());
+            ServerSocket ss;
+            try {
+                ss = new ServerSocket(port);
             } catch (IOException e) {
-                Log.warn("Failed to establish connection: " + e);
+                Log.warn("Cannot open server socket: " + e);
                 Dialogs.warn(I18n.tr("msg.connFailed"));
                 Platform.runLater(gameController::terminate);
                 return;
             }
-            handler = new Handler(sock, gameController, settings.playMode());
-            handler.start();
+            Log.info("OnlineGame Host: Waiting for player.");
+            java.util.concurrent.atomic.AtomicBoolean cancelled = new java.util.concurrent.atomic.AtomicBoolean(false);
+            Dialogs.waitWhile(
+                    I18n.tr("dlg.waiting") + "\n" + I18n.tr("dlg.yourAddress") + getPublicIP(),
+                    () -> {
+                        try {
+                            sock = ss.accept();
+                            Log.info("Connected from " + sock.getRemoteSocketAddress());
+                        } catch (IOException e) {
+                            if (cancelled.get()) Log.info("Host cancelled, socket closed");
+                            else Log.warn("Failed to establish connection: " + e);
+                        }
+                    },
+                    () -> {
+                        cancelled.set(true);
+                        try {
+                            ss.close();
+                        } catch (IOException ignored) {
+                        }
+                    });
+            if (sock != null && sock.isConnected()) {
+                handler = new Handler(sock, gameController, settings.playMode());
+                handler.start();
+            } else if (!cancelled.get()) {
+                Dialogs.warn(I18n.tr("msg.connFailed"));
+                Platform.runLater(gameController::terminate);
+            }
+            // 取消：不启动游戏，也不 terminate，留在建房界面让用户重来
         }, "host-wait");
         wait.setDaemon(true);
         wait.start();

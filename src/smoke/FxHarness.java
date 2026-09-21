@@ -40,6 +40,28 @@ public final class FxHarness {
         }
     }
 
+    /** 同上，但把 JavaFX 线程上的计算结果带回来。 */
+    public static <T> T onFxGet(java.util.function.Supplier<T> task) {
+        if (Platform.isFxApplicationThread()) {
+            return task.get();
+        }
+        CountDownLatch done = new CountDownLatch(1);
+        T[] box = (T[]) new Object[1];
+        Platform.runLater(() -> {
+            try {
+                box[0] = task.get();
+            } finally {
+                done.countDown();
+            }
+        });
+        try {
+            done.await();
+        } catch (InterruptedException _) {
+            Thread.currentThread().interrupt();
+        }
+        return box[0];
+    }
+
     public static void shutdown() {
         Platform.exit();
     }
