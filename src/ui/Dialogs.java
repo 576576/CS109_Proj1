@@ -160,7 +160,9 @@ public final class Dialogs {
         card.setStyle(cardStyle(theme));
 
         StackPane pane = new StackPane(card);
-        pane.setStyle("-fx-padding: " + SHADOW_MARGIN + ";");
+        // modena 的 .root 给场景根节点染了不透明浅灰，主窗有壁纸盖住看不见，
+        // 弹窗没有壁纸，阴影四周会露出一圈白——必须显式打回透明
+        pane.setStyle("-fx-padding: " + SHADOW_MARGIN + "; -fx-background-color: transparent;");
         Scene scene = new Scene(pane, Color.TRANSPARENT);
         String css = theme.stylesheet();
         if (css != null) scene.getStylesheets().add(css);
