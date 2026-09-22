@@ -60,7 +60,9 @@ jobs:
         run: |
           # 镜像自带 WiX v3 留在 PATH 里会被 jpackage 挑中，生成 MSI 会失败
           $env:PATH = ($env:PATH -split ';' | Where-Object { $_ -and $_ -notlike '*WiX Toolset*' }) -join ';'
-          ./gradlew dist -PappVersion=${{ inputs.msi_version }}
+          # -PappVersion=1.0.95 经 pwsh 传给原生命令会被拆成两段，Gradle 会把后半段当成任务名
+          $env:ORG_GRADLE_PROJECT_appVersion = "${{ inputs.msi_version }}"
+          ./gradlew dist
 
       - uses: actions/upload-artifact@v7.0.1
         with:
