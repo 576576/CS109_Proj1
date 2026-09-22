@@ -1,6 +1,6 @@
 package config;
 
-/** 一局游戏从哪儿起步。原来是 MenuFrame 里的 int startPlayMode（0~4）。 */
+/** 一局游戏从哪儿起步。 */
 public enum PlayMode {
     /** 还没选模式。 */
     NONE,

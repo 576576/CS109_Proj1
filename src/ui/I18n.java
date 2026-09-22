@@ -135,7 +135,7 @@ public final class I18n {
         return TRADITIONAL.contains(locale.getCountry());
     }
 
-    /** 依次试 <语言>_<地区> 和 语言 两级，例如 zh_TW → zh_TW、zh_TW。 */
+    /** 依次试 <语言>_<地区> 和 语言 两级，例如 zh_TW → zh_TW、zh。 */
     private static List<String> tags(Locale locale) {
         String language = locale.getLanguage();
         if (language.isEmpty()) return List.of();

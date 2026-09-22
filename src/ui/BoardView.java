@@ -65,7 +65,6 @@ public class BoardView extends Pane {
         repaint();
     }
 
-    /** Puts a TileView into every cell that currently holds a piece. */
     public void initiateTileViews(Board board) {
         BoardSnapshot snapshot = board.snapshot();
         for (int row = 0; row < rows; row++) {

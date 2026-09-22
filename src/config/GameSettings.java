@@ -5,11 +5,7 @@ import model.DifficultyPreset;
 
 import java.io.File;
 
-/**
- * 开局前在菜单里做出的全部选择。
- * 原先这些字段是 view 包里几个 public static，被 controller 静态导入后直接赋值，
- * 于是模型/控制器的一举一动都依赖着界面类的静态状态。现在由菜单持有并显式传下去。
- */
+/** 开局前在菜单里做出的全部选择，由菜单持有并显式传给对局。 */
 public class GameSettings {
 
     private Difficulty difficulty = DifficultyPreset.EASY.difficulty();
@@ -17,7 +13,6 @@ public class GameSettings {
     private boolean verboseDialogs;
     private boolean autoRestart = true;
     private File saveFile;
-    /** 加入游戏时对手房间的地址，从主界面内联文本框取得，不弹窗询问。 */
     private String joinAddress = "";
 
     public Difficulty difficulty() {

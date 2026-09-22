@@ -59,7 +59,6 @@ public final class MusicLibrary {
                 gain.setValue((float) (Math.log(volume) / Math.log(10.0) * 20.0));
                 return;
             } catch (Exception _) {
-                // 这个混音器用不了就换下一个
             }
         }
     }

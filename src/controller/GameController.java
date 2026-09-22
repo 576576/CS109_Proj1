@@ -21,13 +21,7 @@ import java.util.concurrent.TimeUnit;
 import util.Log;
 import static player.MusicPlayer.*;
 
-/**
- * Controller is the connection between model and view,
- * when a Controller receive a request from a view, the Controller
- * analyzes and then hands over to the model for processing
- * [in this demo the request methods are onPlayerClickCell() and
- * onPlayerClickPiece()]
- */
+/** 接住界面的操作，翻译成对模型的读写；模型的结果再由它刷回界面。 */
 public class GameController implements GameListener {
 
     /** 一枚棋子落到位的停顿。整批一起动就只能看到首尾两帧，没有"一个个下坠"。 */
@@ -46,7 +40,7 @@ public class GameController implements GameListener {
         worker.setDaemon(true);
         return worker;
     });
-    /** 下落动画跑在这上面：改视图回 EDT，停顿留在这一侧。 */
+    /** 下落动画跑在这上面：改视图回 FX 线程，停顿留在这一侧。 */
     private final ExecutorService fallAnimator = Executors.newSingleThreadExecutor(r -> {
         Thread worker = new Thread(r, "fall-animation");
         worker.setDaemon(true);
@@ -59,7 +53,6 @@ public class GameController implements GameListener {
     public int timeLeft;
     private final GameScreen screen;
     private boolean isAutoMode = false;
-    // Record whether there is a selected piece before
     private BoardPoint selectedPoint;
     private BoardPoint selectedPoint2;
     private int score, stepLeft;
@@ -113,8 +106,6 @@ public class GameController implements GameListener {
         }
     }
 
-    // For auto mode, to avoid it ends immediately
-    // a workaround
     public static void pauseMilliSeconds(int ms) {
         try {
             TimeUnit.MILLISECONDS.sleep(ms);
@@ -137,7 +128,6 @@ public class GameController implements GameListener {
         stepLeft = difficulty().stepLimit();
     }
 
-    // When initialize from the gaming interface, this was used
     public void initialize() {
         score = 0;
         timeLeft = difficulty().timeLimit();
@@ -155,20 +145,17 @@ public class GameController implements GameListener {
         Log.info("New game initialized");
         boardReady.countDown();
 
-        //complete it when restart game (auto-mode)
         if (isAutoMode) doAutoMode();
     }
 
     public void onPlayerShuffle() {
         view.removeAllTiles();
 
-        // call method to refresh a board with new random pieces
         this.model.initPieces();
         paintTilesFromModel();
         view.repaint();
         Log.info("Board Shuffled");
 
-        //complete it when restart game (auto-mode)
         if (isAutoMode) {
             doAutoMode();
         }
@@ -181,19 +168,11 @@ public class GameController implements GameListener {
         }
     }
 
-    // click an empty cell
     @Override
     public void onPlayerClickCell(BoardPoint point) {
         playWarning();
     }
 
-    /*
-    1. Click "confirm swap", and if OK the chess is swapped and eliminated. (otherwise do no swap, notice the user)
-    2. Click “next step”, the upper chess will fall down.
-    3. Click "next step" again, if this time, there are still 3-matches on the board
-        3.1 The click will cause these 3-match to be eliminated
-        3.2 If there is not any 3-match randomly generate new pieces on the empty cells.
-     */
     @Override
     public void onPlayerSwapChess() {
         if (selectedPoint == null || selectedPoint2 == null) {
@@ -214,7 +193,6 @@ public class GameController implements GameListener {
         checkVictory();
         playEffect("swap");
         try {
-            // Swap, then check if they are matchable
             model.swapPieces(selectedPoint, selectedPoint2);
             TileView tmp = view.removeTileAt(selectedPoint);
             view.setTileAt(selectedPoint, view.removeTileAt(selectedPoint2));
@@ -256,13 +234,11 @@ public class GameController implements GameListener {
         tile.repaint();
     }
 
-    //to check the model to see if sth.'s matchable (3-match only, larger than 3 will be ignored).
+    /** 棋盘上是否存在可消除的连线，长度 3 及以上都算。 */
     public boolean isMatchable() {
         return !model.listMatches().isEmpty();
     }
 
-    // do the elimination, only after board has been checked
-    // notice that there may be multiple matched simultaneously
     private boolean doChessEliminate() {
         List<BoardPoint> matched = model.listMatches();
         if (matched.isEmpty()) return false;
@@ -318,8 +294,8 @@ public class GameController implements GameListener {
             return;
         }
 
-        // 手动点按钮时这里是 EDT。下落要一帧一帧地停，睡在 EDT 上重绘根本发不出来，
-        // 所以 EDT 上只提交任务；auto 线程本来就在后台，直接跑完再决定下一轮。
+        // 手动点按钮时这里是 FX 线程。下落要一帧一帧地停，睡在 FX 线程上重绘根本发不出来，
+        // 所以 FX 线程上只提交任务；auto 线程本来就在后台，直接跑完再决定下一轮。
         if (Platform.isFxApplicationThread()) fallAnimator.execute(this::runGuardedFallCycle);
         else runGuardedFallCycle();
     }
@@ -336,7 +312,6 @@ public class GameController implements GameListener {
     private void runFallCycle() {
         doFallDown();
         do {
-            // Fall done has done, if there is any match-3, eliminate them
             if (settings.verboseDialogs()) {
                 runOnFx(() -> {
                     Dialogs.info(I18n.tr("msg.bonus"));
@@ -376,7 +351,7 @@ public class GameController implements GameListener {
         pauseIfAnimating(FALL_STEP_MS);
     }
 
-    /** 只有在后台线程上才停——在 EDT 上睡等于把重绘一起堵死，动画就没了。 */
+    /** 只有在后台线程上才停——在 FX 线程上睡等于把重绘一起堵死，动画就没了。 */
     private static void pauseIfAnimating(int ms) {
         if (!Platform.isFxApplicationThread()) pauseMilliSeconds(ms);
     }
@@ -463,7 +438,6 @@ public class GameController implements GameListener {
         }
     }
 
-    // click a cell with a chess
     @Override
     public void onPlayerClickPiece(BoardPoint point, TileView component) {
         playEffect("chess_click");
@@ -497,7 +471,6 @@ public class GameController implements GameListener {
                 selectedPoint2 = point;
                 component.setSelected(true);
                 component.repaint();
-                // should do auto confirm only on auto confirm is on, and auto mode is off
                 if (isAutoConfirm() && !isAutoMode()) {
                     doAutoConfirm();
                 }
@@ -600,7 +573,6 @@ public class GameController implements GameListener {
         tile2.repaint();
     }
 
-    // Implement auto-mode
     private void doAutoMode() {
         // 已经有一个循环在跑了就别再开一条，否则每次洗牌都会多出一条永不退出的线程
         if (autoModeThread != null && autoModeThread.isAlive()) return;
@@ -613,8 +585,8 @@ public class GameController implements GameListener {
 
     /**
      * auto 的一轮：找一处可行交换，换掉它，再把空位补满。
-     * 只有动 Swing 的那两步回 EDT；下落动画必须留在本线程上跑——
-     * 它靠一帧一帧的停顿来表现，而 EDT 一旦被睡住，重绘就再也发不出来了。
+     * 只有动视图的那两步回 FX 线程；下落动画必须留在本线程上跑——
+     * 它靠一帧一帧的停顿来表现，而 FX 线程一旦被睡住，重绘就再也发不出来了。
      */
     private void autoStep() {
         runOnFx(this::hint);
@@ -623,7 +595,6 @@ public class GameController implements GameListener {
         nextStep();
     }
 
-    // To handle auto confirm when it is on
     private void doAutoConfirm() {
         // 串行执行：连点时后一次不会和前一次的交换/落子重叠
         autoConfirmWorker.execute(() -> {
@@ -680,7 +651,6 @@ public class GameController implements GameListener {
         autoConfirmWorker.shutdownNow();
         fallAnimator.shutdownNow();
         if (settings.playMode().isOnline()) net.stopHandler();
-        // 无论是单机"返回标题"还是联机"断开连接"，都回到主界面
         screen.finish();
     }
 

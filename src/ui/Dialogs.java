@@ -24,7 +24,6 @@ import java.util.concurrent.CountDownLatch;
 
 /**
  * 统一的对话框出口：一张跟着壁纸取色的 Material 卡片，配 Material 图标和主色按钮。
- * 之前用的是 JavaFX 自带的 Alert，是系统样式，跟取色界面完全不搭。
  * 调用方可能在后台线程上，所以一律先切回 JavaFX 线程。
  */
 public final class Dialogs {
