@@ -34,19 +34,24 @@ jobs:
           distribution: temurin
           java-version: '26'
       - uses: gradle/actions/setup-gradle@v6.3.0
-      - name: Make sure WiX is available
+      - name: Install WiX v5
         shell: powershell
         run: |
-          if (-not (Get-Command candle.exe -ErrorAction SilentlyContinue)) {
-            choco install wixtoolset --no-progress -y
-          }
-          Get-Command candle.exe | Select-Object -ExpandProperty Source
+          dotnet tool install --global wix --version 5.0.2
+          # jpackage 要用到这两个扩展，不装会报 WIX0144
+          wix extension add --global WixToolset.Util.wixext/5.0.2
+          wix extension add --global WixToolset.UI.wixext/5.0.2
+          "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          wix --version
 
       # dist = packageInput（主 jar + 依赖 + resource，JavaFX 除外）
       #      + fxModules（JavaFX 的模块 jar，给 jlink 用）
       #      + jlinkRuntime（裁运行时）+ jpackage（出 exe，带图标）
       - name: Build the installer
-        run: ./gradlew dist
+        run: |
+          # runner 镜像自带 WiX v3.14：它留在 PATH 里就会被 jpackage 挑中，而 v3 生成 MSI 会以 311 失败
+          $env:PATH = ($env:PATH -split ';' | Where-Object { $_ -and $_ -notlike '*WiX Toolset*' }) -join ';'
+          ./gradlew dist
 
       - uses: actions/upload-artifact@v7.0.1
         with:
