@@ -1,10 +1,19 @@
-name: build
+name: Build
+
+# 只被 .github/workflows/release.yml 用 workflow_call 调用，自己不挂任何触发条件。
 
 on:
-  push:
-    branches: [main]
-  pull_request:
-  workflow_dispatch:
+  workflow_call:
+    inputs:
+      msi_version:
+        description: 安装包（MSI）内部版本号，由提交数推出（第 234 个提交 → 1.2.34）
+        type: string
+        required: true
+      build_exe:
+        description: 是否构建 Windows 安装包（自动构建只发布 jar）
+        type: boolean
+        required: false
+        default: false
 
 jobs:
   jar:
@@ -26,6 +35,7 @@ jobs:
 
   exe:
     name: Single exe with a trimmed runtime
+    if: ${{ inputs.build_exe }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7.0.1
@@ -51,7 +61,7 @@ jobs:
         run: |
           # runner 镜像自带 WiX v3.14：它留在 PATH 里就会被 jpackage 挑中，而 v3 生成 MSI 会以 311 失败
           $env:PATH = ($env:PATH -split ';' | Where-Object { $_ -and $_ -notlike '*WiX Toolset*' }) -join ';'
-          ./gradlew dist
+          ./gradlew dist -PappVersion=${{ inputs.version_code }}
 
       - uses: actions/upload-artifact@v7.0.1
         with:

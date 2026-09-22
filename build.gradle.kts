@@ -40,6 +40,10 @@ dependencies {
     implementation("org.kordamp.ikonli:ikonli-material2-pack:12.4.0")
 }
 
+// jpackage 的 --app-version 进的是 MSI 的版本字段，只认数字点分（r1092 这种会被拒），
+// 发版时由 CI 用 -PappVersion 传 1.{提交数/100}.{提交数%100} 进来。
+val appVersion = (findProperty("appVersion") as String?) ?: "1.0.0"
+
 version = "1.0.0"
 
 base {
@@ -233,7 +237,7 @@ tasks.register<Exec>("dist") {
         "--input", layout.buildDirectory.dir("package-input").get().asFile.absolutePath,
         "--main-jar", "match3.jar", "--main-class", "Main",
         "--runtime-image", layout.buildDirectory.dir("runtime").get().asFile.absolutePath,
-        "--name", "Match3", "--app-version", "1.0.0", "--vendor", "CS109",
+        "--name", "Match3", "--app-version", appVersion, "--vendor", "CS109",
         "--icon", "packaging/app.ico",
         // 裁出来的运行时里 JavaFX 是命名模块，ALL-UNNAMED 覆盖不到它们
         "--java-options", "--enable-native-access=ALL-UNNAMED,$fxModuleNames",

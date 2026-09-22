@@ -1,0 +1,98 @@
+name: Release
+
+# 发布入口（CI 里唯一挂触发条件的文件）：
+#   - 推送 main      → 自动构建，只发布 jar（prerelease）
+#   - 手动 dispatch  → 可勾选一并构建 Windows 安装包
+# 编译与打包都委托给 .github/workflows/build.yml，本文件只算版本号并发布。
+# 版本号 r{1000 + 提交数}；安装包内部版本由提交数推出（第 234 个提交 → 1.2.34）。
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      pack_exe:
+        description: 一并构建并发布 Windows 安装包
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+jobs:
+  prep:
+    name: 解析版本号
+    runs-on: ubuntu-latest
+    outputs:
+      version_name: ${{ steps.ver.outputs.version_name }}
+      msi_version: ${{ steps.ver.outputs.msi_version }}
+      tag: ${{ steps.ver.outputs.tag }}
+      build_exe: ${{ steps.ver.outputs.build_exe }}
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          # 版本号按提交数算，浅克隆会数错
+          fetch-depth: 0
+      - id: ver
+        run: |
+          COUNT="$(git rev-list --count HEAD)"
+          echo "version_name=r$((COUNT+1000))" >> "$GITHUB_OUTPUT"
+          echo "msi_version=1.$((COUNT/100)).$(printf '%02d' $((COUNT%100)))" >> "$GITHUB_OUTPUT"
+          echo "tag=r$((COUNT+1000))" >> "$GITHUB_OUTPUT"
+          # 只有手动发版勾了才出安装包；push 触发的自动构建只发布 jar
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.pack_exe }}" = "true" ]; then
+            echo "build_exe=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "build_exe=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: 打印版本号
+        run: |
+          echo "版本 ${{ steps.ver.outputs.version_name }}"
+          echo "安装包版本 ${{ steps.ver.outputs.msi_version }}"
+          echo "构建 exe: ${{ steps.ver.outputs.build_exe }}"
+
+  build:
+    name: 构建
+    needs: prep
+    uses: ./.github/workflows/build.yml
+    with:
+      msi_version: ${{ needs.prep.outputs.msi_version }}
+      build_exe: ${{ needs.prep.outputs.build_exe == 'true' }}
+
+  publish:
+    name: 发布 ${{ needs.prep.outputs.version_name }}
+    needs: [prep, build]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.1
+      - uses: actions/download-artifact@v8
+        with:
+          path: artifacts
+          merge-multiple: true
+      - name: 归拢产物
+        env:
+          VER: ${{ needs.prep.outputs.version_name }}
+        run: |
+          mkdir -p dist
+          mv artifacts/match3.jar "dist/match3-$VER.jar"
+          for f in artifacts/*.exe; do
+            [ -e "$f" ] && mv "$f" "dist/Match3-$VER.exe"
+          done
+          ls -la dist
+      - name: 创建 Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.prep.outputs.tag }}
+          VER: ${{ needs.prep.outputs.version_name }}
+          PRE: ${{ github.event_name == 'push' }}
+        run: |
+          args=(--title "$VER" --generate-notes)
+          if [ "$PRE" = "true" ]; then args+=(--prerelease); fi
+          # 同一版本号重复发布时 tag 已存在，改成往已有 Release 里补文件
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release upload "$TAG" dist/* --clobber
+          else
+            gh release create "$TAG" "${args[@]}" dist/*
+          fi
