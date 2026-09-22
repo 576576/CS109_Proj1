@@ -1,10 +1,7 @@
 name: Release
 
-# 发布入口（CI 里唯一挂触发条件的文件）：
-#   - 推送 main      → 自动构建，只发布 jar（prerelease）
-#   - 手动 dispatch  → 可勾选一并构建 Windows 安装包
-# 编译与打包都委托给 .github/workflows/build.yml，本文件只算版本号并发布。
-# 版本号 r{1000 + 提交数}；安装包内部版本由提交数推出（第 234 个提交 → 1.2.34）。
+# 版本号 r{1000 + 提交数}；安装包内部版本 1.{提交数/100}.{提交数%100}。
+# 打包委托给 build.yml；推送 main 只发布 jar，手动 dispatch 可勾选一并出安装包。
 
 on:
   push:

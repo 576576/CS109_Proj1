@@ -44,24 +44,23 @@ jobs:
           distribution: temurin
           java-version: '26'
       - uses: gradle/actions/setup-gradle@v6.3.0
-      - name: Install WiX v5
+      - name: Install WiX v7
         shell: powershell
         run: |
-          dotnet tool install --global wix --version 5.0.2
-          # jpackage 要用到这两个扩展，不装会报 WIX0144
-          wix extension add --global WixToolset.Util.wixext/5.0.2
-          wix extension add --global WixToolset.UI.wixext/5.0.2
+          dotnet tool install --global wix --version 7.0.0
+          # v7 起要先接受 OSMF EULA，否则任何 wix 命令都以 WIX7015 失败
+          wix eula accept wix7
+          # 不装这两个扩展，jpackage 会在生成 MSI 时报 WIX0144
+          wix extension add --global WixToolset.Util.wixext/7.0.0
+          wix extension add --global WixToolset.UI.wixext/7.0.0
           "$env:USERPROFILE\.dotnet\tools" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
           wix --version
 
-      # dist = packageInput（主 jar + 依赖 + resource，JavaFX 除外）
-      #      + fxModules（JavaFX 的模块 jar，给 jlink 用）
-      #      + jlinkRuntime（裁运行时）+ jpackage（出 exe，带图标）
       - name: Build the installer
         run: |
-          # runner 镜像自带 WiX v3.14：它留在 PATH 里就会被 jpackage 挑中，而 v3 生成 MSI 会以 311 失败
+          # 镜像自带 WiX v3 留在 PATH 里会被 jpackage 挑中，生成 MSI 会失败
           $env:PATH = ($env:PATH -split ';' | Where-Object { $_ -and $_ -notlike '*WiX Toolset*' }) -join ';'
-          ./gradlew dist -PappVersion=${{ inputs.version_code }}
+          ./gradlew dist -PappVersion=${{ inputs.msi_version }}
 
       - uses: actions/upload-artifact@v7.0.1
         with:
