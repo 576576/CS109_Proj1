@@ -3,6 +3,8 @@
 A match-3 puzzle game with a Material 3 JavaFX interface, online play over TCP, and a
 colour scheme derived from the current wallpaper. Originally a CS109 course project.
 
+Chinese version: [../../README.md](../../README.md)
+
 ## Features
 
 - **Three ways to play**: single-player, host a room, or join a room by address.
